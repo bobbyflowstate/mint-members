@@ -51,6 +51,7 @@ export default defineSchema({
    * Applications table - stores member reservation applications
    */
   applications: defineTable({
+    userId: v.id("users"), // Link to authenticated user
     firstName: v.string(),
     lastName: v.string(),
     email: v.string(),
@@ -67,6 +68,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_userId", ["userId"])
     .index("by_status", ["status"])
     .index("by_email", ["email"])
     .index("by_arrival", ["arrival"])
