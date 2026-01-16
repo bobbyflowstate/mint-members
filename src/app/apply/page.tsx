@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ApplicationForm } from "@/components/forms";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { getLandingContent } from "@/config/content";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -46,7 +47,9 @@ export default function ApplyPage() {
 
         {/* Form Card */}
         <div className="rounded-2xl bg-white/5 backdrop-blur-sm p-8 ring-1 ring-white/10">
-          <ApplicationForm />
+          <ErrorBoundary>
+            <ApplicationForm />
+          </ErrorBoundary>
         </div>
 
         {/* Info Footer */}
