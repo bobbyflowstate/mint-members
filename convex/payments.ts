@@ -1,6 +1,9 @@
+"use node";
+
 import { action, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+import Stripe from "stripe";
 import {
   logEvent,
   buildPaymentInitiatedPayload,
@@ -9,6 +12,7 @@ import {
   buildWebhookErrorPayload,
 } from "./lib/events";
 import { DEFAULT_CONFIG } from "./config";
+import { Doc } from "./_generated/dataModel";
 
 /**
  * Create a Stripe checkout session for reservation payment
@@ -20,11 +24,12 @@ export const createReservationCheckout = action({
     successUrl: v.string(),
     cancelUrl: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ sessionId: string; url: string | null }> => {
     // Get the application
-    const application = await ctx.runQuery(api.applications.getById, {
-      applicationId: args.applicationId,
-    });
+    const application: Doc<"applications"> | null = await ctx.runQuery(
+      api.applications.getById,
+      { applicationId: args.applicationId }
+    );
 
     if (!application) {
       throw new Error("Application not found");
@@ -39,16 +44,22 @@ export const createReservationCheckout = action({
     }
 
     // Get reservation fee from config
-    const config = await ctx.runQuery(api.config.getConfig, {});
+    const config: Record<string, string> = await ctx.runQuery(api.config.getConfig, {});
     const reservationFeeCents = parseInt(
       config.reservationFeeCents ?? DEFAULT_CONFIG.reservationFeeCents,
       10
     );
 
-    // Create Stripe checkout session
-    const stripe = await getStripeClient();
+    // Create Stripe client
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      throw new Error("STRIPE_SECRET_KEY environment variable is not set");
+    }
     
-    const session = await stripe.checkout.sessions.create({
+    const stripe = new Stripe(stripeSecretKey);
+
+    // Create Stripe checkout session
+    const session: Stripe.Checkout.Session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
@@ -287,19 +298,3 @@ export const logWebhookError = mutation({
     });
   },
 });
-
-/**
- * Get Stripe client (lazy initialization)
- */
-async function getStripeClient() {
-  const Stripe = (await import("stripe")).default;
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  
-  if (!stripeSecretKey) {
-    throw new Error("STRIPE_SECRET_KEY environment variable is not set");
-  }
-  
-  return new Stripe(stripeSecretKey, {
-    apiVersion: "2025-04-30.basil",
-  });
-}

@@ -6,10 +6,8 @@ import { api } from "../../../../../convex/_generated/api";
 // Initialize Convex client
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-04-30.basil",
-});
+// Initialize Stripe (using default API version from SDK)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 /**
  * Stripe webhook handler
