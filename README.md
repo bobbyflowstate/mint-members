@@ -1,36 +1,176 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DeMentha Camp Reservation System
+
+A modern reservation and signup system for DeMentha camp at Burning Man 2025. Built with Next.js, Convex, and Stripe.
+
+## Features
+
+- 🎫 **Member Reservations** - Apply and pay for camp spots
+- 📅 **Date Validation** - Automatic early departure detection with ops review workflow
+- 💳 **Stripe Payments** - Secure payment processing via Stripe Checkout
+- 📱 **WhatsApp Integration** - Phone validation for WhatsApp communication
+- 👥 **Ops Portal** - Admin dashboard for reviewing applications and viewing logs
+- 📊 **Event Logging** - Complete audit trail of all actions
+
+## Tech Stack
+
+- **Frontend**: Next.js 16, React 19, Tailwind CSS
+- **Backend**: Convex (database, functions, auth)
+- **Payments**: Stripe Checkout
+- **Testing**: Vitest, Playwright
+- **Forms**: React Hook Form, Zod
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- npm or pnpm
+- Convex account
+- Stripe account
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd mint-members
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+4. Configure your `.env.local`:
+   ```
+   NEXT_PUBLIC_CONVEX_URL=<your-convex-deployment-url>
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<your-stripe-publishable-key>
+   STRIPE_SECRET_KEY=<your-stripe-secret-key>
+   STRIPE_WEBHOOK_SECRET=<your-stripe-webhook-secret>
+   ```
+
+5. Start Convex:
+   ```bash
+   npx convex dev
+   ```
+
+6. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+7. Open [http://localhost:3000](http://localhost:3000)
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_CONVEX_URL` | Your Convex deployment URL | Yes |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (pk_test_... or pk_live_...) | Yes |
+| `STRIPE_SECRET_KEY` | Stripe secret key (sk_test_... or sk_live_...) | Yes |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (whsec_...) | Yes |
+
+### Getting Environment Variables
+
+1. **Convex URL**: Run `npx convex dev` and copy the deployment URL from the output
+2. **Stripe Keys**: Get from [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
+3. **Webhook Secret**: Create a webhook endpoint in Stripe Dashboard pointing to `/api/stripe/webhook`
+
+## Scripts
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Development
+npm run dev          # Start Next.js dev server
+npm run convex       # Run Convex CLI commands
+
+# Testing
+npm run test         # Run unit tests (Vitest)
+npm run test:ci      # Run tests in CI mode
+npm run test:e2e     # Run e2e tests (Playwright)
+
+# Build & Deploy
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+├── convex/              # Convex backend
+│   ├── applications.ts  # Application mutations/queries
+│   ├── payments.ts      # Payment mutations
+│   ├── paymentsActions.ts # Stripe action (Node.js runtime)
+│   ├── eventLogs.ts     # Event logging
+│   ├── config.ts        # Configuration
+│   └── schema.ts        # Database schema
+├── src/
+│   ├── app/            # Next.js App Router pages
+│   │   ├── apply/      # Application form & confirmation pages
+│   │   ├── ops/        # Ops admin portal
+│   │   └── api/        # API routes (Stripe webhook)
+│   ├── components/     # React components
+│   │   ├── marketing/  # Landing page components
+│   │   ├── forms/      # Form components
+│   │   └── ops/        # Ops portal components
+│   ├── config/         # Configuration helpers
+│   └── lib/            # Utilities
+│       ├── applications/ # Validation & types
+│       └── logging/    # Client-side logging
+├── tests/
+│   └── e2e/           # Playwright e2e tests
+└── docs/
+    └── plans/         # Implementation plans
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deployment
 
-## Learn More
+### Vercel (Recommended)
 
-To learn more about Next.js, take a look at the following resources:
+1. Connect your repository to Vercel
+2. Configure environment variables in Vercel dashboard
+3. Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Convex Production
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx convex deploy
+```
 
-## Deploy on Vercel
+## Monitoring
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Event Logs
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+View event logs via:
+- Ops Portal: `/ops/logs`
+- Convex Dashboard: Browse `event_logs` table
+- CLI: `npx convex run eventLogs:listRecent`
+
+### Log Types
+
+- `form_submitted` - Application submitted
+- `invalid_departure` - Early departure detected
+- `payment_initiated` - Stripe checkout started
+- `payment_success` - Payment completed
+- `payment_failed` - Payment failed/cancelled
+- `ops_override_granted` - Early departure approved
+- `ops_override_denied` - Early departure denied
+- `webhook_error` - Stripe webhook error
+- `mutation_failed` - Backend error
+
+## Contributing
+
+1. Create a feature branch
+2. Make changes
+3. Run tests: `npm run test:ci`
+4. Run lint: `npm run lint`
+5. Submit PR
+
+## License
+
+Private - DeMentha Camp
