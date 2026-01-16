@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import {
   logEvent,
   buildFormSubmittedPayload,
@@ -12,7 +13,7 @@ import { DEFAULT_CONFIG } from "./config";
 
 /**
  * Create a draft application from form submission
- * Validates input, checks departure date against cutoff, and logs events
+ * Requires authentication. Links application to the authenticated user.
  */
 export const createDraftApplication = mutation({
   args: {
@@ -27,6 +28,22 @@ export const createDraftApplication = mutation({
     allergyNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Require authentication
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("You must be signed in to submit an application");
+    }
+
+    // Check if user already has an application
+    const existingApplication = await ctx.db
+      .query("applications")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+    
+    if (existingApplication) {
+      throw new Error("You already have an application. Please contact us if you need to make changes.");
+    }
+
     const now = Date.now();
 
     // Get departure cutoff from config
@@ -48,6 +65,7 @@ export const createDraftApplication = mutation({
     try {
       // Insert the application
       const applicationId = await ctx.db.insert("applications", {
+        userId,
         firstName: args.firstName.trim(),
         lastName: args.lastName.trim(),
         email: args.email.trim().toLowerCase(),
@@ -203,6 +221,24 @@ export const getById = query({
   args: { applicationId: v.id("applications") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.applicationId);
+  },
+});
+
+/**
+ * Get the current user's application
+ */
+export const getMyApplication = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+    
+    return await ctx.db
+      .query("applications")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
   },
 });
 
