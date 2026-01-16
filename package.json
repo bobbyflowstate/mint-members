@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
-    "test:ci": "vitest run"
+    "test:ci": "vitest run",
+    "convex": "npx convex"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.90",
