@@ -109,8 +109,8 @@ describe("Stripe Webhook Route", () => {
     it("should return 200 for processing errors (to prevent retries)", () => {
       // Even when processing fails, we return 200 to prevent Stripe retries
       // The error is logged for manual investigation
-      const processingError = true;
-      const expectedStatus = 200; // We still return 200
+      // This design decision prevents Stripe from retrying failed webhooks
+      const expectedStatus = 200;
 
       expect(expectedStatus).toBe(200);
     });
