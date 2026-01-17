@@ -2,12 +2,103 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useAction } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const [verificationState, setVerificationState] = useState<"loading" | "success" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  const verifyPayment = useAction(api.paymentsActions.verifyAndConfirmPayment);
 
+  useEffect(() => {
+    if (!sessionId) {
+      setVerificationState("error");
+      setErrorMessage("No session ID provided");
+      return;
+    }
+
+    // Verify and confirm payment with Stripe
+    verifyPayment({ stripeSessionId: sessionId })
+      .then((result) => {
+        if (result.success) {
+          setVerificationState("success");
+        } else {
+          setVerificationState("error");
+          setErrorMessage(result.error || "Failed to verify payment");
+        }
+      })
+      .catch((err) => {
+        console.error("Payment verification error:", err);
+        setVerificationState("error");
+        setErrorMessage("Failed to verify payment");
+      });
+  }, [sessionId, verifyPayment]);
+
+  // Loading state
+  if (verificationState === "loading") {
+    return (
+      <main className="min-h-screen flex items-center justify-center py-12 sm:py-20">
+        <div className="mx-auto max-w-xl px-6 lg:px-8 text-center">
+          <div className="animate-spin h-12 w-12 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto" />
+          <p className="mt-6 text-lg text-slate-300">Confirming your payment...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Error state
+  if (verificationState === "error") {
+    return (
+      <main className="min-h-screen flex items-center justify-center py-12 sm:py-20">
+        <div className="mx-auto max-w-xl px-6 lg:px-8 text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 ring-1 ring-red-500/20">
+            <svg
+              className="h-10 w-10 text-red-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+              />
+            </svg>
+          </div>
+          <h1 className="mt-8 text-3xl font-bold tracking-tight text-white">
+            Verification Issue
+          </h1>
+          <p className="mt-4 text-lg text-slate-300">
+            {errorMessage || "We couldn't verify your payment."}
+          </p>
+          <p className="mt-2 text-sm text-slate-400">
+            If you completed payment, please contact us. Your payment is safe.
+          </p>
+          <div className="mt-8 flex gap-4 justify-center">
+            <Link
+              href="/apply"
+              className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-400 transition-colors"
+            >
+              Check Application Status
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center rounded-lg bg-white/10 px-6 py-3 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
+            >
+              Return Home
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Success state
   return (
     <main className="min-h-screen flex items-center justify-center py-12 sm:py-20">
       <div className="mx-auto max-w-xl px-6 lg:px-8 text-center">
@@ -33,7 +124,7 @@ function SuccessContent() {
           Payment Successful!
         </h1>
         <p className="mt-4 text-lg text-slate-300">
-          Your reservation has been confirmed. Welcome to DeMentha!
+          Your reservation has been confirmed. Welcome to the camp!
         </p>
 
         {/* Important Info Card */}

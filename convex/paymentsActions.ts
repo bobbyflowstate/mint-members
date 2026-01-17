@@ -7,6 +7,51 @@ import Stripe from "stripe";
 import { Doc } from "./_generated/dataModel";
 
 /**
+ * Verify payment status from Stripe session ID (called from success page)
+ * This allows confirming payment via redirect without webhooks
+ */
+export const verifyAndConfirmPayment = action({
+  args: {
+    stripeSessionId: v.string(),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      return { success: false, error: "Stripe not configured" };
+    }
+
+    const stripe = new Stripe(stripeSecretKey);
+
+    try {
+      // Retrieve the checkout session from Stripe
+      const session = await stripe.checkout.sessions.retrieve(args.stripeSessionId);
+
+      // Check if payment was successful
+      if (session.payment_status !== "paid") {
+        return { success: false, error: "Payment not completed" };
+      }
+
+      // Update application status via mutation
+      const result = await ctx.runMutation(api.payments.handleCheckoutSuccess, {
+        stripeSessionId: args.stripeSessionId,
+        amountCents: session.amount_total ?? 0,
+        stripePaymentIntentId: typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : undefined,
+      });
+
+      return { success: result.success ?? false, error: result.error };
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to verify payment" 
+      };
+    }
+  },
+});
+
+/**
  * Create a Stripe checkout session for reservation payment
  * This is an action because it calls external Stripe API
  */
