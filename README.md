@@ -1,6 +1,6 @@
 # DeMentha Camp Reservation System
 
-A modern reservation and signup system for DeMentha camp at Burning Man 2025. Built with Next.js, Convex, and Stripe.
+A modern reservation and signup system for DeMentha camp at Burning Man. Built with Next.js, Convex, and Stripe.
 
 ## Features
 
