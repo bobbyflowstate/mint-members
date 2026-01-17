@@ -233,3 +233,47 @@ export const resetToPendingPayment = mutation({
     return { success: true, applicationId: args.applicationId };
   },
 });
+
+/**
+ * Manually confirm payment (admin use)
+ * Use this when you've verified payment in Stripe dashboard but webhook didn't fire
+ * (common in local development without Stripe CLI)
+ * 
+ * Usage: npx convex run payments:manuallyConfirmPayment '{"applicationId": "..."}'
+ */
+export const manuallyConfirmPayment = mutation({
+  args: {
+    applicationId: v.id("applications"),
+  },
+  handler: async (ctx, args) => {
+    const application = await ctx.db.get(args.applicationId);
+    
+    if (!application) {
+      throw new Error("Application not found");
+    }
+
+    if (application.status === "confirmed") {
+      return { success: true, message: "Already confirmed" };
+    }
+
+    await ctx.db.patch(args.applicationId, {
+      status: "confirmed",
+      updatedAt: Date.now(),
+    });
+
+    // Log manual confirmation
+    await logEvent(ctx, {
+      applicationId: args.applicationId,
+      eventType: "payment_success",
+      payload: {
+        type: "payment_success",
+        email: application.email,
+        note: "Manually confirmed by admin",
+        timestamp: new Date().toISOString(),
+      },
+      actor: "admin",
+    });
+
+    return { success: true, applicationId: args.applicationId };
+  },
+});
