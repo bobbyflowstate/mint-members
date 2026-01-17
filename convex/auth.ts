@@ -1,5 +1,5 @@
 import { convexAuth } from "@convex-dev/auth/server";
-import Email from "@convex-dev/auth/providers/Email";
+import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend } from "resend";
 
 /**
