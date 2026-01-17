@@ -1,18 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { SignInForm } from "./SignInForm";
-import { SignUpForm } from "./SignUpForm";
+import { EmailAuthForm } from "./EmailAuthForm";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultMode?: "signIn" | "signUp";
 }
 
-export function AuthModal({ isOpen, onClose, defaultMode = "signIn" }: AuthModalProps) {
-  const [mode, setMode] = useState<"signIn" | "signUp">(defaultMode);
-
+export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -49,27 +44,15 @@ export function AuthModal({ isOpen, onClose, defaultMode = "signIn" }: AuthModal
           {/* Header */}
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-white">
-              {mode === "signIn" ? "Welcome Back" : "Create Account"}
+              Sign In to Continue
             </h2>
             <p className="mt-2 text-sm text-slate-400">
-              {mode === "signIn"
-                ? "Sign in to continue your application"
-                : "Sign up to reserve your spot at DeMentha"}
+              Enter your email to receive a magic link
             </p>
           </div>
 
           {/* Form */}
-          {mode === "signIn" ? (
-            <SignInForm
-              onSuccess={onClose}
-              onSwitchToSignUp={() => setMode("signUp")}
-            />
-          ) : (
-            <SignUpForm
-              onSuccess={onClose}
-              onSwitchToSignIn={() => setMode("signIn")}
-            />
-          )}
+          <EmailAuthForm onSuccess={onClose} />
         </div>
       </div>
     </div>
