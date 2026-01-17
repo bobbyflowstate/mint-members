@@ -78,7 +78,10 @@ export function ReviewTable() {
               Dates
             </th>
             <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Notes
+              Reason for Early Departure
+            </th>
+            <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Ops Notes
             </th>
             <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
               Actions
@@ -107,9 +110,20 @@ export function ReviewTable() {
                 <div className="text-xs text-amber-400">Early departure</div>
               </td>
               <td className="px-6 py-4">
+                <div className="max-w-xs">
+                  {app.earlyDepartureReason ? (
+                    <p className="text-sm text-slate-300 whitespace-pre-wrap">
+                      {app.earlyDepartureReason}
+                    </p>
+                  ) : (
+                    <span className="text-xs text-slate-500 italic">No reason provided</span>
+                  )}
+                </div>
+              </td>
+              <td className="px-6 py-4">
                 <input
                   type="text"
-                  placeholder="Add notes..."
+                  placeholder="Add ops notes..."
                   value={notes[app._id] || ""}
                   onChange={(e) =>
                     setNotes((prev) => ({ ...prev, [app._id]: e.target.value }))

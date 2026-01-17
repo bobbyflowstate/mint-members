@@ -15,17 +15,28 @@ import { CONFIG_DEFAULTS } from "./config";
  * Create a draft application from form submission
  * Requires authentication. Links application to the authenticated user.
  */
+/**
+ * Time of arrival/departure options
+ */
+const arrivalDepartureTime = v.union(
+  v.literal("after 10 am"),
+  v.literal("after 2 pm"),
+  v.literal("after 9 pm")
+);
+
 export const createDraftApplication = mutation({
   args: {
     firstName: v.string(),
     lastName: v.string(),
-    email: v.string(),
     phone: v.string(),
     arrival: v.string(),
+    arrivalTime: arrivalDepartureTime,
     departure: v.string(),
+    departureTime: arrivalDepartureTime,
     dietaryPreference: v.string(),
     allergyFlag: v.boolean(),
     allergyNotes: v.optional(v.string()),
+    earlyDepartureReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Require authentication
@@ -33,6 +44,13 @@ export const createDraftApplication = mutation({
     if (!userId) {
       throw new Error("You must be signed in to submit an application");
     }
+
+    // Get user data to get their email
+    const user = await ctx.db.get(userId);
+    if (!user || !user.email) {
+      throw new Error("Unable to retrieve user email. Please ensure your account has an email associated.");
+    }
+    const userEmail = user.email.toLowerCase();
 
     // Check if user already has an application
     const existingApplication = await ctx.db
@@ -68,15 +86,18 @@ export const createDraftApplication = mutation({
         userId,
         firstName: args.firstName.trim(),
         lastName: args.lastName.trim(),
-        email: args.email.trim().toLowerCase(),
+        email: userEmail,
         phone: args.phone.trim(),
         arrival: args.arrival,
+        arrivalTime: args.arrivalTime,
         departure: args.departure,
+        departureTime: args.departureTime,
         status,
         dietaryPreference: args.dietaryPreference,
         allergyFlag: args.allergyFlag,
         allergyNotes: args.allergyNotes?.trim(),
         earlyDepartureRequested: requiresOpsReview,
+        earlyDepartureReason: requiresOpsReview ? args.earlyDepartureReason?.trim() : undefined,
         paymentAllowed,
         createdAt: now,
         updatedAt: now,
@@ -87,7 +108,7 @@ export const createDraftApplication = mutation({
         applicationId,
         eventType: "form_submitted",
         payload: buildFormSubmittedPayload({
-          email: args.email,
+          email: userEmail,
           firstName: args.firstName,
           lastName: args.lastName,
           arrival: args.arrival,
@@ -102,7 +123,7 @@ export const createDraftApplication = mutation({
           applicationId,
           eventType: "invalid_departure",
           payload: buildInvalidDeparturePayload({
-            email: args.email,
+            email: userEmail,
             requestedDeparture: args.departure,
             cutoffDate: departureCutoff,
           }),
@@ -123,7 +144,7 @@ export const createDraftApplication = mutation({
         payload: buildMutationFailedPayload({
           mutationName: "createDraftApplication",
           error: error instanceof Error ? error.message : "Unknown error",
-          input: { email: args.email },
+          input: { email: userEmail },
         }),
         actor: "system",
       });

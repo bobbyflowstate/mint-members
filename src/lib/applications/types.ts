@@ -28,6 +28,17 @@ export const DIETARY_PREFERENCES: DietaryPreference[] = [
 ];
 
 /**
+ * Arrival/Departure time options
+ */
+export type ArrivalDepartureTime = "after 10 am" | "after 2 pm" | "after 9 pm";
+
+export const ARRIVAL_DEPARTURE_TIMES: ArrivalDepartureTime[] = [
+  "after 10 am",
+  "after 2 pm",
+  "after 9 pm",
+];
+
+/**
  * Raw input from the application form (before validation)
  */
 export interface ApplicationFormInput {
@@ -36,7 +47,9 @@ export interface ApplicationFormInput {
   email: string;
   phone: string;
   arrival: string;
+  arrivalTime: ArrivalDepartureTime;
   departure: string;
+  departureTime: ArrivalDepartureTime;
   dietaryPreference: string;
   allergyFlag: boolean;
   allergyNotes?: string;
@@ -51,7 +64,9 @@ export interface ApplicationPayload {
   email: string;
   phone: string; // Canonical E.164 format
   arrival: string; // ISO date string
+  arrivalTime: ArrivalDepartureTime;
   departure: string; // ISO date string
+  departureTime: ArrivalDepartureTime;
   dietaryPreference: DietaryPreference;
   allergyFlag: boolean;
   allergyNotes?: string;

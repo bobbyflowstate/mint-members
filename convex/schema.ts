@@ -30,6 +30,15 @@ const opsAuthorizationStatus = v.union(
 );
 
 /**
+ * Time of arrival/departure options
+ */
+const arrivalDepartureTime = v.union(
+  v.literal("after 10 am"),
+  v.literal("after 2 pm"),
+  v.literal("after 9 pm")
+);
+
+/**
  * Event types for audit logging
  */
 const eventType = v.union(
@@ -57,13 +66,16 @@ export default defineSchema({
     email: v.string(),
     phone: v.string(),
     arrival: v.string(), // ISO date string
+    arrivalTime: arrivalDepartureTime,
     departure: v.string(), // ISO date string
+    departureTime: arrivalDepartureTime,
     status: applicationStatus,
     dietaryPreference: v.string(),
     allergyFlag: v.boolean(),
     allergyNotes: v.optional(v.string()),
     checkoutSessionId: v.optional(v.string()),
     earlyDepartureRequested: v.boolean(),
+    earlyDepartureReason: v.optional(v.string()),
     paymentAllowed: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
