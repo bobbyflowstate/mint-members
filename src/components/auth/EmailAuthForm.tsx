@@ -22,7 +22,8 @@ export function EmailAuthForm({ onSuccess }: EmailAuthFormProps) {
     try {
       await signIn("resend", { email });
       setEmailSent(true);
-      onSuccess?.();
+      // Don't call onSuccess here - keep modal open to show "check email" message
+      // User will be redirected after clicking magic link
     } catch (err) {
       console.error("Auth error:", err);
       setError(
@@ -37,10 +38,10 @@ export function EmailAuthForm({ onSuccess }: EmailAuthFormProps) {
 
   if (emailSent) {
     return (
-      <div className="text-center py-4">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20">
+      <div className="text-center py-6">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-2 ring-emerald-500/30">
           <svg
-            className="h-8 w-8 text-emerald-400"
+            className="h-10 w-10 text-emerald-400"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -53,21 +54,27 @@ export function EmailAuthForm({ onSuccess }: EmailAuthFormProps) {
             />
           </svg>
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-white">Check your email</h3>
-        <p className="mt-2 text-sm text-slate-400">
-          We sent a magic link to <span className="text-white font-medium">{email}</span>
+        <h3 className="mt-6 text-xl font-bold text-white">Check your inbox!</h3>
+        <p className="mt-3 text-base text-slate-300">
+          We sent a magic link to:
         </p>
-        <p className="mt-1 text-sm text-slate-500">
-          Click the link in the email to sign in.
+        <p className="mt-1 text-lg font-semibold text-emerald-400">{email}</p>
+        <div className="mt-6 p-4 bg-white/5 rounded-lg ring-1 ring-white/10">
+          <p className="text-sm text-slate-300">
+            📧 Open your email and click the link to sign in instantly.
+          </p>
+        </div>
+        <p className="mt-4 text-xs text-slate-500">
+          Link expires in 15 minutes. Check spam if you don&apos;t see it.
         </p>
         <button
           onClick={() => {
             setEmailSent(false);
             setEmail("");
           }}
-          className="mt-6 text-sm text-emerald-400 hover:text-emerald-300"
+          className="mt-6 text-sm text-slate-400 hover:text-white transition-colors"
         >
-          Use a different email
+          ← Use a different email
         </button>
       </div>
     );

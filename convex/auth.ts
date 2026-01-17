@@ -12,6 +12,8 @@ export const { auth, signIn, signOut, store } = convexAuth({
       id: "resend",
       apiKey: process.env.AUTH_RESEND_KEY,
       maxAge: 60 * 15, // 15 minutes
+      // Magic link behavior - only the token/link is needed, no email re-verification
+      authorize: undefined,
       async sendVerificationRequest({ identifier: email, url }) {
         const resendApiKey = process.env.AUTH_RESEND_KEY;
         
