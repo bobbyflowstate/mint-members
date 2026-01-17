@@ -36,6 +36,7 @@ export const createDraftApplication = mutation({
     dietaryPreference: v.string(),
     allergyFlag: v.boolean(),
     allergyNotes: v.optional(v.string()),
+    earlyDepartureReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Require authentication
@@ -96,6 +97,7 @@ export const createDraftApplication = mutation({
         allergyFlag: args.allergyFlag,
         allergyNotes: args.allergyNotes?.trim(),
         earlyDepartureRequested: requiresOpsReview,
+        earlyDepartureReason: requiresOpsReview ? args.earlyDepartureReason?.trim() : undefined,
         paymentAllowed,
         createdAt: now,
         updatedAt: now,

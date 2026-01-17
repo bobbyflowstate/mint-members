@@ -75,6 +75,7 @@ export default defineSchema({
     allergyNotes: v.optional(v.string()),
     checkoutSessionId: v.optional(v.string()),
     earlyDepartureRequested: v.boolean(),
+    earlyDepartureReason: v.optional(v.string()),
     paymentAllowed: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),

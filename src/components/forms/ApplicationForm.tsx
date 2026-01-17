@@ -22,6 +22,7 @@ interface FormData {
   dietaryPreference: string;
   allergyFlag: boolean;
   allergyNotes?: string;
+  earlyDepartureReason?: string;
 }
 
 interface SubmissionResult {
@@ -108,6 +109,7 @@ function ApplicationFormInner({
         dietaryPreference: data.dietaryPreference,
         allergyFlag: data.allergyFlag,
         allergyNotes: data.allergyNotes,
+        earlyDepartureReason: data.earlyDepartureReason,
       });
       
       setSubmissionResult(result);
@@ -292,10 +294,23 @@ function ApplicationFormInner({
         </div>
 
         {showEarlyDepartureWarning && (
-          <DepartureNotice
-            cutoffDate={content.departureCutoffFormatted}
-            requestedDeparture={watchDeparture}
-          />
+          <>
+            <DepartureNotice
+              cutoffDate={content.departureCutoffFormatted}
+              requestedDeparture={watchDeparture}
+            />
+            <Field
+              as="textarea"
+              label="Reason for Early Departure"
+              {...register("earlyDepartureReason", {
+                required: showEarlyDepartureWarning ? "Please explain why you need to leave early" : false,
+              })}
+              error={errors.earlyDepartureReason?.message}
+              placeholder="Please explain why you need to leave before the standard departure date..."
+              hint="This will help our ops team review your request"
+              required
+            />
+          </>
         )}
       </div>
 
