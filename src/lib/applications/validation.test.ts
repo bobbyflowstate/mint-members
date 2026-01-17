@@ -276,6 +276,243 @@ describe("validateApplicationInput", () => {
       expect(result.payload?.allergyFlag).toBe(false);
     });
   });
+
+  describe("arrival/departure time validation", () => {
+    it("should reject missing arrival time", () => {
+      const input = {
+        ...validInput,
+        arrivalTime: undefined as unknown as typeof validInput.arrivalTime,
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some((e) => e.field === "arrivalTime")).toBe(true);
+    });
+
+    it("should reject missing departure time", () => {
+      const input = {
+        ...validInput,
+        departureTime: undefined as unknown as typeof validInput.departureTime,
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some((e) => e.field === "departureTime")).toBe(true);
+    });
+
+    it("should reject invalid arrival time", () => {
+      const input = {
+        ...validInput,
+        arrivalTime: "invalid time" as typeof validInput.arrivalTime,
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some((e) => e.field === "arrivalTime")).toBe(true);
+    });
+
+    it("should accept all valid arrival/departure times", () => {
+      const validTimes = ["after 10 am", "after 2 pm", "after 9 pm"] as const;
+
+      for (const time of validTimes) {
+        const input = {
+          ...validInput,
+          arrivalTime: time,
+          departureTime: time,
+        };
+        const result = validateApplicationInput(input, testConfig);
+        expect(result.success).toBe(true);
+      }
+    });
+  });
+
+  describe("same day arrival/departure edge case", () => {
+    it("should reject when departure equals arrival (same day)", () => {
+      const input = {
+        ...validInput,
+        arrival: "2025-08-25",
+        departure: "2025-08-25",
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(false);
+      expect(
+        result.errors.some(
+          (e) => e.code === ErrorCodes.DEPARTURE_BEFORE_ARRIVAL
+        )
+      ).toBe(true);
+    });
+
+    it("should accept departure one day after arrival", () => {
+      const input = {
+        ...validInput,
+        arrival: "2025-08-25",
+        departure: "2025-08-26",
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      // Should fail only if it's before cutoff, not because of date order
+      const hasDateOrderError = result.errors.some(
+        (e) => e.code === ErrorCodes.DEPARTURE_BEFORE_ARRIVAL
+      );
+      expect(hasDateOrderError).toBe(false);
+    });
+  });
+
+  describe("whitespace handling", () => {
+    it("should trim leading and trailing whitespace from all fields", () => {
+      const input = {
+        ...validInput,
+        firstName: "  John  ",
+        lastName: "  Doe  ",
+        email: "  john@example.com  ",
+        phone: "  +14155551234  ",
+        arrival: "  2025-08-22  ",
+        departure: "  2025-09-01  ",
+        dietaryPreference: "  omnivore  ",
+        allergyNotes: "  Peanuts  ",
+        allergyFlag: true,
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(true);
+      expect(result.payload?.firstName).toBe("John");
+      expect(result.payload?.lastName).toBe("Doe");
+      expect(result.payload?.email).toBe("john@example.com");
+      expect(result.payload?.allergyNotes).toBe("Peanuts");
+    });
+  });
+
+  describe("email case handling", () => {
+    it("should lowercase email addresses", () => {
+      const input = {
+        ...validInput,
+        email: "JOHN@EXAMPLE.COM",
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(true);
+      expect(result.payload?.email).toBe("john@example.com");
+    });
+
+    it("should lowercase mixed case emails", () => {
+      const input = {
+        ...validInput,
+        email: "John.Doe@Example.COM",
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(true);
+      expect(result.payload?.email).toBe("john.doe@example.com");
+    });
+  });
+
+  describe("dietary preference case handling", () => {
+    it("should lowercase dietary preferences", () => {
+      const input = {
+        ...validInput,
+        dietaryPreference: "VEGETARIAN",
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(true);
+      expect(result.payload?.dietaryPreference).toBe("vegetarian");
+    });
+
+    it("should handle mixed case dietary preferences", () => {
+      const input = {
+        ...validInput,
+        dietaryPreference: "VeGaN",
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(true);
+      expect(result.payload?.dietaryPreference).toBe("vegan");
+    });
+  });
+
+  describe("null/undefined handling", () => {
+    it("should handle null firstName gracefully", () => {
+      const input = {
+        ...validInput,
+        firstName: null as unknown as string,
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some((e) => e.field === "firstName")).toBe(true);
+    });
+
+    it("should handle undefined email gracefully", () => {
+      const input = {
+        ...validInput,
+        email: undefined as unknown as string,
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some((e) => e.field === "email")).toBe(true);
+    });
+  });
+
+  describe("multiple validation errors", () => {
+    it("should collect all validation errors at once", () => {
+      const input = {
+        ...validInput,
+        firstName: "",
+        lastName: "",
+        email: "invalid",
+        phone: "invalid",
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThanOrEqual(4);
+      expect(result.errors.some((e) => e.field === "firstName")).toBe(true);
+      expect(result.errors.some((e) => e.field === "lastName")).toBe(true);
+      expect(result.errors.some((e) => e.field === "email")).toBe(true);
+      expect(result.errors.some((e) => e.field === "phone")).toBe(true);
+    });
+  });
+
+  describe("early departure edge cases", () => {
+    it("should set requiresOpsReview but still succeed for early departure", () => {
+      const input = {
+        ...validInput,
+        departure: "2025-08-30", // Before cutoff
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(true);
+      expect(result.requiresOpsReview).toBe(true);
+      expect(result.payload).toBeDefined();
+    });
+
+    it("should include early departure in errors but not block submission", () => {
+      const input = {
+        ...validInput,
+        departure: "2025-08-30",
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      const earlyDepartureError = result.errors.find(
+        (e) => e.code === ErrorCodes.EARLY_DEPARTURE
+      );
+      expect(earlyDepartureError).toBeDefined();
+      expect(result.success).toBe(true); // Still succeeds
+    });
+
+    it("should handle departure exactly on cutoff", () => {
+      const input = {
+        ...validInput,
+        departure: "2025-09-01", // Exactly on cutoff
+      };
+      const result = validateApplicationInput(input, testConfig);
+
+      expect(result.success).toBe(true);
+      expect(result.requiresOpsReview).toBe(false);
+    });
+  });
 });
 
 describe("normalizePhone", () => {
