@@ -9,7 +9,12 @@ import {
   buildOpsOverrideDeniedPayload,
   buildMutationFailedPayload,
 } from "./lib/events";
-import { DEFAULT_CONFIG } from "./config";
+
+/**
+ * Fallback departure cutoff - MUST match src/config/camp.config.ts
+ * This is only used if no database override exists
+ */
+const FALLBACK_DEPARTURE_CUTOFF = "2025-09-01";
 
 /**
  * Create a draft application from form submission
@@ -46,12 +51,12 @@ export const createDraftApplication = mutation({
 
     const now = Date.now();
 
-    // Get departure cutoff from config
+    // Get departure cutoff from config (database override or fallback)
     const cutoffConfig = await ctx.db
       .query("config")
       .withIndex("by_key", (q) => q.eq("key", "departureCutoff"))
       .first();
-    const departureCutoff = cutoffConfig?.value ?? DEFAULT_CONFIG.departureCutoff;
+    const departureCutoff = cutoffConfig?.value ?? FALLBACK_DEPARTURE_CUTOFF;
 
     // Check if departure is before cutoff (requires ops review)
     const departureDate = new Date(args.departure);
