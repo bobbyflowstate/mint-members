@@ -10,6 +10,8 @@ import {
 
 /**
  * Update application with checkout session (internal mutation)
+ * Note: We DON'T change status here - status only changes when Stripe
+ * confirms payment via webhook (handleCheckoutSuccess)
  */
 export const updateApplicationCheckout = mutation({
   args: {
@@ -19,7 +21,7 @@ export const updateApplicationCheckout = mutation({
   handler: async (ctx, args) => {
     await ctx.db.patch(args.applicationId, {
       checkoutSessionId: args.checkoutSessionId,
-      status: "payment_processing",
+      // Status stays as "pending_payment" until Stripe webhook confirms
       updatedAt: Date.now(),
     });
   },
@@ -198,5 +200,36 @@ export const logWebhookError = mutation({
       }),
       actor: "stripe",
     });
+  },
+});
+
+/**
+ * Reset application to pending_payment status (admin use)
+ * Use this to fix applications stuck in payment_processing after abandoned checkout
+ * 
+ * Usage: npx convex run payments:resetToPendingPayment '{"applicationId": "..."}'
+ */
+export const resetToPendingPayment = mutation({
+  args: {
+    applicationId: v.id("applications"),
+  },
+  handler: async (ctx, args) => {
+    const application = await ctx.db.get(args.applicationId);
+    
+    if (!application) {
+      throw new Error("Application not found");
+    }
+
+    if (application.status === "confirmed") {
+      throw new Error("Cannot reset a confirmed application");
+    }
+
+    await ctx.db.patch(args.applicationId, {
+      status: "pending_payment",
+      checkoutSessionId: undefined,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, applicationId: args.applicationId };
   },
 });
