@@ -123,7 +123,7 @@ export default function ApplyPage() {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        defaultMode="signUp"
+        redirectTo="/apply"
       />
     </main>
   );

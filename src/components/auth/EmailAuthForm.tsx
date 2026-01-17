@@ -5,9 +5,10 @@ import { useAuthActions } from "@convex-dev/auth/react";
 
 interface EmailAuthFormProps {
   onSuccess?: () => void;
+  redirectTo?: string;
 }
 
-export function EmailAuthForm({ onSuccess }: EmailAuthFormProps) {
+export function EmailAuthForm({ onSuccess, redirectTo }: EmailAuthFormProps) {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +21,8 @@ export function EmailAuthForm({ onSuccess }: EmailAuthFormProps) {
     setIsLoading(true);
 
     try {
-      await signIn("resend", { email });
+      // Pass redirectTo so user returns to the right page after clicking magic link
+      await signIn("resend", { email, redirectTo });
       setEmailSent(true);
       // Don't call onSuccess here - keep modal open to show "check email" message
       // User will be redirected after clicking magic link

@@ -5,9 +5,10 @@ import { EmailAuthForm } from "./EmailAuthForm";
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  redirectTo?: string;
 }
 
-export function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, redirectTo }: AuthModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -52,7 +53,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </div>
 
           {/* Form */}
-          <EmailAuthForm onSuccess={onClose} />
+          <EmailAuthForm onSuccess={onClose} redirectTo={redirectTo} />
         </div>
       </div>
     </div>
