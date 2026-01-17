@@ -15,24 +15,24 @@ import { v } from "convex/values";
 export const CONFIG_DEFAULTS: Record<string, string> = {
   // Camp identity
   campName: "DeMentha",
-  year: "2025",
+  year: "2026",
 
   // Burning Man dates (official event)
-  burningManStartDate: "2025-08-24",
-  burningManEndDate: "2025-09-01",
+  burningManStartDate: "2026-08-31",
+  burningManEndDate: "2026-09-06",
 
   // Camp operational dates
-  earliestArrival: "2025-08-22",
-  latestDeparture: "2025-09-02",
+  earliestArrival: "2026-08-26",
+  latestDeparture: "2026-09-09",
 
   // Departure cutoff - leaving before this requires ops approval
-  departureCutoff: "2025-09-01",
+  departureCutoff: "2026-09-06",
 
   // Reservation fee in cents (15000 = $150.00)
   reservationFeeCents: "15000",
 
   // Capacity (0 = unlimited)
-  maxMembers: "0",
+  maxMembers: "70",
   
   // Whether applications are open
   applicationsOpen: "true",
