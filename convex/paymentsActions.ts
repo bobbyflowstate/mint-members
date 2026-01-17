@@ -9,8 +9,11 @@ import { Doc } from "./_generated/dataModel";
 /**
  * Fallback reservation fee - MUST match src/config/camp.config.ts
  * This is only used if no database override exists
+ * 
+ * BETTER: Set via database so you don't need to redeploy:
+ *   npx convex run config:setConfig '{"key": "reservationFeeCents", "value": "15000"}'
  */
-const FALLBACK_RESERVATION_FEE_CENTS = 35000;
+const FALLBACK_RESERVATION_FEE_CENTS = 15000;
 
 /**
  * Create a Stripe checkout session for reservation payment

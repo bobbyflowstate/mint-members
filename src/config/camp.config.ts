@@ -47,10 +47,11 @@ export const campConfig = {
   // ═══════════════════════════════════════════════════════════════════════════
   
   /** 
-   * Reservation fee in cents (e.g., 35000 = $350.00)
+   * Reservation fee in cents (e.g., 15000 = $150.00)
    * This is collected via Stripe during the application process.
+   * NOTE: Also update convex/paymentsActions.ts FALLBACK_RESERVATION_FEE_CENTS
    */
-  reservationFeeCents: 35000,
+  reservationFeeCents: 15000,
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CAPACITY (optional - for future use)
