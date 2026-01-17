@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { PaymentCTA } from "@/components/forms";
-import { getLandingContent } from "@/config/content";
+import { getLandingContent, AppConfig } from "@/config/content";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 
 export default function PaymentPage() {
@@ -14,7 +14,17 @@ export default function PaymentPage() {
   const applicationId = searchParams.get("id") as Id<"applications"> | null;
   
   const config = useQuery(api.config.getConfig);
-  const content = getLandingContent(config ?? undefined);
+
+  // Show loading while config loads
+  if (!config) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+      </main>
+    );
+  }
+
+  const content = getLandingContent(config as AppConfig);
 
   if (!applicationId) {
     return (

@@ -5,15 +5,25 @@ import Link from "next/link";
 import { ApplicationForm } from "@/components/forms";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthModal, UserButton } from "@/components/auth";
-import { getLandingContent } from "@/config/content";
+import { getLandingContent, AppConfig } from "@/config/content";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 
 export default function ApplyPage() {
   const config = useQuery(api.config.getConfig);
-  const content = getLandingContent(config ?? undefined);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Show loading while config loads
+  if (!config) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+      </main>
+    );
+  }
+
+  const content = getLandingContent(config as AppConfig);
 
   return (
     <main className="min-h-screen py-12 sm:py-20">

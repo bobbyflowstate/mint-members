@@ -1,33 +1,24 @@
 import dayjs from "dayjs";
-import { campConfig } from "./camp.config";
 
 /**
- * Configuration type from Convex config query (for runtime overrides)
+ * Configuration type from Convex config query
+ * 
+ * SINGLE SOURCE OF TRUTH: All config values come from convex/config.ts
+ * Edit CONFIG_DEFAULTS there to change values.
  */
 export interface AppConfig {
+  campName: string;
+  year: string;
   burningManStartDate: string;
   burningManEndDate: string;
   earliestArrival: string;
   latestDeparture: string;
   departureCutoff: string;
   reservationFeeCents: string;
-  campName: string;
+  maxMembers: string;
+  applicationsOpen: string;
   [key: string]: string;
 }
-
-/**
- * Default configuration values from camp.config.ts
- * These are used as defaults and can be overridden via Convex config at runtime
- */
-export const DEFAULT_CONFIG: AppConfig = {
-  burningManStartDate: campConfig.burningManStartDate,
-  burningManEndDate: campConfig.burningManEndDate,
-  earliestArrival: campConfig.earliestArrival,
-  latestDeparture: campConfig.latestDeparture,
-  departureCutoff: campConfig.departureCutoff,
-  reservationFeeCents: String(campConfig.reservationFeeCents),
-  campName: campConfig.campName,
-};
 
 /**
  * Formatted content for the landing page
@@ -101,42 +92,37 @@ function formatCurrency(cents: number): string {
 }
 
 /**
- * Derive landing page content from configuration
- * Merges provided config with defaults for any missing values
+ * Derive landing page content from Convex configuration
+ * Config comes from useQuery(api.config.getConfig)
  */
-export function getLandingContent(config?: Partial<AppConfig>): LandingContent {
-  // Merge with defaults
-  const mergedConfig: AppConfig = {
-    ...DEFAULT_CONFIG,
-    ...config,
-  };
-  
-  const reservationFeeCents = parseInt(mergedConfig.reservationFeeCents, 10);
+export function getLandingContent(config: AppConfig): LandingContent {
+  const reservationFeeCents = parseInt(config.reservationFeeCents, 10);
+  const year = config.year || "2025";
   
   return {
-    campName: mergedConfig.campName,
-    heroTitle: `Join ${mergedConfig.campName} at Burning Man ${campConfig.year}`,
+    campName: config.campName,
+    heroTitle: `Join ${config.campName} at Burning Man ${year}`,
     heroSubtitle: "Reserve your spot in our community and be part of an unforgettable experience in Black Rock City.",
     
     // Burning Man dates
     burningManDates: formatDateRange(
-      mergedConfig.burningManStartDate,
-      mergedConfig.burningManEndDate
+      config.burningManStartDate,
+      config.burningManEndDate
     ),
-    burningManStartDate: mergedConfig.burningManStartDate,
-    burningManEndDate: mergedConfig.burningManEndDate,
+    burningManStartDate: config.burningManStartDate,
+    burningManEndDate: config.burningManEndDate,
     
     // Camp operational dates
     campDates: formatDateRange(
-      mergedConfig.earliestArrival,
-      mergedConfig.latestDeparture
+      config.earliestArrival,
+      config.latestDeparture
     ),
-    earliestArrival: mergedConfig.earliestArrival,
-    latestDeparture: mergedConfig.latestDeparture,
+    earliestArrival: config.earliestArrival,
+    latestDeparture: config.latestDeparture,
     
     // Departure cutoff
-    departureCutoff: mergedConfig.departureCutoff,
-    departureCutoffFormatted: formatDate(mergedConfig.departureCutoff),
+    departureCutoff: config.departureCutoff,
+    departureCutoffFormatted: formatDate(config.departureCutoff),
     
     // Fees
     reservationFeeCents,
@@ -154,7 +140,7 @@ export function getLandingContent(config?: Partial<AppConfig>): LandingContent {
       },
       {
         title: "Departure Commitment",
-        description: `Members are expected to stay through ${formatDate(mergedConfig.departureCutoff)}. Early departure requests require ops approval.`,
+        description: `Members are expected to stay through ${formatDate(config.departureCutoff)}. Early departure requests require ops approval.`,
       },
     ],
   };
@@ -165,11 +151,10 @@ export function getLandingContent(config?: Partial<AppConfig>): LandingContent {
  */
 export function requiresOpsReview(
   departureDate: string,
-  config?: Partial<AppConfig>
+  departureCutoff: string
 ): boolean {
-  const mergedConfig = { ...DEFAULT_CONFIG, ...config };
   const departure = dayjs(departureDate);
-  const cutoff = dayjs(mergedConfig.departureCutoff);
+  const cutoff = dayjs(departureCutoff);
   
   return departure.isBefore(cutoff, "day");
 }

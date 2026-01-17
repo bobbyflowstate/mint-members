@@ -2,14 +2,27 @@ import { describe, it, expect } from "vitest";
 import {
   getLandingContent,
   requiresOpsReview,
-  DEFAULT_CONFIG,
   type AppConfig,
 } from "./content";
 
+// Mock config that matches Convex CONFIG_DEFAULTS
+const mockConfig: AppConfig = {
+  campName: "DeMentha",
+  year: "2025",
+  burningManStartDate: "2025-08-24",
+  burningManEndDate: "2025-09-01",
+  earliestArrival: "2025-08-22",
+  latestDeparture: "2025-09-02",
+  departureCutoff: "2025-09-01",
+  reservationFeeCents: "15000",
+  maxMembers: "0",
+  applicationsOpen: "true",
+};
+
 describe("getLandingContent", () => {
-  describe("with default config", () => {
-    it("should return content with default values when no config provided", () => {
-      const content = getLandingContent();
+  describe("with standard config", () => {
+    it("should return content with config values", () => {
+      const content = getLandingContent(mockConfig);
       
       expect(content.campName).toBe("DeMentha");
       expect(content.heroTitle).toContain("DeMentha");
@@ -17,20 +30,20 @@ describe("getLandingContent", () => {
     });
 
     it("should format reservation fee correctly", () => {
-      const content = getLandingContent();
+      const content = getLandingContent(mockConfig);
       
-      expect(content.reservationFeeCents).toBe(35000);
-      expect(content.reservationFeeFormatted).toBe("$350");
+      expect(content.reservationFeeCents).toBe(15000);
+      expect(content.reservationFeeFormatted).toBe("$150");
     });
 
     it("should format Burning Man dates correctly", () => {
-      const content = getLandingContent();
+      const content = getLandingContent(mockConfig);
       
       expect(content.burningManDates).toBe("August 24 - September 1, 2025");
     });
 
     it("should format camp dates correctly", () => {
-      const content = getLandingContent();
+      const content = getLandingContent(mockConfig);
       
       expect(content.campDates).toBe("August 22 - September 2, 2025");
       expect(content.earliestArrival).toBe("2025-08-22");
@@ -38,14 +51,14 @@ describe("getLandingContent", () => {
     });
 
     it("should format departure cutoff correctly", () => {
-      const content = getLandingContent();
+      const content = getLandingContent(mockConfig);
       
       expect(content.departureCutoff).toBe("2025-09-01");
       expect(content.departureCutoffFormatted).toBe("September 1, 2025");
     });
 
     it("should include expectations array", () => {
-      const content = getLandingContent();
+      const content = getLandingContent(mockConfig);
       
       expect(content.expectations).toHaveLength(3);
       expect(content.expectations[0].title).toBe("Reservation Fee");
@@ -54,9 +67,10 @@ describe("getLandingContent", () => {
     });
   });
 
-  describe("with custom config overrides", () => {
-    it("should use provided config values over defaults", () => {
-      const customConfig: Partial<AppConfig> = {
+  describe("with custom config values", () => {
+    it("should use provided config values", () => {
+      const customConfig: AppConfig = {
+        ...mockConfig,
         campName: "Test Camp",
         reservationFeeCents: "50000",
       };
@@ -70,10 +84,12 @@ describe("getLandingContent", () => {
     });
 
     it("should use custom dates when provided", () => {
-      const customConfig: Partial<AppConfig> = {
+      const customConfig: AppConfig = {
+        ...mockConfig,
         burningManStartDate: "2026-08-30",
         burningManEndDate: "2026-09-07",
         departureCutoff: "2026-09-07",
+        year: "2026",
       };
       
       const content = getLandingContent(customConfig);
@@ -81,25 +97,15 @@ describe("getLandingContent", () => {
       expect(content.burningManDates).toBe("August 30 - September 7, 2026");
       expect(content.departureCutoff).toBe("2026-09-07");
     });
-
-    it("should merge partial config with defaults", () => {
-      const customConfig: Partial<AppConfig> = {
-        reservationFeeCents: "25000",
-      };
-      
-      const content = getLandingContent(customConfig);
-      
-      // Custom value used
-      expect(content.reservationFeeCents).toBe(25000);
-      // Defaults still present
-      expect(content.campName).toBe("DeMentha");
-      expect(content.departureCutoff).toBe("2025-09-01");
-    });
   });
 
   describe("expectations content", () => {
     it("should include reservation fee amount in expectations", () => {
-      const content = getLandingContent({ reservationFeeCents: "40000" });
+      const customConfig: AppConfig = {
+        ...mockConfig,
+        reservationFeeCents: "40000",
+      };
+      const content = getLandingContent(customConfig);
       
       const reservationExpectation = content.expectations.find(
         (e) => e.title === "Reservation Fee"
@@ -109,7 +115,11 @@ describe("getLandingContent", () => {
     });
 
     it("should include departure cutoff date in expectations", () => {
-      const content = getLandingContent({ departureCutoff: "2025-08-31" });
+      const customConfig: AppConfig = {
+        ...mockConfig,
+        departureCutoff: "2025-08-31",
+      };
+      const content = getLandingContent(customConfig);
       
       const departureExpectation = content.expectations.find(
         (e) => e.title === "Departure Commitment"
@@ -122,62 +132,17 @@ describe("getLandingContent", () => {
 
 describe("requiresOpsReview", () => {
   it("should return true when departure is before cutoff", () => {
-    const result = requiresOpsReview("2025-08-30", {
-      departureCutoff: "2025-09-01",
-    });
-    
+    const result = requiresOpsReview("2025-08-30", "2025-09-01");
     expect(result).toBe(true);
   });
 
   it("should return false when departure is on cutoff date", () => {
-    const result = requiresOpsReview("2025-09-01", {
-      departureCutoff: "2025-09-01",
-    });
-    
+    const result = requiresOpsReview("2025-09-01", "2025-09-01");
     expect(result).toBe(false);
   });
 
   it("should return false when departure is after cutoff", () => {
-    const result = requiresOpsReview("2025-09-02", {
-      departureCutoff: "2025-09-01",
-    });
-    
+    const result = requiresOpsReview("2025-09-02", "2025-09-01");
     expect(result).toBe(false);
-  });
-
-  it("should use default cutoff when no config provided", () => {
-    // Default cutoff is 2025-09-01
-    expect(requiresOpsReview("2025-08-30")).toBe(true);
-    expect(requiresOpsReview("2025-09-01")).toBe(false);
-    expect(requiresOpsReview("2025-09-02")).toBe(false);
-  });
-});
-
-describe("DEFAULT_CONFIG", () => {
-  it("should have all required fields", () => {
-    expect(DEFAULT_CONFIG).toHaveProperty("burningManStartDate");
-    expect(DEFAULT_CONFIG).toHaveProperty("burningManEndDate");
-    expect(DEFAULT_CONFIG).toHaveProperty("earliestArrival");
-    expect(DEFAULT_CONFIG).toHaveProperty("latestDeparture");
-    expect(DEFAULT_CONFIG).toHaveProperty("departureCutoff");
-    expect(DEFAULT_CONFIG).toHaveProperty("reservationFeeCents");
-    expect(DEFAULT_CONFIG).toHaveProperty("campName");
-  });
-
-  it("should have valid date formats", () => {
-    // ISO date format check (YYYY-MM-DD)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    
-    expect(DEFAULT_CONFIG.burningManStartDate).toMatch(dateRegex);
-    expect(DEFAULT_CONFIG.burningManEndDate).toMatch(dateRegex);
-    expect(DEFAULT_CONFIG.earliestArrival).toMatch(dateRegex);
-    expect(DEFAULT_CONFIG.latestDeparture).toMatch(dateRegex);
-    expect(DEFAULT_CONFIG.departureCutoff).toMatch(dateRegex);
-  });
-
-  it("should have valid reservation fee (numeric string)", () => {
-    const fee = parseInt(DEFAULT_CONFIG.reservationFeeCents, 10);
-    expect(fee).toBeGreaterThan(0);
-    expect(Number.isInteger(fee)).toBe(true);
   });
 });
