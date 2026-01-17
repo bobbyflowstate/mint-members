@@ -46,8 +46,8 @@ export function ApplicationForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
-      arrival: content.dementhaStartDate,
-      departure: content.dementhaEndDate,
+      arrival: content.earliestArrival,
+      departure: content.latestDeparture,
       dietaryPreference: "omnivore",
       allergyFlag: false,
     },
@@ -212,11 +212,16 @@ export function ApplicationForm() {
       {/* Dates */}
       <div className="space-y-6">
         <h3 className="text-lg font-semibold text-white">Attendance Dates</h3>
+        <p className="text-sm text-slate-400">
+          Camp is operational {content.campDates}
+        </p>
         
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <Field
             label="Arrival Date"
             type="date"
+            min={content.earliestArrival}
+            max={content.latestDeparture}
             {...register("arrival", { required: "Arrival date is required" })}
             error={errors.arrival?.message}
             required
@@ -225,6 +230,8 @@ export function ApplicationForm() {
           <Field
             label="Departure Date"
             type="date"
+            min={content.earliestArrival}
+            max={content.latestDeparture}
             {...register("departure", { required: "Departure date is required" })}
             error={errors.departure?.message}
             required

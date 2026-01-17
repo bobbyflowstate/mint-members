@@ -133,10 +133,13 @@ npx convex run config:setConfig --args '{"key": "reservationFeeCents", "value": 
 # Update departure cutoff
 npx convex run config:setConfig --args '{"key": "departureCutoff", "value": "2025-09-01"}'
 
-# Update camp dates
-npx convex run config:setConfig --args '{"key": "dementhaStartDate", "value": "2025-08-22"}'
-npx convex run config:setConfig --args '{"key": "dementhaEndDate", "value": "2025-09-01"}'
+# Update camp operational dates
+npx convex run config:setConfig --args '{"key": "earliestArrival", "value": "2025-08-22"}'
+npx convex run config:setConfig --args '{"key": "latestDeparture", "value": "2025-09-02"}'
 ```
+
+> **Note**: For static configuration changes, prefer editing `src/config/camp.config.ts` instead.
+> The database config is for runtime overrides only.
 
 ## Emergency Procedures
 

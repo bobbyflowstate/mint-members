@@ -107,7 +107,7 @@ export default defineSchema({
   /**
    * Config table - stores key/value configuration
    * Keys: departureCutoff, burningManStartDate, burningManEndDate, 
-   *       dementhaStartDate, dementhaEndDate, reservationFeeCents
+   *       earliestArrival, latestDeparture, reservationFeeCents, campName
    */
   config: defineTable({
     key: v.string(),

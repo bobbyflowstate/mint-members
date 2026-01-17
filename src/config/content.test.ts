@@ -29,10 +29,12 @@ describe("getLandingContent", () => {
       expect(content.burningManDates).toBe("August 24 - September 1, 2025");
     });
 
-    it("should format DeMentha dates correctly", () => {
+    it("should format camp dates correctly", () => {
       const content = getLandingContent();
       
-      expect(content.dementhaDates).toBe("August 22 - September 1, 2025");
+      expect(content.campDates).toBe("August 22 - September 2, 2025");
+      expect(content.earliestArrival).toBe("2025-08-22");
+      expect(content.latestDeparture).toBe("2025-09-02");
     });
 
     it("should format departure cutoff correctly", () => {
@@ -155,8 +157,8 @@ describe("DEFAULT_CONFIG", () => {
   it("should have all required fields", () => {
     expect(DEFAULT_CONFIG).toHaveProperty("burningManStartDate");
     expect(DEFAULT_CONFIG).toHaveProperty("burningManEndDate");
-    expect(DEFAULT_CONFIG).toHaveProperty("dementhaStartDate");
-    expect(DEFAULT_CONFIG).toHaveProperty("dementhaEndDate");
+    expect(DEFAULT_CONFIG).toHaveProperty("earliestArrival");
+    expect(DEFAULT_CONFIG).toHaveProperty("latestDeparture");
     expect(DEFAULT_CONFIG).toHaveProperty("departureCutoff");
     expect(DEFAULT_CONFIG).toHaveProperty("reservationFeeCents");
     expect(DEFAULT_CONFIG).toHaveProperty("campName");
@@ -168,8 +170,8 @@ describe("DEFAULT_CONFIG", () => {
     
     expect(DEFAULT_CONFIG.burningManStartDate).toMatch(dateRegex);
     expect(DEFAULT_CONFIG.burningManEndDate).toMatch(dateRegex);
-    expect(DEFAULT_CONFIG.dementhaStartDate).toMatch(dateRegex);
-    expect(DEFAULT_CONFIG.dementhaEndDate).toMatch(dateRegex);
+    expect(DEFAULT_CONFIG.earliestArrival).toMatch(dateRegex);
+    expect(DEFAULT_CONFIG.latestDeparture).toMatch(dateRegex);
     expect(DEFAULT_CONFIG.departureCutoff).toMatch(dateRegex);
   });
 
