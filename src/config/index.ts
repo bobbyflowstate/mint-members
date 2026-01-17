@@ -1,11 +1,7 @@
-// Camp configuration
-export { campConfig, type CampConfig } from "./camp.config";
-
-// Content helpers
+// Content helpers - config comes from Convex (convex/config.ts)
 export {
   getLandingContent,
   requiresOpsReview,
-  DEFAULT_CONFIG,
   type AppConfig,
   type LandingContent,
 } from "./content";

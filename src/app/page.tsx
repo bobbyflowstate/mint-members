@@ -4,11 +4,21 @@ import { Hero, Stats, Expectations } from "@/components/marketing";
 import { getLandingContent } from "@/config/content";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { AppConfig } from "@/config/content";
 
 export default function Home() {
-  // Try to get config from Convex, fall back to defaults
   const config = useQuery(api.config.getConfig);
-  const content = getLandingContent(config ?? undefined);
+
+  // Show loading state while config loads
+  if (!config) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+      </main>
+    );
+  }
+
+  const content = getLandingContent(config as AppConfig);
 
   return (
     <main className="min-h-screen">

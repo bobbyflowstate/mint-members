@@ -7,15 +7,6 @@ import Stripe from "stripe";
 import { Doc } from "./_generated/dataModel";
 
 /**
- * Fallback reservation fee - MUST match src/config/camp.config.ts
- * This is only used if no database override exists
- * 
- * BETTER: Set via database so you don't need to redeploy:
- *   npx convex run config:setConfig '{"key": "reservationFeeCents", "value": "15000"}'
- */
-const FALLBACK_RESERVATION_FEE_CENTS = 15000;
-
-/**
  * Create a Stripe checkout session for reservation payment
  * This is an action because it calls external Stripe API
  */
@@ -44,12 +35,9 @@ export const createReservationCheckout = action({
       throw new Error(`Invalid application status: ${application.status}`);
     }
 
-    // Get reservation fee from config (database override or fallback)
+    // Get reservation fee from config (includes defaults)
     const config: Record<string, string> = await ctx.runQuery(api.config.getConfig, {});
-    const reservationFeeCents = parseInt(
-      config.reservationFeeCents ?? String(FALLBACK_RESERVATION_FEE_CENTS),
-      10
-    );
+    const reservationFeeCents = parseInt(config.reservationFeeCents, 10);
 
     // Create Stripe client
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;

@@ -8,7 +8,7 @@ import { Field } from "./Field";
 import { DepartureNotice } from "./DepartureNotice";
 import { PaymentCTA } from "./PaymentCTA";
 import { DIETARY_PREFERENCES } from "@/lib/applications/types";
-import { getLandingContent, requiresOpsReview } from "@/config/content";
+import { getLandingContent, requiresOpsReview, AppConfig } from "@/config/content";
 import { Id } from "../../../convex/_generated/dataModel";
 
 interface FormData {
@@ -35,10 +35,39 @@ export function ApplicationForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   
   const config = useQuery(api.config.getConfig);
-  const content = getLandingContent(config ?? undefined);
-  
   const createApplication = useMutation(api.applications.createDraftApplication);
-  
+
+  // Show loading while config loads
+  if (!config) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  const content = getLandingContent(config as AppConfig);
+
+  return <ApplicationFormInner config={config as AppConfig} content={content} submissionResult={submissionResult} setSubmissionResult={setSubmissionResult} submitError={submitError} setSubmitError={setSubmitError} createApplication={createApplication} />;
+}
+
+function ApplicationFormInner({ 
+  config, 
+  content, 
+  submissionResult, 
+  setSubmissionResult, 
+  submitError, 
+  setSubmitError,
+  createApplication 
+}: { 
+  config: AppConfig;
+  content: ReturnType<typeof getLandingContent>;
+  submissionResult: SubmissionResult | null;
+  setSubmissionResult: (result: SubmissionResult | null) => void;
+  submitError: string | null;
+  setSubmitError: (error: string | null) => void;
+  createApplication: ReturnType<typeof useMutation<typeof api.applications.createDraftApplication>>;
+}) {
   const {
     register,
     handleSubmit,
@@ -55,7 +84,7 @@ export function ApplicationForm() {
 
   const watchDeparture = watch("departure");
   const watchAllergyFlag = watch("allergyFlag");
-  const showEarlyDepartureWarning = watchDeparture && requiresOpsReview(watchDeparture, config ?? undefined);
+  const showEarlyDepartureWarning = watchDeparture && requiresOpsReview(watchDeparture, config.departureCutoff);
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
