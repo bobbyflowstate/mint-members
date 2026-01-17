@@ -1,13 +1,14 @@
 import dayjs from "dayjs";
+import { campConfig } from "./camp.config";
 
 /**
- * Configuration type from Convex config query
+ * Configuration type from Convex config query (for runtime overrides)
  */
 export interface AppConfig {
   burningManStartDate: string;
   burningManEndDate: string;
-  dementhaStartDate: string;
-  dementhaEndDate: string;
+  earliestArrival: string;
+  latestDeparture: string;
   departureCutoff: string;
   reservationFeeCents: string;
   campName: string;
@@ -15,17 +16,17 @@ export interface AppConfig {
 }
 
 /**
- * Default configuration values (mirrors convex/config.ts)
- * Used when config hasn't loaded yet
+ * Default configuration values from camp.config.ts
+ * These are used as defaults and can be overridden via Convex config at runtime
  */
 export const DEFAULT_CONFIG: AppConfig = {
-  burningManStartDate: "2025-08-24",
-  burningManEndDate: "2025-09-01",
-  dementhaStartDate: "2025-08-22",
-  dementhaEndDate: "2025-09-01",
-  departureCutoff: "2025-09-01",
-  reservationFeeCents: "35000",
-  campName: "DeMentha",
+  burningManStartDate: campConfig.burningManStartDate,
+  burningManEndDate: campConfig.burningManEndDate,
+  earliestArrival: campConfig.earliestArrival,
+  latestDeparture: campConfig.latestDeparture,
+  departureCutoff: campConfig.departureCutoff,
+  reservationFeeCents: String(campConfig.reservationFeeCents),
+  campName: campConfig.campName,
 };
 
 /**
@@ -41,10 +42,10 @@ export interface LandingContent {
   burningManStartDate: string;
   burningManEndDate: string;
   
-  // DeMentha camp dates
-  dementhaDates: string;
-  dementhaStartDate: string;
-  dementhaEndDate: string;
+  // Camp operational dates (for date picker constraints)
+  campDates: string;
+  earliestArrival: string;
+  latestDeparture: string;
   
   // Departure cutoff info
   departureCutoff: string;
@@ -114,7 +115,7 @@ export function getLandingContent(config?: Partial<AppConfig>): LandingContent {
   
   return {
     campName: mergedConfig.campName,
-    heroTitle: `Join ${mergedConfig.campName} at Burning Man 2025`,
+    heroTitle: `Join ${mergedConfig.campName} at Burning Man ${campConfig.year}`,
     heroSubtitle: "Reserve your spot in our community and be part of an unforgettable experience in Black Rock City.",
     
     // Burning Man dates
@@ -125,13 +126,13 @@ export function getLandingContent(config?: Partial<AppConfig>): LandingContent {
     burningManStartDate: mergedConfig.burningManStartDate,
     burningManEndDate: mergedConfig.burningManEndDate,
     
-    // DeMentha dates
-    dementhaDates: formatDateRange(
-      mergedConfig.dementhaStartDate,
-      mergedConfig.dementhaEndDate
+    // Camp operational dates
+    campDates: formatDateRange(
+      mergedConfig.earliestArrival,
+      mergedConfig.latestDeparture
     ),
-    dementhaStartDate: mergedConfig.dementhaStartDate,
-    dementhaEndDate: mergedConfig.dementhaEndDate,
+    earliestArrival: mergedConfig.earliestArrival,
+    latestDeparture: mergedConfig.latestDeparture,
     
     // Departure cutoff
     departureCutoff: mergedConfig.departureCutoff,

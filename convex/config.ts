@@ -4,15 +4,18 @@ import { v } from "convex/values";
 /**
  * Default configuration values
  * These are used when no database override exists
+ * 
+ * Note: Primary configuration is in src/config/camp.config.ts
+ * These values can be overridden at runtime via the database
  */
 const DEFAULT_CONFIG: Record<string, string> = {
   // Burning Man 2025 dates
   burningManStartDate: "2025-08-24",
   burningManEndDate: "2025-09-01",
   
-  // DeMentha camp dates (typically arrive early, leave on burn day)
-  dementhaStartDate: "2025-08-22",
-  dementhaEndDate: "2025-09-01",
+  // Camp operational dates
+  earliestArrival: "2025-08-22",
+  latestDeparture: "2025-09-02",
   
   // Departure cutoff - members leaving before this need ops approval
   departureCutoff: "2025-09-01",
