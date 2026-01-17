@@ -22,7 +22,7 @@ export function EmailAuthForm({ onSuccess, redirectTo }: EmailAuthFormProps) {
 
     try {
       // Pass redirectTo so user returns to the right page after clicking magic link
-      await signIn("resend", { email, redirectTo });
+      await signIn("resend", { email, ...(redirectTo ? { redirectTo } : {}) });
       setEmailSent(true);
       // Don't call onSuccess here - keep modal open to show "check email" message
       // User will be redirected after clicking magic link

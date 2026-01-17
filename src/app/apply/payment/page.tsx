@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "convex/react";
@@ -10,6 +11,22 @@ import { getLandingContent, AppConfig } from "@/config/content";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 
 export default function PaymentPage() {
+  return (
+    <Suspense fallback={<PaymentPageLoading />}>
+      <PaymentPageInner />
+    </Suspense>
+  );
+}
+
+function PaymentPageLoading() {
+  return (
+    <main className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+    </main>
+  );
+}
+
+function PaymentPageInner() {
   const searchParams = useSearchParams();
   const applicationId = searchParams.get("id") as Id<"applications"> | null;
   

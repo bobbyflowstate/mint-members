@@ -142,13 +142,13 @@ export function EventLogTable() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-slate-400 max-w-md truncate">
-                        {payload.email && (
+                        {!!payload.email && (
                           <span className="text-white">{String(payload.email)}</span>
                         )}
-                        {payload.error && (
+                        {!!payload.error && (
                           <span className="text-red-400"> {String(payload.error)}</span>
                         )}
-                        {payload.reason && (
+                        {!!payload.reason && (
                           <span> - {String(payload.reason)}</span>
                         )}
                         {!payload.email && !payload.error && !payload.reason && (
