@@ -4,56 +4,66 @@ import { Resend } from "resend";
 
 /**
  * Dementha authentication configuration
- * Uses magic link via email (OTP) for passwordless authentication
+ * Uses magic link via email for passwordless authentication
  */
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
     Email({
-      // Magic link behavior - only token needed, no email re-verification
-      authorize: undefined,
-      
-      // Send verification email via Resend
-      sendVerificationRequest: async ({ identifier: email, token, expires }) => {
+      id: "resend",
+      apiKey: process.env.AUTH_RESEND_KEY,
+      maxAge: 60 * 15, // 15 minutes
+      async sendVerificationRequest({ identifier: email, url }) {
         const resendApiKey = process.env.AUTH_RESEND_KEY;
         
         if (!resendApiKey) {
-          // In development without Resend, log the token
+          // In development without Resend, log the magic link
           console.log("======================================");
-          console.log("MAGIC LINK TOKEN (dev mode)");
-          console.log(`Email: ${email}`);
-          console.log(`Token: ${token}`);
-          console.log(`Expires: ${expires}`);
+          console.log("MAGIC LINK (dev mode - click or copy this URL):");
+          console.log(url);
           console.log("======================================");
           return;
         }
 
         const resend = new Resend(resendApiKey);
-        const fromEmail = process.env.AUTH_EMAIL_FROM ?? "DeMentha <noreply@dementha.com>";
+        const fromEmail = process.env.AUTH_EMAIL_FROM ?? "DeMentha <onboarding@resend.dev>";
 
-        await resend.emails.send({
+        const { error } = await resend.emails.send({
           from: fromEmail,
           to: email,
           subject: "Sign in to DeMentha",
           html: `
-            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
-              <h1 style="color: #10b981;">DeMentha Camp</h1>
-              <p>Click the link below to sign in to your account:</p>
-              <p style="margin: 24px 0;">
-                <a href="${process.env.CONVEX_SITE_URL}/auth/verify?token=${token}" 
-                   style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-                  Sign In to DeMentha
-                </a>
-              </p>
-              <p style="color: #666; font-size: 14px;">
-                Or copy this code: <strong>${token}</strong>
-              </p>
-              <p style="color: #999; font-size: 12px;">
-                This link expires at ${expires.toLocaleString()}.
-                If you didn't request this, you can safely ignore this email.
-              </p>
-            </div>
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              </head>
+              <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+                <div style="text-align: center;">
+                  <h1 style="color: #10b981; margin-bottom: 24px;">DeMentha Camp</h1>
+                  <p style="color: #374151; font-size: 16px; margin-bottom: 32px;">
+                    Click the button below to sign in to your account:
+                  </p>
+                  <a href="${url}" 
+                     style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                    Sign In to DeMentha
+                  </a>
+                  <p style="color: #9ca3af; font-size: 14px; margin-top: 32px;">
+                    This link expires in 15 minutes.
+                  </p>
+                  <p style="color: #9ca3af; font-size: 12px; margin-top: 24px;">
+                    If you didn't request this email, you can safely ignore it.
+                  </p>
+                </div>
+              </body>
+            </html>
           `,
         });
+
+        if (error) {
+          console.error("Failed to send email:", error);
+          throw new Error("Failed to send verification email");
+        }
       },
     }),
   ],
