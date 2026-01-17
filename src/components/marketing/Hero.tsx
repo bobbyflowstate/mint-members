@@ -64,7 +64,7 @@ export function Hero({ content }: HeroProps) {
             <div className="rounded-xl bg-white/5 backdrop-blur-sm p-6 ring-1 ring-white/10">
               <p className="text-sm text-slate-400">Camp Dates</p>
               <p className="mt-2 text-2xl font-bold text-white">
-                Aug 22 - Sep 1
+                {content.campDates}
               </p>
             </div>
             <div className="rounded-xl bg-white/5 backdrop-blur-sm p-6 ring-1 ring-white/10">

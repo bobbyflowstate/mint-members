@@ -14,8 +14,8 @@ export function Stats({ content }: StatsProps) {
       description: "The official event dates",
     },
     {
-      label: "DeMentha Camp Dates",
-      value: content.dementhaDates,
+      label: `${content.campName} Camp Dates`,
+      value: content.campDates,
       description: "Early arrival for setup",
     },
     {
