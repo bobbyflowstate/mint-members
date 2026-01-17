@@ -7,17 +7,18 @@ import { api } from "../../../convex/_generated/api";
 import { Field } from "./Field";
 import { DepartureNotice } from "./DepartureNotice";
 import { PaymentCTA } from "./PaymentCTA";
-import { DIETARY_PREFERENCES } from "@/lib/applications/types";
+import { DIETARY_PREFERENCES, ARRIVAL_DEPARTURE_TIMES, ArrivalDepartureTime } from "@/lib/applications/types";
 import { getLandingContent, requiresOpsReview, AppConfig } from "@/config/content";
 import { Id } from "../../../convex/_generated/dataModel";
 
 interface FormData {
   firstName: string;
   lastName: string;
-  email: string;
   phone: string;
   arrival: string;
+  arrivalTime: ArrivalDepartureTime;
   departure: string;
+  departureTime: ArrivalDepartureTime;
   dietaryPreference: string;
   allergyFlag: boolean;
   allergyNotes?: string;
@@ -35,10 +36,11 @@ export function ApplicationForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   
   const config = useQuery(api.config.getConfig);
+  const currentUser = useQuery(api.users.currentUser);
   const createApplication = useMutation(api.applications.createDraftApplication);
 
-  // Show loading while config loads
-  if (!config) {
+  // Show loading while config or user loads
+  if (!config || currentUser === undefined) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
@@ -47,13 +49,15 @@ export function ApplicationForm() {
   }
 
   const content = getLandingContent(config as AppConfig);
+  const userEmail = currentUser?.email ?? "";
 
-  return <ApplicationFormInner config={config as AppConfig} content={content} submissionResult={submissionResult} setSubmissionResult={setSubmissionResult} submitError={submitError} setSubmitError={setSubmitError} createApplication={createApplication} />;
+  return <ApplicationFormInner config={config as AppConfig} content={content} userEmail={userEmail} submissionResult={submissionResult} setSubmissionResult={setSubmissionResult} submitError={submitError} setSubmitError={setSubmitError} createApplication={createApplication} />;
 }
 
 function ApplicationFormInner({ 
   config, 
   content, 
+  userEmail,
   submissionResult, 
   setSubmissionResult, 
   submitError, 
@@ -62,6 +66,7 @@ function ApplicationFormInner({
 }: { 
   config: AppConfig;
   content: ReturnType<typeof getLandingContent>;
+  userEmail: string;
   submissionResult: SubmissionResult | null;
   setSubmissionResult: (result: SubmissionResult | null) => void;
   submitError: string | null;
@@ -76,7 +81,9 @@ function ApplicationFormInner({
   } = useForm<FormData>({
     defaultValues: {
       arrival: content.earliestArrival,
+      arrivalTime: "after 10 am",
       departure: content.latestDeparture,
+      departureTime: "after 10 am",
       dietaryPreference: "omnivore",
       allergyFlag: false,
     },
@@ -93,10 +100,11 @@ function ApplicationFormInner({
       const result = await createApplication({
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
         phone: data.phone,
         arrival: data.arrival,
+        arrivalTime: data.arrivalTime,
         departure: data.departure,
+        departureTime: data.departureTime,
         dietaryPreference: data.dietaryPreference,
         allergyFlag: data.allergyFlag,
         allergyNotes: data.allergyNotes,
@@ -176,6 +184,11 @@ function ApplicationFormInner({
     label: pref.charAt(0).toUpperCase() + pref.slice(1),
   }));
 
+  const timeOptions = ARRIVAL_DEPARTURE_TIMES.map((time) => ({
+    value: time,
+    label: time.charAt(0).toUpperCase() + time.slice(1),
+  }));
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {submitError && (
@@ -209,16 +222,9 @@ function ApplicationFormInner({
         <Field
           label="Email"
           type="email"
-          {...register("email", {
-            required: "Email is required",
-            pattern: {
-              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-              message: "Please enter a valid email address",
-            },
-          })}
-          error={errors.email?.message}
-          placeholder="john@example.com"
-          required
+          value={userEmail}
+          disabled
+          hint="Email is linked to your account and cannot be changed"
         />
 
         <Field
@@ -257,12 +263,30 @@ function ApplicationFormInner({
           />
           
           <Field
+            as="select"
+            label="Arrival Time"
+            options={timeOptions}
+            {...register("arrivalTime", { required: "Arrival time is required" })}
+            error={errors.arrivalTime?.message}
+            required
+          />
+          
+          <Field
             label="Departure Date"
             type="date"
             min={content.earliestArrival}
             max={content.latestDeparture}
             {...register("departure", { required: "Departure date is required" })}
             error={errors.departure?.message}
+            required
+          />
+          
+          <Field
+            as="select"
+            label="Departure Time"
+            options={timeOptions}
+            {...register("departureTime", { required: "Departure time is required" })}
+            error={errors.departureTime?.message}
             required
           />
         </div>

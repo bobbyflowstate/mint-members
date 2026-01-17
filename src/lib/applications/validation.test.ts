@@ -14,7 +14,9 @@ const validInput: ApplicationFormInput = {
   email: "john@example.com",
   phone: "+14155551234",
   arrival: "2025-08-22",
+  arrivalTime: "after 10 am",
   departure: "2025-09-01",
+  departureTime: "after 10 am",
   dietaryPreference: "omnivore",
   allergyFlag: false,
 };

@@ -7,8 +7,9 @@ import type {
   ValidationResult,
   ValidationError,
   DietaryPreference,
+  ArrivalDepartureTime,
 } from "./types";
-import { DIETARY_PREFERENCES } from "./types";
+import { DIETARY_PREFERENCES, ARRIVAL_DEPARTURE_TIMES } from "./types";
 
 /**
  * Normalize phone number by removing spaces, dashes, and parentheses
@@ -56,7 +57,9 @@ export function validateApplicationInput(
     email: input.email?.trim().toLowerCase() ?? "",
     phone: normalizePhone(input.phone ?? ""),
     arrival: input.arrival?.trim() ?? "",
+    arrivalTime: input.arrivalTime,
     departure: input.departure?.trim() ?? "",
+    departureTime: input.departureTime,
     dietaryPreference: input.dietaryPreference?.trim().toLowerCase() ?? "",
     allergyFlag: input.allergyFlag ?? false,
     allergyNotes: input.allergyNotes?.trim(),
@@ -170,6 +173,24 @@ export function validateApplicationInput(
     }
   }
 
+  // Validate arrival time
+  if (!trimmedInput.arrivalTime || !ARRIVAL_DEPARTURE_TIMES.includes(trimmedInput.arrivalTime)) {
+    errors.push({
+      field: "arrivalTime",
+      code: ErrorCodes.REQUIRED_FIELD,
+      message: "Please select an arrival time",
+    });
+  }
+
+  // Validate departure time
+  if (!trimmedInput.departureTime || !ARRIVAL_DEPARTURE_TIMES.includes(trimmedInput.departureTime)) {
+    errors.push({
+      field: "departureTime",
+      code: ErrorCodes.REQUIRED_FIELD,
+      message: "Please select a departure time",
+    });
+  }
+
   // Validate dietary preference
   if (!DIETARY_PREFERENCES.includes(trimmedInput.dietaryPreference as DietaryPreference)) {
     errors.push({
@@ -201,7 +222,9 @@ export function validateApplicationInput(
     email: trimmedInput.email,
     phone: trimmedInput.phone,
     arrival: trimmedInput.arrival,
+    arrivalTime: trimmedInput.arrivalTime as ArrivalDepartureTime,
     departure: trimmedInput.departure,
+    departureTime: trimmedInput.departureTime as ArrivalDepartureTime,
     dietaryPreference: trimmedInput.dietaryPreference as DietaryPreference,
     allergyFlag: trimmedInput.allergyFlag,
     allergyNotes: trimmedInput.allergyNotes || undefined,
