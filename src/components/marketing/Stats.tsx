@@ -21,7 +21,7 @@ export function Stats({ content }: StatsProps) {
     {
       label: "Departure Cutoff",
       value: content.departureCutoffFormatted,
-      description: "Stay through the burn",
+      description: "Stay through the burn and teardown",
     },
     {
       label: "Reservation Fee",
