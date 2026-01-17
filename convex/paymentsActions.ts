@@ -4,8 +4,13 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import Stripe from "stripe";
-import { DEFAULT_CONFIG } from "./config";
 import { Doc } from "./_generated/dataModel";
+
+/**
+ * Fallback reservation fee - MUST match src/config/camp.config.ts
+ * This is only used if no database override exists
+ */
+const FALLBACK_RESERVATION_FEE_CENTS = 35000;
 
 /**
  * Create a Stripe checkout session for reservation payment
@@ -36,10 +41,10 @@ export const createReservationCheckout = action({
       throw new Error(`Invalid application status: ${application.status}`);
     }
 
-    // Get reservation fee from config
+    // Get reservation fee from config (database override or fallback)
     const config: Record<string, string> = await ctx.runQuery(api.config.getConfig, {});
     const reservationFeeCents = parseInt(
-      config.reservationFeeCents ?? DEFAULT_CONFIG.reservationFeeCents,
+      config.reservationFeeCents ?? String(FALLBACK_RESERVATION_FEE_CENTS),
       10
     );
 
