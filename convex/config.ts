@@ -2,58 +2,39 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
- * Default configuration values
- * These are used when no database override exists
+ * Runtime config overrides from database
  * 
- * Note: Primary configuration is in src/config/camp.config.ts
- * These values can be overridden at runtime via the database
+ * IMPORTANT: The primary configuration is in src/config/camp.config.ts
+ * This query only returns DATABASE OVERRIDES, not defaults.
+ * The frontend merges these overrides with camp.config.ts values.
  */
-const DEFAULT_CONFIG: Record<string, string> = {
-  // Burning Man 2025 dates
-  burningManStartDate: "2025-08-24",
-  burningManEndDate: "2025-09-01",
-  
-  // Camp operational dates
-  earliestArrival: "2025-08-22",
-  latestDeparture: "2025-09-02",
-  
-  // Departure cutoff - members leaving before this need ops approval
-  departureCutoff: "2025-09-01",
-  
-  // Reservation fee in cents (e.g., 35000 = $350.00)
-  reservationFeeCents: "35000",
-  
-  // Camp name for display
-  campName: "DeMentha",
-};
 
 /**
- * Get all configuration values, merging defaults with database overrides
+ * Get runtime configuration overrides from the database
+ * Returns ONLY values that have been explicitly set in the database
+ * The frontend's camp.config.ts provides all default values
  */
 export const getConfig = query({
   args: {},
   handler: async (ctx) => {
-    // Get all config entries from database
+    // Get all config entries from database (overrides only)
     const dbConfigs = await ctx.db.query("config").collect();
     
-    // Create a map of database values
+    // Create a map of database values - these are OVERRIDES only
     const dbConfigMap: Record<string, string> = {};
     for (const config of dbConfigs) {
       dbConfigMap[config.key] = config.value;
     }
     
-    // Merge defaults with database overrides (database takes precedence)
-    const mergedConfig: Record<string, string> = {
-      ...DEFAULT_CONFIG,
-      ...dbConfigMap,
-    };
-    
-    return mergedConfig;
+    // Return only database overrides, NOT merged with defaults
+    // The frontend will merge with camp.config.ts defaults
+    return dbConfigMap;
   },
 });
 
 /**
- * Get a single configuration value by key
+ * Get a single configuration override by key
+ * Returns null if no override exists (frontend should use camp.config.ts default)
  */
 export const getConfigByKey = query({
   args: { key: v.string() },
@@ -63,12 +44,8 @@ export const getConfigByKey = query({
       .withIndex("by_key", (q) => q.eq("key", args.key))
       .first();
     
-    if (dbConfig) {
-      return dbConfig.value;
-    }
-    
-    // Return default if exists
-    return DEFAULT_CONFIG[args.key] ?? null;
+    // Return database override or null (frontend uses camp.config.ts for defaults)
+    return dbConfig?.value ?? null;
   },
 });
 
@@ -111,7 +88,7 @@ export const setConfig = mutation({
 });
 
 /**
- * Delete a configuration value (resets to default)
+ * Delete a configuration override (reverts to camp.config.ts default)
  */
 export const deleteConfig = mutation({
   args: { key: v.string() },
@@ -128,6 +105,3 @@ export const deleteConfig = mutation({
     return false;
   },
 });
-
-// Export defaults for use in other modules
-export { DEFAULT_CONFIG };
