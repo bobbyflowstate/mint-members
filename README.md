@@ -7,7 +7,7 @@ A modern reservation and signup system for DeMentha camp at Burning Man. Built w
 - 🎫 **Member Reservations** - Apply and pay for camp spots
 - 📅 **Date Validation** - Automatic early departure detection with ops review workflow
 - 💳 **Stripe Payments** - Secure payment processing via Stripe Checkout
-- 📱 **WhatsApp Integration** - Phone validation for WhatsApp communication
+- 📱 **WhatsApp Integration** - Phone validation with auto-formatting for WhatsApp communication
 - 👥 **Ops Portal** - Admin dashboard for reviewing applications and viewing logs
 - 📊 **Event Logging** - Complete audit trail of all actions
 

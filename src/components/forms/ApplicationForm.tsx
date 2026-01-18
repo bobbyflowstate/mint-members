@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Field } from "./Field";
@@ -10,6 +10,8 @@ import { PaymentCTA } from "./PaymentCTA";
 import { DIETARY_PREFERENCES, ARRIVAL_DEPARTURE_TIMES, ArrivalDepartureTime } from "@/lib/applications/types";
 import { getLandingContent, requiresOpsReview, AppConfig } from "@/config/content";
 import { Id } from "../../../convex/_generated/dataModel";
+import { usePhoneFormatter } from "./usePhoneFormatter";
+import type { Control, ControllerRenderProps } from "react-hook-form";
 
 interface FormData {
   firstName: string;
@@ -78,6 +80,7 @@ function ApplicationFormInner({
     register,
     handleSubmit,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
@@ -101,7 +104,7 @@ function ApplicationFormInner({
       const result = await createApplication({
         firstName: data.firstName,
         lastName: data.lastName,
-        phone: data.phone,
+        phone: data.phone, // Already canonicalized (E.164) by phone formatter
         arrival: data.arrival,
         arrivalTime: data.arrivalTime,
         departure: data.departure,
@@ -229,21 +232,7 @@ function ApplicationFormInner({
           hint="Email is linked to your account and cannot be changed"
         />
 
-        <Field
-          label="Phone Number (WhatsApp)"
-          type="tel"
-          {...register("phone", {
-            required: "Phone number is required",
-            pattern: {
-              value: /^\+[1-9]\d{6,14}$/,
-              message: "Please enter a valid phone number with country code (e.g., +14155551234)",
-            },
-          })}
-          error={errors.phone?.message}
-          placeholder="+14155551234"
-          hint="Include country code. This must be a WhatsApp-enabled number."
-          required
-        />
+        <PhoneField control={control} error={errors.phone?.message} />
       </div>
 
       {/* Dates */}
@@ -366,5 +355,62 @@ function ApplicationFormInner({
         </p>
       </div>
     </form>
+  );
+}
+
+type PhoneFieldProps = {
+  control: Control<FormData>;
+  error?: string;
+};
+
+function PhoneField({ control, error }: PhoneFieldProps) {
+  return (
+    <Controller
+      name="phone"
+      control={control}
+      defaultValue=""
+      rules={{
+        required: "Phone number is required",
+        pattern: {
+          value: /^\+[1-9]\d{6,14}$/,
+          message: "Please enter a valid phone number with country code (e.g., +14155551234)",
+        },
+      }}
+      render={({ field }) => <PhoneInputField field={field} error={error} />}
+    />
+  );
+}
+
+type PhoneInputFieldProps = {
+  field: ControllerRenderProps<FormData, "phone">;
+  error?: string;
+};
+
+function PhoneInputField({ field, error }: PhoneInputFieldProps) {
+  const { displayValue, handleChange, handleBlur } = usePhoneFormatter(field.value ?? "");
+
+  return (
+    <Field
+      label="Phone Number (WhatsApp)"
+      type="tel"
+      name={field.name}
+      ref={field.ref}
+      value={displayValue}
+      onChange={(event) => {
+        const canonical = handleChange(event.target.value);
+        field.onChange(canonical);
+      }}
+      onBlur={(event) => {
+        const canonical = handleBlur(event.target.value);
+        if (canonical !== field.value) {
+          field.onChange(canonical);
+        }
+        field.onBlur(event);
+      }}
+      error={error}
+      placeholder="+14155551234"
+      hint="Include country code. This must be a WhatsApp-enabled number."
+      required
+    />
   );
 }
