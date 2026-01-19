@@ -405,7 +405,7 @@ function PhoneInputField({ field, error }: PhoneInputFieldProps) {
         if (canonical !== field.value) {
           field.onChange(canonical);
         }
-        field.onBlur(event);
+        field.onBlur();
       }}
       error={error}
       placeholder="+14155551234"
