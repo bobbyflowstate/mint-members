@@ -12,6 +12,7 @@ import { getLandingContent, requiresOpsReview, AppConfig } from "@/config/conten
 import { Id } from "../../../convex/_generated/dataModel";
 import { usePhoneFormatter } from "./usePhoneFormatter";
 import type { Control, ControllerRenderProps } from "react-hook-form";
+import { isFlagEnabled } from "@/lib/config/flags";
 
 interface FormData {
   firstName: string;
@@ -53,7 +54,7 @@ export function ApplicationForm() {
 
   const content = getLandingContent(config as AppConfig);
   const userEmail = currentUser?.email ?? "";
-  const paymentsEnabled = (config as AppConfig).paymentsEnabled === "true";
+  const paymentsEnabled = isFlagEnabled((config as AppConfig).paymentsEnabled);
 
   return (
     <ApplicationFormInner

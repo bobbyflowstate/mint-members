@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { isFlagEnabled } from "@/lib/config/flags";
 
 export default function OpsHomePage() {
   const pendingReviews = useQuery(api.applications.listNeedingReview);
@@ -12,7 +13,7 @@ export default function OpsHomePage() {
   const updateConfig = useMutation(api.config.setConfig);
   const [isSaving, setIsSaving] = useState(false);
 
-  const paymentsEnabled = config?.paymentsEnabled === "true";
+  const paymentsEnabled = isFlagEnabled(config?.paymentsEnabled);
 
   const handlePaymentToggle = async () => {
     if (!config) {

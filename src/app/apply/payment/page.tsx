@@ -9,6 +9,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 import { PaymentCTA } from "@/components/forms";
 import { getLandingContent, AppConfig } from "@/config/content";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { isFlagEnabled } from "@/lib/config/flags";
 
 export default function PaymentPage() {
   return (
@@ -134,7 +135,7 @@ function PaymentPageInner() {
           <PaymentPageContent
             applicationId={applicationId}
             content={content}
-            paymentsEnabled={config.paymentsEnabled === "true"}
+            paymentsEnabled={isFlagEnabled(config.paymentsEnabled)}
           />
         </Authenticated>
       </div>

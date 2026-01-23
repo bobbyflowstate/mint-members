@@ -9,6 +9,7 @@ import { getLandingContent, AppConfig } from "@/config/content";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { isFlagEnabled } from "@/lib/config/flags";
 
 export default function ApplyPage() {
   const config = useQuery(api.config.getConfig);
@@ -24,7 +25,7 @@ export default function ApplyPage() {
   }
 
   const content = getLandingContent(config as AppConfig);
-  const paymentsEnabled = (config as AppConfig).paymentsEnabled === "true";
+  const paymentsEnabled = isFlagEnabled((config as AppConfig).paymentsEnabled);
 
   return (
     <main className="min-h-screen py-12 sm:py-20">
