@@ -24,6 +24,7 @@ export default function ApplyPage() {
   }
 
   const content = getLandingContent(config as AppConfig);
+  const paymentsEnabled = (config as AppConfig).paymentsEnabled === "true";
 
   return (
     <main className="min-h-screen py-12 sm:py-20">
@@ -116,7 +117,7 @@ export default function ApplyPage() {
         <Authenticated>
           <div className="rounded-2xl bg-white/5 backdrop-blur-sm p-8 ring-1 ring-white/10">
             <ErrorBoundary>
-              <ApplicationFormWithCheck content={content} />
+              <ApplicationFormWithCheck content={content} paymentsEnabled={paymentsEnabled} />
             </ErrorBoundary>
           </div>
         </Authenticated>
@@ -142,7 +143,13 @@ export default function ApplyPage() {
 /**
  * Wrapper component that checks for existing application
  */
-function ApplicationFormWithCheck({ content }: { content: ReturnType<typeof getLandingContent> }) {
+function ApplicationFormWithCheck({ 
+  content,
+  paymentsEnabled,
+}: { 
+  content: ReturnType<typeof getLandingContent>;
+  paymentsEnabled: boolean;
+}) {
   const existingApplication = useQuery(api.applications.getMyApplication);
 
   // Loading state
@@ -200,7 +207,7 @@ function ApplicationFormWithCheck({ content }: { content: ReturnType<typeof getL
           </div>
         </div>
 
-        {existingApplication.status === "pending_payment" && existingApplication.paymentAllowed && (
+        {existingApplication.status === "pending_payment" && existingApplication.paymentAllowed && paymentsEnabled && (
           <div className="mt-6">
             <p className="text-slate-300 mb-4">
               Complete your payment to secure your spot:
@@ -213,6 +220,14 @@ function ApplicationFormWithCheck({ content }: { content: ReturnType<typeof getL
             </Link>
           </div>
         )}
+
+        {existingApplication.status === "pending_payment" &&
+          existingApplication.paymentAllowed &&
+          !paymentsEnabled && (
+            <p className="mt-6 text-sm text-amber-400">
+              Payments are currently closed. Please check back once payments are enabled.
+            </p>
+          )}
 
         {existingApplication.status === "needs_ops_review" && (
           <p className="mt-6 text-sm text-amber-400">

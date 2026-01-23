@@ -1,12 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
 export default function OpsHomePage() {
   const pendingReviews = useQuery(api.applications.listNeedingReview);
   const recentEvents = useQuery(api.eventLogs.listRecent, { limit: 5 });
+  const config = useQuery(api.config.getConfig);
+  const updateConfig = useMutation(api.config.setConfig);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const paymentsEnabled = config?.paymentsEnabled === "true";
+
+  const handlePaymentToggle = async () => {
+    if (!config) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateConfig({
+        key: "paymentsEnabled",
+        value: paymentsEnabled ? "false" : "true",
+        description: "Controls whether applicants can complete payments",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -18,6 +41,43 @@ export default function OpsHomePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Payments</h2>
+              <p className="mt-2 text-sm text-slate-400">
+                Toggle when applicants can complete payments. Applications can still be
+                submitted while payments are disabled.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={paymentsEnabled}
+              aria-label="Toggle payments"
+              onClick={handlePaymentToggle}
+              disabled={!config || isSaving}
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+                paymentsEnabled ? "bg-emerald-500" : "bg-slate-600"
+              } ${isSaving ? "opacity-70" : ""} disabled:cursor-not-allowed`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  paymentsEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
+            <span>
+              Status:{" "}
+              <span className={paymentsEnabled ? "text-emerald-400" : "text-amber-400"}>
+                {paymentsEnabled ? "Enabled" : "Disabled"}
+              </span>
+            </span>
+            {isSaving && <span className="text-slate-500">Saving...</span>}
+          </div>
+        </div>
         {/* Pending Reviews Card */}
         <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
           <div className="flex items-center justify-between">

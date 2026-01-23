@@ -82,6 +82,9 @@ export const createReservationCheckout = action({
 
     // Get reservation fee from config (includes defaults)
     const config: Record<string, string> = await ctx.runQuery(api.config.getConfig, {});
+    if (config.paymentsEnabled !== "true") {
+      throw new Error("Payments are currently disabled");
+    }
     const reservationFeeCents = parseInt(config.reservationFeeCents, 10);
 
     // Create Stripe client

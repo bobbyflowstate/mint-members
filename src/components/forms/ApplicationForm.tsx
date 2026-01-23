@@ -53,14 +53,28 @@ export function ApplicationForm() {
 
   const content = getLandingContent(config as AppConfig);
   const userEmail = currentUser?.email ?? "";
+  const paymentsEnabled = (config as AppConfig).paymentsEnabled === "true";
 
-  return <ApplicationFormInner config={config as AppConfig} content={content} userEmail={userEmail} submissionResult={submissionResult} setSubmissionResult={setSubmissionResult} submitError={submitError} setSubmitError={setSubmitError} createApplication={createApplication} />;
+  return (
+    <ApplicationFormInner
+      config={config as AppConfig}
+      content={content}
+      userEmail={userEmail}
+      paymentsEnabled={paymentsEnabled}
+      submissionResult={submissionResult}
+      setSubmissionResult={setSubmissionResult}
+      submitError={submitError}
+      setSubmitError={setSubmitError}
+      createApplication={createApplication}
+    />
+  );
 }
 
 function ApplicationFormInner({ 
   config, 
   content, 
   userEmail,
+  paymentsEnabled,
   submissionResult, 
   setSubmissionResult, 
   submitError, 
@@ -70,6 +84,7 @@ function ApplicationFormInner({
   config: AppConfig;
   content: ReturnType<typeof getLandingContent>;
   userEmail: string;
+  paymentsEnabled: boolean;
   submissionResult: SubmissionResult | null;
   setSubmissionResult: (result: SubmissionResult | null) => void;
   submitError: string | null;
@@ -161,14 +176,15 @@ function ApplicationFormInner({
           ) : (
             <div className="mt-4 text-slate-300">
               <p>
-                Your application has been received. Complete your payment below to
-                secure your spot at {content.campName}.
+                {paymentsEnabled
+                  ? `Your application has been received. Complete your payment below to secure your spot at ${content.campName}.`
+                  : "Your application has been received. Payments will open after applications have been reviewed."}
               </p>
             </div>
           )}
         </div>
 
-        {submissionResult.paymentAllowed ? (
+        {submissionResult.paymentAllowed && paymentsEnabled ? (
           <PaymentCTA
             applicationId={submissionResult.applicationId}
             amount={content.reservationFeeFormatted}
@@ -176,7 +192,9 @@ function ApplicationFormInner({
         ) : (
           <div className="rounded-lg bg-slate-700/50 p-6 text-center">
             <p className="text-slate-400">
-              Payment will be available after your early departure request is approved.
+              {submissionResult.paymentAllowed
+                ? "Payments are not open yet. Please check back once payments are enabled."
+                : "Payment will be available after your early departure request is approved."}
             </p>
           </div>
         )}
