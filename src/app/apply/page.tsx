@@ -69,7 +69,7 @@ export default function ApplyPage() {
         </div>
       </div>
 
-      <Expectations content={content} />
+      <Expectations content={content} showHeader={false} />
 
       <div className="mx-auto max-w-2xl px-6 lg:px-8">
         {/* Loading State */}

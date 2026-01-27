@@ -33,9 +33,9 @@ const opsAuthorizationStatus = v.union(
  * Time of arrival/departure options
  */
 const arrivalDepartureTime = v.union(
-  v.literal("after 10 am"),
-  v.literal("after 2 pm"),
-  v.literal("after 9 pm")
+  v.literal("12:01 am to 11.00 am"),
+  v.literal("11.01 am to 6.00 pm"),
+  v.literal("6.01 pm to 12.00 am")
 );
 
 /**
