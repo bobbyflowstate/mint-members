@@ -13,16 +13,30 @@ export default function OpsHomePage() {
   const updateConfig = useMutation(api.config.setConfig);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmationText, setConfirmationText] = useState("");
 
   const paymentsEnabled = isFlagEnabled(config?.paymentsEnabled);
 
-  const handlePaymentToggle = async () => {
+  const handlePaymentToggle = () => {
+    if (!config) {
+      return;
+    }
+    // Show confirmation dialog instead of toggling directly
+    setShowConfirmDialog(true);
+    setConfirmationText("");
+  };
+
+  const handleConfirmToggle = async () => {
     if (!config) {
       return;
     }
 
     setErrorMessage(null);
     setIsSaving(true);
+    setShowConfirmDialog(false);
+    setConfirmationText("");
+
     try {
       await updateConfig({
         key: "paymentsEnabled",
@@ -40,6 +54,13 @@ export default function OpsHomePage() {
       setIsSaving(false);
     }
   };
+
+  const handleCancelToggle = () => {
+    setShowConfirmDialog(false);
+    setConfirmationText("");
+  };
+
+  const isConfirmationValid = confirmationText === "minted2026";
 
   return (
     <div className="space-y-8">
@@ -164,6 +185,61 @@ export default function OpsHomePage() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-xl bg-slate-900 p-6 ring-1 ring-white/10 shadow-2xl">
+            <h3 className="text-xl font-bold text-white">
+              {paymentsEnabled ? "Disable Payments" : "Enable Payments"}
+            </h3>
+            <div className="mt-4 space-y-3">
+              <p className="text-slate-300">
+                You are about to{" "}
+                <span className="font-semibold text-amber-400">
+                  {paymentsEnabled ? "disable" : "enable"}
+                </span>{" "}
+                payments for all users.
+              </p>
+              <p className="text-sm text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg p-3">
+                ⚠️ This action will immediately affect all applicants. Please ensure you
+                actually want to proceed.
+              </p>
+              <div className="mt-4">
+                <label htmlFor="confirmation" className="block text-sm font-medium text-slate-300 mb-2">
+                  Type <span className="font-mono font-bold text-white">minted2026</span> to confirm:
+                </label>
+                <input
+                  id="confirmation"
+                  type="text"
+                  value={confirmationText}
+                  onChange={(e) => setConfirmationText(e.target.value)}
+                  placeholder="minted2026"
+                  className="w-full rounded-lg bg-slate-800 px-4 py-2 text-white placeholder:text-slate-500 border border-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={handleCancelToggle}
+                className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmToggle}
+                disabled={!isConfirmationValid}
+                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-600"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
