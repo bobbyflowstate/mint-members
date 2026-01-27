@@ -38,7 +38,7 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   applicationsOpen: "true",
 
   // Whether payments are enabled
-  paymentsEnabled: "true",
+  paymentsEnabled: "false",
 };
 
 /**
