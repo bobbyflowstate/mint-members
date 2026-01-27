@@ -17,6 +17,7 @@ export interface AppConfig {
   reservationFeeCents: string;
   maxMembers: string;
   applicationsOpen: string;
+  paymentsEnabled: string;
   [key: string]: string;
 }
 
