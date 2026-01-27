@@ -228,43 +228,6 @@ function PaymentPageContent({
     );
   }
 
-  if (!paymentsEnabled) {
-    return (
-      <div className="rounded-2xl bg-white/5 backdrop-blur-sm p-8 ring-1 ring-white/10 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 ring-1 ring-amber-500/20">
-          <svg
-            className="h-8 w-8 text-amber-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <h2 className="mt-6 text-xl font-bold text-white">Payments Closed</h2>
-        <p className="mt-2 text-slate-400">
-          Payments are not open yet. We&apos;ll notify applicants once payments are enabled.
-        </p>
-        {!application.paymentAllowed && (
-          <p className="mt-3 text-sm text-slate-500">
-            Your early departure request is still pending approval.
-          </p>
-        )}
-        <Link
-          href="/apply"
-          className="mt-6 inline-block rounded-lg bg-white/10 px-6 py-3 text-sm font-semibold text-white hover:bg-white/20 transition-all"
-        >
-          View Application
-        </Link>
-      </div>
-    );
-  }
-
   if (!application.paymentAllowed) {
     return (
       <div className="rounded-2xl bg-white/5 backdrop-blur-sm p-8 ring-1 ring-white/10 text-center">
@@ -286,6 +249,38 @@ function PaymentPageContent({
         <h2 className="mt-6 text-xl font-bold text-white">Pending Review</h2>
         <p className="mt-2 text-slate-400">
           Your early departure request is being reviewed. Payment will be available after approval.
+        </p>
+        <Link
+          href="/apply"
+          className="mt-6 inline-block rounded-lg bg-white/10 px-6 py-3 text-sm font-semibold text-white hover:bg-white/20 transition-all"
+        >
+          View Application
+        </Link>
+      </div>
+    );
+  }
+
+  if (!paymentsEnabled) {
+    return (
+      <div className="rounded-2xl bg-white/5 backdrop-blur-sm p-8 ring-1 ring-white/10 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 ring-1 ring-amber-500/20">
+          <svg
+            className="h-8 w-8 text-amber-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <h2 className="mt-6 text-xl font-bold text-white">Payments Closed</h2>
+        <p className="mt-2 text-slate-400">
+          Payments are not open yet. We&apos;ll notify applicants once payments are enabled.
         </p>
         <Link
           href="/apply"
