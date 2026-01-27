@@ -58,11 +58,11 @@ export function PaymentCTA({ applicationId, amount, disabled = false }: PaymentC
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-white">Complete Payment</h3>
-            <p className="text-sm text-slate-400">Secure your reservation</p>
+            <p className="text-sm text-slate-400">Non Refundable reservation fee</p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-white">{amount}</p>
-            <p className="text-sm text-slate-400">Reservation fee</p>
+            <p className="text-sm text-slate-400">Non Refundable</p>
           </div>
         </div>
 
@@ -116,13 +116,13 @@ export function PaymentCTA({ applicationId, amount, disabled = false }: PaymentC
                   d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
                 />
               </svg>
-              Pay with Card
+              Pay Non Refundable Fee
             </>
           )}
         </button>
 
         <p className="mt-4 text-center text-xs text-slate-500">
-          Secure payment powered by Stripe
+          Secure payment powered by Stripe. This fee is Non Refundable.
         </p>
       </div>
     </div>

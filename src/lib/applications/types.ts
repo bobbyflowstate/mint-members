@@ -16,26 +16,27 @@ export type DietaryPreference =
   | "omnivore"
   | "vegetarian"
   | "vegan"
-  | "pescatarian"
-  | "other";
+  | "pescatarian";
 
 export const DIETARY_PREFERENCES: DietaryPreference[] = [
   "omnivore",
   "vegetarian",
   "vegan",
   "pescatarian",
-  "other",
 ];
 
 /**
  * Arrival/Departure time options
  */
-export type ArrivalDepartureTime = "after 10 am" | "after 2 pm" | "after 9 pm";
+export type ArrivalDepartureTime =
+  | "12:01 am to 11.00 am"
+  | "11.01 am to 6.00 pm"
+  | "6.01 pm to 12.00 am";
 
 export const ARRIVAL_DEPARTURE_TIMES: ArrivalDepartureTime[] = [
-  "after 10 am",
-  "after 2 pm",
-  "after 9 pm",
+  "12:01 am to 11.00 am",
+  "11.01 am to 6.00 pm",
+  "6.01 pm to 12.00 am",
 ];
 
 /**

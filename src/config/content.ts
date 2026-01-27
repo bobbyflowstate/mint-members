@@ -132,8 +132,8 @@ export function getLandingContent(config: AppConfig): LandingContent {
     // Expectations for members
     expectations: [
       {
-        title: "Reservation Fee",
-        description: `A ${formatCurrency(reservationFeeCents)} reservation fee is required to secure your spot. This is non-refundable and goes toward camp infrastructure.`,
+        title: "Non Refundable Reservation Fee",
+        description: `A ${formatCurrency(reservationFeeCents)} reservation fee is required to secure your spot. This is Non Refundable and goes toward camp infrastructure.`,
       },
       {
         title: "WhatsApp Required",

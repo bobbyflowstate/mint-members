@@ -19,9 +19,9 @@ interface FormData {
   lastName: string;
   phone: string;
   arrival: string;
-  arrivalTime: ArrivalDepartureTime;
+  arrivalTime: ArrivalDepartureTime | "";
   departure: string;
-  departureTime: ArrivalDepartureTime;
+  departureTime: ArrivalDepartureTime | "";
   dietaryPreference: string;
   allergyFlag: boolean;
   allergyNotes?: string;
@@ -100,10 +100,10 @@ function ApplicationFormInner({
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
-      arrival: content.earliestArrival,
-      arrivalTime: "after 10 am",
-      departure: content.latestDeparture,
-      departureTime: "after 10 am",
+      arrival: "",
+      arrivalTime: "",
+      departure: "",
+      departureTime: "",
       dietaryPreference: "omnivore",
       allergyFlag: false,
     },
@@ -122,9 +122,9 @@ function ApplicationFormInner({
         lastName: data.lastName,
         phone: data.phone, // Already canonicalized (E.164) by phone formatter
         arrival: data.arrival,
-        arrivalTime: data.arrivalTime,
+        arrivalTime: data.arrivalTime as ArrivalDepartureTime,
         departure: data.departure,
-        departureTime: data.departureTime,
+        departureTime: data.departureTime as ArrivalDepartureTime,
         dietaryPreference: data.dietaryPreference,
         allergyFlag: data.allergyFlag,
         allergyNotes: data.allergyNotes,
@@ -178,7 +178,7 @@ function ApplicationFormInner({
             <div className="mt-4 text-slate-300">
               <p>
                 {paymentsEnabled
-                  ? `Your application has been received. Complete your payment below to secure your spot at ${content.campName}.`
+                  ? `Your application has been received. Complete your Non Refundable payment below to secure your spot at ${content.campName}.`
                   : "Your application has been received. Payments will open after applications have been reviewed."}
               </p>
             </div>
@@ -353,7 +353,6 @@ function ApplicationFormInner({
             label="Allergy Details"
             {...register("allergyNotes")}
             placeholder="Please describe your allergies or dietary restrictions..."
-            hint="Help us keep you safe by being specific"
           />
         )}
       </div>
