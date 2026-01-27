@@ -12,6 +12,7 @@ export default function OpsHomePage() {
   const config = useQuery(api.config.getConfig);
   const updateConfig = useMutation(api.config.setConfig);
   const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const paymentsEnabled = isFlagEnabled(config?.paymentsEnabled);
 
@@ -20,6 +21,7 @@ export default function OpsHomePage() {
       return;
     }
 
+    setErrorMessage(null);
     setIsSaving(true);
     try {
       await updateConfig({
@@ -27,6 +29,13 @@ export default function OpsHomePage() {
         value: paymentsEnabled ? "false" : "true",
         description: "Controls whether applicants can complete payments",
       });
+    } catch (error) {
+      console.error("Failed to toggle payments", error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to save payments setting. Please try again."
+      );
     } finally {
       setIsSaving(false);
     }
@@ -69,6 +78,11 @@ export default function OpsHomePage() {
               />
             </button>
           </div>
+          {errorMessage && (
+            <p className="mt-3 text-sm text-amber-400" role="alert">
+              {errorMessage}
+            </p>
+          )}
           <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
             <span>
               Status:{" "}
