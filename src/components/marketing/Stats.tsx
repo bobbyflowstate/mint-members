@@ -16,15 +16,15 @@ export function Stats({ content }: StatsProps) {
     {
       label: `${content.campName} Camp Dates`,
       value: content.campDates,
-      description: "Early arrival for setup",
+      description: "Includes early arrival for setup and extended time for tear-down",
     },
     {
-      label: "Departure Cutoff",
+      label: "Earliest Departure",
       value: content.departureCutoffFormatted,
       description: "Stay through the burn and teardown",
     },
     {
-      label: "Reservation Fee",
+      label: "Non Refundable Registration Fee",
       value: content.reservationFeeFormatted,
       description: "Secures your spot",
     },

@@ -311,6 +311,12 @@ function PaymentPageContent({
             <span className="text-slate-400">Dates</span>
             <span className="text-white">{application.arrival} → {application.departure}</span>
           </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-400">Reservation Fee</span>
+            <span className="text-white">
+              {content.reservationFeeFormatted} (Non Refundable)
+            </span>
+          </div>
         </div>
       </div>
 

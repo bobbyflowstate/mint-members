@@ -14,9 +14,9 @@ const validInput: ApplicationFormInput = {
   email: "john@example.com",
   phone: "+14155551234",
   arrival: "2025-08-22",
-  arrivalTime: "after 10 am",
+  arrivalTime: "12:01 am to 11.00 am",
   departure: "2025-09-01",
-  departureTime: "after 10 am",
+  departureTime: "12:01 am to 11.00 am",
   dietaryPreference: "omnivore",
   allergyFlag: false,
 };
@@ -239,7 +239,6 @@ describe("validateApplicationInput", () => {
         "vegetarian",
         "vegan",
         "pescatarian",
-        "other",
       ];
 
       for (const dietaryPreference of validDiets) {
@@ -312,7 +311,11 @@ describe("validateApplicationInput", () => {
     });
 
     it("should accept all valid arrival/departure times", () => {
-      const validTimes = ["after 10 am", "after 2 pm", "after 9 pm"] as const;
+      const validTimes = [
+        "12:01 am to 11.00 am",
+        "11.01 am to 6.00 pm",
+        "6.01 pm to 12.00 am",
+      ] as const;
 
       for (const time of validTimes) {
         const input = {

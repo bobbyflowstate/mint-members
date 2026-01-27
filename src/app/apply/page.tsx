@@ -10,6 +10,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { isFlagEnabled } from "@/lib/config/flags";
+import { Expectations } from "@/components/marketing";
 
 export default function ApplyPage() {
   const config = useQuery(api.config.getConfig);
@@ -58,7 +59,7 @@ export default function ApplyPage() {
             </h1>
             <p className="mt-4 text-lg text-slate-300">
               Complete the form below to reserve your spot at Burning Man 2025.
-              The reservation fee is {content.reservationFeeFormatted}.
+              The reservation fee is {content.reservationFeeFormatted} (Non Refundable).
             </p>
           </div>
           
@@ -66,7 +67,11 @@ export default function ApplyPage() {
             <UserButton />
           </Authenticated>
         </div>
+      </div>
 
+      <Expectations content={content} />
+
+      <div className="mx-auto max-w-2xl px-6 lg:px-8">
         {/* Loading State */}
         <AuthLoading>
           <div className="rounded-2xl bg-white/5 backdrop-blur-sm p-8 ring-1 ring-white/10">
@@ -217,7 +222,7 @@ function ApplicationFormWithCheck({
               href={`/apply/payment?id=${existingApplication._id}`}
               className="inline-block rounded-lg bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400 transition-all"
             >
-              Complete Payment ({content.reservationFeeFormatted})
+              Complete Non Refundable Payment ({content.reservationFeeFormatted})
             </Link>
           </div>
         )}

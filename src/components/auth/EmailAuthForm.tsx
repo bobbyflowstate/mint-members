@@ -65,6 +65,9 @@ export function EmailAuthForm({ onSuccess, redirectTo }: EmailAuthFormProps) {
           <p className="text-sm text-slate-300">
             📧 Open your email and click the link to sign in instantly.
           </p>
+          <p className="mt-2 text-xs text-slate-400">
+            Magic link delivery can take up to 10 minutes.
+          </p>
         </div>
         <p className="mt-4 text-xs text-slate-500">
           Link expires in 15 minutes. Check spam if you don&apos;t see it.

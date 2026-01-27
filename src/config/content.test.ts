@@ -306,7 +306,7 @@ describe("Expectations array", () => {
     const content = getLandingContent(config);
 
     const feeExpectation = content.expectations.find(
-      (e) => e.title === "Reservation Fee"
+      (e) => e.title === "Non Refundable Reservation Fee"
     );
     expect(feeExpectation?.description).toContain("$500");
   });
