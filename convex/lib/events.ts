@@ -14,6 +14,9 @@ export const EVENT_TYPES = [
   "ops_override_denied",
   "webhook_error",
   "mutation_failed",
+  "allowlist_emails_added",
+  "allowlist_email_removed",
+  "allowlist_emails_removed_bulk",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -212,6 +215,55 @@ export function buildMutationFailedPayload(data: {
     mutationName: data.mutationName,
     error: data.error,
     input: data.input,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build payload for allowlist_emails_added event
+ */
+export function buildAllowlistEmailsAddedPayload(data: {
+  addedBy: string;
+  totalAdded: number;
+  duplicates: number;
+  invalid: number;
+}) {
+  return {
+    type: "allowlist_emails_added" as const,
+    addedBy: data.addedBy,
+    totalAdded: data.totalAdded,
+    duplicates: data.duplicates,
+    invalid: data.invalid,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build payload for allowlist_email_removed event
+ */
+export function buildAllowlistEmailRemovedPayload(data: {
+  email: string;
+  removedBy: string;
+}) {
+  return {
+    type: "allowlist_email_removed" as const,
+    email: data.email,
+    removedBy: data.removedBy,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build payload for allowlist_emails_removed_bulk event
+ */
+export function buildAllowlistEmailsRemovedBulkPayload(data: {
+  count: number;
+  removedBy: string;
+}) {
+  return {
+    type: "allowlist_emails_removed_bulk" as const,
+    count: data.count,
+    removedBy: data.removedBy,
     timestamp: new Date().toISOString(),
   };
 }

@@ -8,6 +8,7 @@ interface AuthGateProps {
 }
 
 const OPS_AUTH_KEY = "ops_authenticated";
+const OPS_PASSWORD_KEY = "ops_password";
 
 export function AuthGate({ children }: AuthGateProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -37,6 +38,7 @@ export function AuthGate({ children }: AuthGateProps) {
 
       if (data.valid) {
         sessionStorage.setItem(OPS_AUTH_KEY, "true");
+        sessionStorage.setItem(OPS_PASSWORD_KEY, password);
         setIsAuthenticated(true);
       } else {
         setError(data.error || "Invalid password");

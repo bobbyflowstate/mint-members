@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireOpsPassword } from "./lib/auth";
 
 /**
  * =============================================================================
@@ -39,6 +40,9 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
 
   // Whether payments are enabled
   paymentsEnabled: "false",
+
+  // Email allowlist enforcement
+  allowlistEnabled: "false",
 };
 
 /**
@@ -82,23 +86,28 @@ export const getConfigByKey = query({
 });
 
 /**
- * Set a configuration value (admin use only)
+ * Set a configuration value (ops only)
  * Creates or updates the config entry
+ * Requires ops password
  */
 export const setConfig = mutation({
   args: {
     key: v.string(),
     value: v.string(),
     description: v.optional(v.string()),
+    opsPassword: v.string(),
   },
   handler: async (ctx, args) => {
+    // Verify ops password
+    requireOpsPassword(args.opsPassword);
+
     const existing = await ctx.db
       .query("config")
       .withIndex("by_key", (q) => q.eq("key", args.key))
       .first();
-    
+
     const now = Date.now();
-    
+
     if (existing) {
       // Update existing config
       await ctx.db.patch(existing._id, {
@@ -121,15 +130,22 @@ export const setConfig = mutation({
 
 /**
  * Delete a configuration override (reverts to camp.config.ts default)
+ * Requires ops password
  */
 export const deleteConfig = mutation({
-  args: { key: v.string() },
+  args: {
+    key: v.string(),
+    opsPassword: v.string(),
+  },
   handler: async (ctx, args) => {
+    // Verify ops password
+    requireOpsPassword(args.opsPassword);
+
     const existing = await ctx.db
       .query("config")
       .withIndex("by_key", (q) => q.eq("key", args.key))
       .first();
-    
+
     if (existing) {
       await ctx.db.delete(existing._id);
       return true;

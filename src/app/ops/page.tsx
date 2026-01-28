@@ -6,7 +6,16 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { isFlagEnabled } from "@/lib/config/flags";
 
+const OPS_PASSWORD_KEY = "ops_password";
+
 export default function OpsHomePage() {
+  const [opsPassword] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem(OPS_PASSWORD_KEY);
+    }
+    return null;
+  });
+
   const pendingReviews = useQuery(api.applications.listNeedingReview);
   const recentEvents = useQuery(api.eventLogs.listRecent, { limit: 5 });
   const config = useQuery(api.config.getConfig);
@@ -28,7 +37,7 @@ export default function OpsHomePage() {
   };
 
   const handleConfirmToggle = async () => {
-    if (!config) {
+    if (!config || !opsPassword) {
       return;
     }
 
@@ -42,6 +51,7 @@ export default function OpsHomePage() {
         key: "paymentsEnabled",
         value: paymentsEnabled ? "false" : "true",
         description: "Controls whether applicants can complete payments",
+        opsPassword,
       });
     } catch (error) {
       console.error("Failed to toggle payments", error);

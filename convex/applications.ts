@@ -52,12 +52,30 @@ export const createDraftApplication = mutation({
     }
     const userEmail = user.email.toLowerCase();
 
+    // Check allowlist enforcement
+    const allowlistConfig = await ctx.db
+      .query("config")
+      .withIndex("by_key", (q) => q.eq("key", "allowlistEnabled"))
+      .first();
+    const allowlistEnabled = allowlistConfig?.value === "true";
+
+    if (allowlistEnabled) {
+      const emailEntry = await ctx.db
+        .query("email_allowlist")
+        .withIndex("by_email", (q) => q.eq("email", userEmail))
+        .first();
+
+      if (!emailEntry) {
+        throw new Error("Applications are currently only open to alumni members.");
+      }
+    }
+
     // Check if user already has an application
     const existingApplication = await ctx.db
       .query("applications")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .first();
-    
+
     if (existingApplication) {
       throw new Error("You already have an application. Please contact us if you need to make changes.");
     }

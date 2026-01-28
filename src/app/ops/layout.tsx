@@ -13,6 +13,7 @@ interface OpsLayoutProps {
 const navigation = [
   { name: "Review Queue", href: "/ops/review" },
   { name: "Event Logs", href: "/ops/logs" },
+  { name: "Email Allowlist", href: "/ops/allowlist" },
 ];
 
 export default function OpsLayout({ children }: OpsLayoutProps) {

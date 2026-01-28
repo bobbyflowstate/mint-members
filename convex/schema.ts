@@ -50,7 +50,10 @@ const eventType = v.union(
   v.literal("ops_override_granted"),
   v.literal("ops_override_denied"),
   v.literal("webhook_error"),
-  v.literal("mutation_failed")
+  v.literal("mutation_failed"),
+  v.literal("allowlist_emails_added"),
+  v.literal("allowlist_email_removed"),
+  v.literal("allowlist_emails_removed_bulk")
 );
 
 export default defineSchema({
@@ -118,7 +121,7 @@ export default defineSchema({
 
   /**
    * Config table - stores key/value configuration
-   * Keys: departureCutoff, burningManStartDate, burningManEndDate, 
+   * Keys: departureCutoff, burningManStartDate, burningManEndDate,
    *       earliestArrival, latestDeparture, reservationFeeCents, campName
    */
   config: defineTable({
@@ -127,4 +130,16 @@ export default defineSchema({
     description: v.optional(v.string()),
     updatedAt: v.number(),
   }).index("by_key", ["key"]),
+
+  /**
+   * Email allowlist - controls who can submit applications
+   */
+  email_allowlist: defineTable({
+    email: v.string(),        // Normalized to lowercase
+    addedBy: v.string(),      // Email of ops user who added
+    addedAt: v.number(),
+    notes: v.optional(v.string()),
+  })
+    .index("by_email", ["email"])
+    .index("by_addedAt", ["addedAt"]),
 });

@@ -149,20 +149,63 @@ export default function ApplyPage() {
 /**
  * Wrapper component that checks for existing application
  */
-function ApplicationFormWithCheck({ 
+function ApplicationFormWithCheck({
   content,
   paymentsEnabled,
-}: { 
+}: {
   content: ReturnType<typeof getLandingContent>;
   paymentsEnabled: boolean;
 }) {
   const existingApplication = useQuery(api.applications.getMyApplication);
+  const config = useQuery(api.config.getConfig);
+  const currentUser = useQuery(api.users.currentUser);
+
+  // Check if email is allowlisted
+  const isEmailAllowed = useQuery(
+    api.allowlist.isEmailAllowed,
+    currentUser?.email ? { email: currentUser.email } : "skip"
+  );
 
   // Loading state
-  if (existingApplication === undefined) {
+  if (existingApplication === undefined || config === undefined || currentUser === undefined) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // Check allowlist enforcement
+  const allowlistEnabled = config?.allowlistEnabled === "true";
+
+  // If allowlist is enabled and email is not allowed, show blocked message
+  if (allowlistEnabled && isEmailAllowed === false) {
+    return (
+      <div className="text-center py-8">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 ring-1 ring-amber-500/20">
+          <svg
+            className="h-8 w-8 text-amber-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+            />
+          </svg>
+        </div>
+        <h2 className="mt-6 text-xl font-semibold text-white">
+          Applications Restricted
+        </h2>
+        <p className="mt-2 text-slate-400 max-w-sm mx-auto">
+          Applications are currently only open to alumni members. If you believe this is an error, please contact us.
+        </p>
+        <div className="mt-6 text-xs text-slate-500">
+          Signed in as: {currentUser?.email}
+        </div>
       </div>
     );
   }
