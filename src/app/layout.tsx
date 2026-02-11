@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "DeMentha Camp | Burning Man 2025",
-  description: "Reserve your spot at DeMentha camp for Burning Man 2025. Join our community in Black Rock City.",
-  keywords: ["Burning Man", "DeMentha", "camp", "2025", "Black Rock City", "reservation"],
+  title: "DeMentha Camp | Burning Man 2026",
+  description: "Reserve your spot at DeMentha camp for Burning Man 2026. Join our community in Black Rock City.",
+  keywords: ["Burning Man", "DeMentha", "camp", "2026", "Black Rock City", "reservation"],
   openGraph: {
-    title: "DeMentha Camp | Burning Man 2025",
-    description: "Reserve your spot at DeMentha camp for Burning Man 2025.",
+    title: "DeMentha Camp | Burning Man 2026",
+    description: "Reserve your spot at DeMentha camp for Burning Man 2026.",
     type: "website",
   },
 };
@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-b from-slate-900 to-slate-800`}
+        className={`${inter.variable} ${jetBrainsMono.variable} antialiased min-h-screen bg-gradient-to-b from-slate-900 to-slate-800`}
       >
         <Providers>{children}</Providers>
       </body>

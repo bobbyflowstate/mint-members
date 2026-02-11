@@ -58,7 +58,7 @@ export default function ApplyPage() {
               Apply to Join {content.campName}
             </h1>
             <p className="mt-4 text-lg text-slate-300">
-              Complete the form below to reserve your spot at Burning Man 2025.
+              Complete the form below to reserve your spot at {content.campName}.
               The reservation fee is {content.reservationFeeFormatted} (Non Refundable).
             </p>
           </div>

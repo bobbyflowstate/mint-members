@@ -23,7 +23,7 @@ export function Hero({ content }: HeroProps) {
             <div className="relative rounded-full px-4 py-1.5 text-sm leading-6 text-emerald-400 ring-1 ring-emerald-500/30 hover:ring-emerald-500/50 transition-all">
               <span className="font-semibold">{content.campName}</span>
               <span className="mx-2 text-slate-500">•</span>
-              <span className="text-slate-400">Burning Man 2025</span>
+              <span className="text-slate-400">{content.burningManDates}</span>
             </div>
           </div>
 

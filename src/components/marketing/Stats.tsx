@@ -39,7 +39,7 @@ export function Stats({ content }: StatsProps) {
               Important Dates & Details
             </h2>
             <p className="mt-4 text-lg leading-8 text-slate-300">
-              Everything you need to know about joining {content.campName} at Burning Man 2025
+              Everything you need to know about joining {content.campName}
             </p>
           </div>
           <dl className="mt-16 grid grid-cols-1 gap-4 overflow-hidden rounded-2xl text-center sm:grid-cols-2 lg:grid-cols-4">
