@@ -15,7 +15,7 @@ const jetBrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "DeMentha Camp | Burning Man 2026",
-  description: "Reserve your spot at DeMentha camp for Burning Man 2026. Join our community in Black Rock City.",
+  description: "Reserve your spot at DeMentha camp for Burning Man 2026. Join our minty oasis in Black Rock City.",
   keywords: ["Burning Man", "DeMentha", "camp", "2026", "Black Rock City", "reservation"],
   openGraph: {
     title: "DeMentha Camp | Burning Man 2026",

@@ -103,7 +103,7 @@ export function getLandingContent(config: AppConfig): LandingContent {
   return {
     campName: config.campName,
     heroTitle: `Join ${config.campName} at Burning Man ${year}`,
-    heroSubtitle: "Reserve your spot in our community and be part of an unforgettable experience in Black Rock City.",
+    heroSubtitle: "Reserve your spot at DeMentha and join our minty oasis in Black Rock City.",
     
     // Burning Man dates
     burningManDates: formatDateRange(
