@@ -30,9 +30,12 @@ export default function OpsLayout({ children }: OpsLayoutProps) {
                 <Link href="/" className="text-lg font-bold text-white">
                   DeMentha
                 </Link>
-                <span className="text-sm font-medium text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">
+                <Link 
+                  href="/ops"
+                  className="text-sm font-medium text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded hover:bg-emerald-500/20 transition-colors"
+                >
                   Ops Portal
-                </span>
+                </Link>
               </div>
               <nav className="flex items-center gap-6">
                 {navigation.map((item) => (
