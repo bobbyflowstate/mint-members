@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  CONFIG_DEFAULTS,
   isRuntimeConfigOverrideAllowed,
   mergeConfigValues,
   parseMaxMembers,
-} from "./config";
+} from "./configPolicy";
+
+const DEFAULTS = {
+  reservationFeeCents: "10000",
+  paymentsEnabled: "false",
+  departureCutoff: "2026-09-06",
+};
 
 describe("config override policy", () => {
   it("disallows runtime overrides for reservationFeeCents", () => {
@@ -19,7 +24,7 @@ describe("config override policy", () => {
 
 describe("mergeConfigValues", () => {
   it("applies runtime overrides for mutable keys", () => {
-    const merged = mergeConfigValues(CONFIG_DEFAULTS, {
+    const merged = mergeConfigValues(DEFAULTS, {
       paymentsEnabled: "true",
     });
 
@@ -27,12 +32,12 @@ describe("mergeConfigValues", () => {
   });
 
   it("keeps reservationFeeCents pinned to CONFIG_DEFAULTS", () => {
-    const merged = mergeConfigValues(CONFIG_DEFAULTS, {
+    const merged = mergeConfigValues(DEFAULTS, {
       reservationFeeCents: "15000",
       paymentsEnabled: "true",
     });
 
-    expect(merged.reservationFeeCents).toBe(CONFIG_DEFAULTS.reservationFeeCents);
+    expect(merged.reservationFeeCents).toBe(DEFAULTS.reservationFeeCents);
     expect(merged.paymentsEnabled).toBe("true");
   });
 });
