@@ -1,6 +1,17 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireOpsPassword } from "./lib/auth";
+import {
+  isRuntimeConfigOverrideAllowed,
+  mergeConfigValues,
+  parseMaxMembers,
+} from "./configPolicy";
+
+export {
+  isRuntimeConfigOverrideAllowed,
+  mergeConfigValues,
+  parseMaxMembers,
+};
 
 /**
  * =============================================================================
@@ -11,7 +22,7 @@ import { requireOpsPassword } from "./lib/auth";
  * served to both frontend and backend from Convex.
  * 
  * To override at runtime without redeploying:
- *   npx convex run config:setConfig '{"key": "reservationFeeCents", "value": "20000"}'
+ *   npx convex run config:setConfig '{"key": "paymentsEnabled", "value": "true"}'
  */
 export const CONFIG_DEFAULTS: Record<string, string> = {
   // Camp identity
@@ -30,6 +41,7 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   departureCutoff: "2026-09-06",
 
   // Reservation fee in cents (10000 = $100.00)
+  // NOTE: This key is intentionally NOT runtime-overridable.
   reservationFeeCents: "10000",
 
   // Capacity (0 = unlimited)
@@ -44,22 +56,6 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   // Email allowlist enforcement
   allowlistEnabled: "false",
 };
-
-/**
- * Parse maxMembers from a config string, with NaN guard.
- * Returns 0 (unlimited) only if the raw value is literally "0".
- * Throws on non-numeric / NaN values so a bad config can never
- * silently disable the capacity cap.
- */
-export function parseMaxMembers(raw: string): number {
-  const trimmed = raw.trim();
-  if (!/^\d+$/.test(trimmed)) {
-    throw new Error(
-      `Invalid maxMembers config value: "${raw}". Must be a non-negative integer.`
-    );
-  }
-  return Number(trimmed);
-}
 
 /**
  * Get all configuration values
@@ -77,11 +73,8 @@ export const getConfig = query({
       dbConfigMap[config.key] = config.value;
     }
     
-    // Merge: defaults first, then database overrides
-    return {
-      ...CONFIG_DEFAULTS,
-      ...dbConfigMap,
-    };
+    // Merge defaults with DB values, then enforce non-overridable keys.
+    return mergeConfigValues(CONFIG_DEFAULTS, dbConfigMap);
   },
 });
 
@@ -92,6 +85,10 @@ export const getConfig = query({
 export const getConfigByKey = query({
   args: { key: v.string() },
   handler: async (ctx, args) => {
+    if (!isRuntimeConfigOverrideAllowed(args.key)) {
+      return CONFIG_DEFAULTS[args.key] ?? null;
+    }
+
     const dbConfig = await ctx.db
       .query("config")
       .withIndex("by_key", (q) => q.eq("key", args.key))
@@ -116,6 +113,13 @@ export const setConfig = mutation({
   handler: async (ctx, args) => {
     // Verify ops password
     requireOpsPassword(args.opsPassword);
+
+    if (!isRuntimeConfigOverrideAllowed(args.key)) {
+      throw new Error(
+        `Config key "${args.key}" cannot be overridden at runtime. ` +
+        "Edit CONFIG_DEFAULTS in convex/config.ts instead."
+      );
+    }
 
     const existing = await ctx.db
       .query("config")
@@ -145,7 +149,7 @@ export const setConfig = mutation({
 });
 
 /**
- * Delete a configuration override (reverts to camp.config.ts default)
+ * Delete a configuration override (reverts to convex/config.ts default)
  * Requires ops password
  */
 export const deleteConfig = mutation({

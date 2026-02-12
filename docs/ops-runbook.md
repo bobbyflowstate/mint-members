@@ -127,9 +127,6 @@ npx convex run config:getConfig
 ### Update Config
 
 ```bash
-# Update reservation fee (in cents)
-npx convex run config:setConfig --args '{"key": "reservationFeeCents", "value": "35000"}'
-
 # Update departure cutoff
 npx convex run config:setConfig --args '{"key": "departureCutoff", "value": "2025-09-01"}'
 
@@ -138,8 +135,8 @@ npx convex run config:setConfig --args '{"key": "earliestArrival", "value": "202
 npx convex run config:setConfig --args '{"key": "latestDeparture", "value": "2025-09-02"}'
 ```
 
-> **Note**: For static configuration changes, prefer editing `src/config/camp.config.ts` instead.
-> The database config is for runtime overrides only.
+> **Note**: `reservationFeeCents` is pinned to `convex/config.ts` (`CONFIG_DEFAULTS`) as a single source of truth.
+> To change the reservation fee, edit `convex/config.ts` and redeploy.
 
 ## Emergency Procedures
 
