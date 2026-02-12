@@ -14,7 +14,7 @@ const mockConfig: AppConfig = {
   earliestArrival: "2025-08-22",
   latestDeparture: "2025-09-02",
   departureCutoff: "2025-09-01",
-  reservationFeeCents: "15000",
+  reservationFeeCents: "10000",
   maxMembers: "0",
   applicationsOpen: "true",
 };
@@ -37,8 +37,8 @@ describe("getLandingContent", () => {
     it("should format reservation fee correctly", () => {
       const content = getLandingContent(mockConfig);
       
-      expect(content.reservationFeeCents).toBe(15000);
-      expect(content.reservationFeeFormatted).toBe("$150");
+      expect(content.reservationFeeCents).toBe(10000);
+      expect(content.reservationFeeFormatted).toBe("$100");
     });
 
     it("should format Burning Man dates correctly", () => {
@@ -66,7 +66,7 @@ describe("getLandingContent", () => {
       const content = getLandingContent(mockConfig);
       
       expect(content.expectations).toHaveLength(3);
-      expect(content.expectations[0].title).toBe("Reservation Fee");
+      expect(content.expectations[0].title).toBe("Non Refundable Reservation Fee");
       expect(content.expectations[1].title).toBe("WhatsApp Required");
       expect(content.expectations[2].title).toBe("Departure Commitment");
     });
@@ -113,7 +113,7 @@ describe("getLandingContent", () => {
       const content = getLandingContent(customConfig);
       
       const reservationExpectation = content.expectations.find(
-        (e) => e.title === "Reservation Fee"
+        (e) => e.title === "Non Refundable Reservation Fee"
       );
       
       expect(reservationExpectation?.description).toContain("$400");
