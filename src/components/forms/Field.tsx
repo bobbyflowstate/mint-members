@@ -50,9 +50,9 @@ export const Field = forwardRef<
           className={baseInputStyles}
           {...(rest as SelectHTMLAttributes<HTMLSelectElement>)}
         >
-          <option value="">Select an option</option>
+          <option value="" className="bg-slate-800 text-white">Select an option</option>
           {props.options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} className="bg-slate-800 text-white">
               {option.label}
             </option>
           ))}
