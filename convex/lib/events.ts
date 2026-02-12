@@ -17,6 +17,7 @@ export const EVENT_TYPES = [
   "allowlist_emails_added",
   "allowlist_email_removed",
   "allowlist_emails_removed_bulk",
+  "capacity_exceeded",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -264,6 +265,29 @@ export function buildAllowlistEmailsRemovedBulkPayload(data: {
     type: "allowlist_emails_removed_bulk" as const,
     count: data.count,
     removedBy: data.removedBy,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build payload for capacity_exceeded event
+ * Logged when a payment comes in but camp is already at capacity (race condition)
+ */
+export function buildCapacityExceededPayload(data: {
+  email: string;
+  confirmedCount: number;
+  maxMembers: number;
+  stripeSessionId: string;
+  stripePaymentIntentId?: string;
+}) {
+  return {
+    type: "capacity_exceeded" as const,
+    email: data.email,
+    confirmedCount: data.confirmedCount,
+    maxMembers: data.maxMembers,
+    stripeSessionId: data.stripeSessionId,
+    stripePaymentIntentId: data.stripePaymentIntentId,
+    note: "Payment received after capacity was reached. Automatic refund initiated.",
     timestamp: new Date().toISOString(),
   };
 }

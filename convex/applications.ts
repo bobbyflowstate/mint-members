@@ -9,7 +9,7 @@ import {
   buildOpsOverrideDeniedPayload,
   buildMutationFailedPayload,
 } from "./lib/events";
-import { CONFIG_DEFAULTS } from "./config";
+import { CONFIG_DEFAULTS, parseMaxMembers } from "./config";
 
 /**
  * Create a draft application from form submission
@@ -250,6 +250,37 @@ export const setOpsOverride = mutation({
       newStatus: args.approved ? "pending_payment" : "rejected",
       paymentAllowed: args.approved,
     };
+  },
+});
+
+/**
+ * Get capacity status — how many confirmed reservations vs. the max
+ * Used by frontend to show sold-out state and by backend to enforce the hard cap
+ */
+export const getCapacityStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    // Get max members from config (database override or default)
+    const maxMembersConfig = await ctx.db
+      .query("config")
+      .withIndex("by_key", (q) => q.eq("key", "maxMembers"))
+      .first();
+    const maxMembers = parseMaxMembers(
+      maxMembersConfig?.value ?? CONFIG_DEFAULTS.maxMembers
+    );
+
+    // Count confirmed applications (paid reservations)
+    const confirmed = await ctx.db
+      .query("applications")
+      .withIndex("by_status", (q) => q.eq("status", "confirmed"))
+      .collect();
+    const confirmedCount = confirmed.length;
+
+    // 0 means unlimited
+    const isFull = maxMembers > 0 && confirmedCount >= maxMembers;
+    const spotsRemaining = maxMembers > 0 ? Math.max(0, maxMembers - confirmedCount) : null;
+
+    return { confirmedCount, maxMembers, isFull, spotsRemaining };
   },
 });
 

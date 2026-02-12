@@ -53,7 +53,8 @@ const eventType = v.union(
   v.literal("mutation_failed"),
   v.literal("allowlist_emails_added"),
   v.literal("allowlist_email_removed"),
-  v.literal("allowlist_emails_removed_bulk")
+  v.literal("allowlist_emails_removed_bulk"),
+  v.literal("capacity_exceeded")
 );
 
 export default defineSchema({

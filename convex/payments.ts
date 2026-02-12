@@ -6,7 +6,9 @@ import {
   buildPaymentSuccessPayload,
   buildPaymentFailedPayload,
   buildWebhookErrorPayload,
+  buildCapacityExceededPayload,
 } from "./lib/events";
+import { CONFIG_DEFAULTS, parseMaxMembers } from "./config";
 
 /**
  * Update application with checkout session (internal mutation)
@@ -113,7 +115,54 @@ export const handleCheckoutSuccess = mutation({
       return { success: false, error: "Application not found" };
     }
 
-    // Update application status to confirmed
+    // Idempotency: if already confirmed, return success without re-checking capacity
+    if (application.status === "confirmed") {
+      return { success: true, applicationId: application._id };
+    }
+
+    // === CAPACITY HARD CAP (serialized — race-condition safe) ===
+    // This mutation runs in a serializable transaction, so two concurrent
+    // calls will be serialized. The second one WILL see the first one's write.
+    const maxMembersConfig = await ctx.db
+      .query("config")
+      .withIndex("by_key", (q) => q.eq("key", "maxMembers"))
+      .first();
+    const maxMembers = parseMaxMembers(
+      maxMembersConfig?.value ?? CONFIG_DEFAULTS.maxMembers
+    );
+
+    if (maxMembers > 0) {
+      const confirmed = await ctx.db
+        .query("applications")
+        .withIndex("by_status", (q) => q.eq("status", "confirmed"))
+        .collect();
+
+      if (confirmed.length >= maxMembers) {
+        // Camp is full — do NOT confirm. Flag for automatic refund.
+        await logEvent(ctx, {
+          applicationId: application._id,
+          stripeSessionId: args.stripeSessionId,
+          eventType: "capacity_exceeded",
+          payload: buildCapacityExceededPayload({
+            email: application.email,
+            confirmedCount: confirmed.length,
+            maxMembers,
+            stripeSessionId: args.stripeSessionId,
+            stripePaymentIntentId: args.stripePaymentIntentId,
+          }),
+          actor: "stripe",
+        });
+
+        return {
+          success: false,
+          error: "capacity_exceeded",
+          requiresRefund: true,
+          stripePaymentIntentId: args.stripePaymentIntentId,
+        };
+      }
+    }
+
+    // Under capacity — confirm the reservation
     await ctx.db.patch(application._id, {
       status: "confirmed",
       updatedAt: Date.now(),

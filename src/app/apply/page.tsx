@@ -159,6 +159,7 @@ function ApplicationFormWithCheck({
   const existingApplication = useQuery(api.applications.getMyApplication);
   const config = useQuery(api.config.getConfig);
   const currentUser = useQuery(api.users.currentUser);
+  const capacity = useQuery(api.applications.getCapacityStatus);
 
   // Check if email is allowlisted
   const isEmailAllowed = useQuery(
@@ -167,7 +168,7 @@ function ApplicationFormWithCheck({
   );
 
   // Loading state
-  if (existingApplication === undefined || config === undefined || currentUser === undefined) {
+  if (existingApplication === undefined || config === undefined || currentUser === undefined || capacity === undefined) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
@@ -206,6 +207,38 @@ function ApplicationFormWithCheck({
         <div className="mt-6 text-xs text-slate-500">
           Signed in as: {currentUser?.email}
         </div>
+      </div>
+    );
+  }
+
+  // Camp is full — block everyone except already-confirmed members
+  if (capacity.isFull && existingApplication?.status !== "confirmed") {
+    return (
+      <div className="text-center py-8">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 ring-1 ring-red-500/20">
+          <svg
+            className="h-8 w-8 text-red-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+            />
+          </svg>
+        </div>
+        <h2 className="mt-6 text-xl font-semibold text-white">
+          Camp is Full
+        </h2>
+        <p className="mt-2 text-slate-400 max-w-sm mx-auto">
+          All {capacity.maxMembers} spots have been reserved. We are no longer accepting reservations.
+        </p>
+        <p className="mt-4 text-sm text-slate-500">
+          Questions? Contact us via WhatsApp or email.
+        </p>
       </div>
     );
   }

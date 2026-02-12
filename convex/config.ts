@@ -46,6 +46,22 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
 };
 
 /**
+ * Parse maxMembers from a config string, with NaN guard.
+ * Returns 0 (unlimited) only if the raw value is literally "0".
+ * Throws on non-numeric / NaN values so a bad config can never
+ * silently disable the capacity cap.
+ */
+export function parseMaxMembers(raw: string): number {
+  const trimmed = raw.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    throw new Error(
+      `Invalid maxMembers config value: "${raw}". Must be a non-negative integer.`
+    );
+  }
+  return Number(trimmed);
+}
+
+/**
  * Get all configuration values
  * Returns defaults merged with any database overrides
  */

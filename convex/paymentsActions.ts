@@ -31,14 +31,45 @@ export const verifyAndConfirmPayment = action({
         return { success: false, error: "Payment not completed" };
       }
 
-      // Update application status via mutation
+      const paymentIntentId = typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : undefined;
+
+      // Update application status via mutation (serialized — race-condition safe)
       const result = await ctx.runMutation(api.payments.handleCheckoutSuccess, {
         stripeSessionId: args.stripeSessionId,
         amountCents: session.amount_total ?? 0,
-        stripePaymentIntentId: typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : undefined,
+        stripePaymentIntentId: paymentIntentId,
       });
+
+      // If capacity was exceeded, automatically refund via Stripe
+      if (result.requiresRefund && paymentIntentId) {
+        try {
+          await stripe.refunds.create({ payment_intent: paymentIntentId });
+          console.log(`Auto-refund issued for payment_intent ${paymentIntentId} (capacity exceeded)`);
+          return {
+            success: false,
+            error: "Camp is at full capacity. Your payment has been automatically refunded.",
+          };
+        } catch (refundError) {
+          // Refund may already have been issued by the webhook path
+          const isAlreadyRefunded =
+            refundError instanceof Error &&
+            refundError.message.includes("already been refunded");
+          if (isAlreadyRefunded) {
+            return {
+              success: false,
+              error: "Camp is at full capacity. Your payment has been automatically refunded.",
+            };
+          }
+          // Genuine refund failure — tell the user the truth
+          console.error("Auto-refund failed:", refundError);
+          return {
+            success: false,
+            error: "Camp is at full capacity. We were unable to process your refund automatically — please contact us and we will refund you promptly.",
+          };
+        }
+      }
 
       return { success: result.success ?? false, error: result.error };
     } catch (error) {
@@ -86,6 +117,15 @@ export const createReservationCheckout = action({
     if (!paymentsEnabled) {
       throw new Error("Payments are currently disabled");
     }
+
+    // Enforce capacity hard cap — reject if camp is full
+    const capacity = await ctx.runQuery(api.applications.getCapacityStatus, {});
+    if (capacity.isFull) {
+      throw new Error(
+        "Camp is at full capacity. No more reservations are being accepted."
+      );
+    }
+
     const reservationFeeCents = parseInt(config.reservationFeeCents, 10);
 
     // Create Stripe client
