@@ -35,6 +35,36 @@ export const verifyAndConfirmPayment = action({
         ? session.payment_intent
         : undefined;
 
+      // Check if the payment has already been refunded (e.g. capacity-exceeded
+      // auto-refund). Stripe keeps payment_status as "paid" after a refund, so
+      // we must check the PaymentIntent directly to avoid re-confirming a
+      // refunded payment on back-button / page revisit.
+      if (paymentIntentId) {
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (
+          paymentIntent.status === "canceled" ||
+          (paymentIntent.latest_charge &&
+            typeof paymentIntent.latest_charge !== "string" &&
+            paymentIntent.latest_charge.refunded)
+        ) {
+          return {
+            success: false,
+            error: "This payment has already been refunded.",
+          };
+        }
+        // Also check via refunds list (handles expanded vs non-expanded charge)
+        const refunds = await stripe.refunds.list({
+          payment_intent: paymentIntentId,
+          limit: 1,
+        });
+        if (refunds.data.length > 0) {
+          return {
+            success: false,
+            error: "This payment has already been refunded.",
+          };
+        }
+      }
+
       // Update application status via mutation (serialized — race-condition safe)
       const result = await ctx.runMutation(api.payments.handleCheckoutSuccess, {
         stripeSessionId: args.stripeSessionId,
@@ -43,10 +73,34 @@ export const verifyAndConfirmPayment = action({
       });
 
       // If capacity was exceeded, automatically refund via Stripe
+      if (result.requiresRefund && !paymentIntentId) {
+        // Can't refund without payment_intent — log for ops
+        console.error(`Capacity exceeded but no paymentIntentId for session ${args.stripeSessionId}`);
+
+        await ctx.runMutation(api.payments.logRefundOutcome, {
+          stripeSessionId: args.stripeSessionId,
+          refundSucceeded: false,
+          error: "payment_intent missing from checkout session — manual refund required",
+        });
+
+        return {
+          success: false,
+          error: "Camp is at full capacity. We were unable to process your refund automatically — please contact us and we will refund you promptly.",
+        };
+      }
+
       if (result.requiresRefund && paymentIntentId) {
         try {
           await stripe.refunds.create({ payment_intent: paymentIntentId });
           console.log(`Auto-refund issued for payment_intent ${paymentIntentId} (capacity exceeded)`);
+
+          // Log success so ops can see the refund completed
+          await ctx.runMutation(api.payments.logRefundOutcome, {
+            stripeSessionId: args.stripeSessionId,
+            stripePaymentIntentId: paymentIntentId,
+            refundSucceeded: true,
+          });
+
           return {
             success: false,
             error: "Camp is at full capacity. Your payment has been automatically refunded.",
@@ -57,13 +111,29 @@ export const verifyAndConfirmPayment = action({
             refundError instanceof Error &&
             refundError.message.includes("already been refunded");
           if (isAlreadyRefunded) {
+            // Already refunded is still a success from ops' perspective
+            await ctx.runMutation(api.payments.logRefundOutcome, {
+              stripeSessionId: args.stripeSessionId,
+              stripePaymentIntentId: paymentIntentId,
+              refundSucceeded: true,
+            });
+
             return {
               success: false,
               error: "Camp is at full capacity. Your payment has been automatically refunded.",
             };
           }
-          // Genuine refund failure — tell the user the truth
+          // Genuine refund failure — tell the user the truth and log for ops
+          const errorMsg = refundError instanceof Error ? refundError.message : "Unknown error";
           console.error("Auto-refund failed:", refundError);
+
+          await ctx.runMutation(api.payments.logRefundOutcome, {
+            stripeSessionId: args.stripeSessionId,
+            stripePaymentIntentId: paymentIntentId,
+            refundSucceeded: false,
+            error: errorMsg,
+          });
+
           return {
             success: false,
             error: "Camp is at full capacity. We were unable to process your refund automatically — please contact us and we will refund you promptly.",

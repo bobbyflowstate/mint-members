@@ -77,7 +77,7 @@ function SuccessContent() {
             {errorMessage || "We couldn't verify your payment."}
           </p>
           <p className="mt-2 text-sm text-slate-400">
-            If you completed payment, please contact us. Your payment is safe.
+            If there are any issues, please contact us. Your payment is safe.
           </p>
           <div className="mt-8 flex gap-4 justify-center">
             <Link

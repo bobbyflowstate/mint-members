@@ -77,6 +77,14 @@ export async function POST(request: NextRequest) {
           console.error(
             `Capacity exceeded but no paymentIntentId for session ${session.id}. Returning 500 for retry.`
           );
+
+          // Log so ops can find this when filtering by capacity_exceeded
+          await convex.mutation(api.payments.logRefundOutcome, {
+            stripeSessionId: session.id,
+            refundSucceeded: false,
+            error: "payment_intent missing from checkout session — manual refund required",
+          });
+
           return NextResponse.json(
             { error: "Cannot refund: missing payment_intent" },
             { status: 500 }
@@ -86,21 +94,54 @@ export async function POST(request: NextRequest) {
         try {
           await stripe.refunds.create({ payment_intent: paymentIntentId });
           console.log(`Auto-refund issued for payment_intent ${paymentIntentId} (capacity exceeded)`);
+
+          // Log success so ops can see the refund completed
+          await convex.mutation(api.payments.logRefundOutcome, {
+            stripeSessionId: session.id,
+            stripePaymentIntentId: paymentIntentId,
+            refundSucceeded: true,
+          });
         } catch (refundError) {
           const isAlreadyRefunded =
             refundError instanceof Error &&
             refundError.message.includes("already been refunded");
-          if (!isAlreadyRefunded) {
+          if (isAlreadyRefunded) {
+            // Already refunded — still log success for ops
+            await convex.mutation(api.payments.logRefundOutcome, {
+              stripeSessionId: session.id,
+              stripePaymentIntentId: paymentIntentId,
+              refundSucceeded: true,
+            });
+          } else {
+            // Genuine failure — log for ops and return 500 so Stripe retries
+            const errorMsg = refundError instanceof Error ? refundError.message : "Unknown error";
             console.error("Auto-refund failed, returning 500 for Stripe retry:", refundError);
+
+            await convex.mutation(api.payments.logRefundOutcome, {
+              stripeSessionId: session.id,
+              stripePaymentIntentId: paymentIntentId,
+              refundSucceeded: false,
+              error: errorMsg,
+            });
+
             return NextResponse.json(
               { error: "Refund failed, please retry" },
               { status: 500 }
             );
           }
-          // Already refunded (e.g. success-page path got there first) — OK
         }
-      } else {
+      } else if (result.success) {
         console.log(`Payment successful for session: ${session.id}`);
+      } else {
+        // Mutation returned failure without requiring refund (e.g. application
+        // not found). The mutation already logged the error internally.
+        // Return 500 so Stripe retries — the application record may appear
+        // on a subsequent attempt (e.g. replication lag).
+        console.error(`Payment confirmation failed for session ${session.id}: ${result.error}`);
+        return NextResponse.json(
+          { error: result.error ?? "Payment confirmation failed" },
+          { status: 500 }
+        );
       }
 
       return NextResponse.json({ received: true }, { status: 200 });

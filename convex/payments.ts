@@ -230,6 +230,44 @@ export const handleCheckoutFailed = mutation({
 });
 
 /**
+ * Log the outcome of a capacity-exceeded refund attempt.
+ * Called by the action / webhook AFTER attempting the Stripe refund,
+ * so ops can see at a glance whether manual intervention is needed.
+ */
+export const logRefundOutcome = mutation({
+  args: {
+    stripeSessionId: v.string(),
+    stripePaymentIntentId: v.optional(v.string()),
+    refundSucceeded: v.boolean(),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Link to the application for context
+    const applications = await ctx.db.query("applications").collect();
+    const application = applications.find(
+      (app) => app.checkoutSessionId === args.stripeSessionId
+    );
+
+    await logEvent(ctx, {
+      applicationId: application?._id,
+      stripeSessionId: args.stripeSessionId,
+      eventType: "capacity_exceeded",
+      payload: {
+        type: args.refundSucceeded ? "refund_success" : "refund_failed",
+        email: application?.email,
+        stripeSessionId: args.stripeSessionId,
+        stripePaymentIntentId: args.stripePaymentIntentId,
+        note: args.refundSucceeded
+          ? "Automatic refund completed successfully. No manual action needed."
+          : `REFUND FAILED — manual refund required via Stripe dashboard. Error: ${args.error ?? "unknown"}`,
+        timestamp: new Date().toISOString(),
+      },
+      actor: "stripe",
+    });
+  },
+});
+
+/**
  * Log webhook error (called from webhook route)
  */
 export const logWebhookError = mutation({

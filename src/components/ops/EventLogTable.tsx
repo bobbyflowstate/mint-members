@@ -11,6 +11,7 @@ const EVENT_TYPE_STYLES: Record<string, { bg: string; text: string }> = {
   payment_initiated: { bg: "bg-purple-500/20", text: "text-purple-400" },
   payment_success: { bg: "bg-emerald-500/20", text: "text-emerald-400" },
   payment_failed: { bg: "bg-red-500/20", text: "text-red-400" },
+  capacity_exceeded: { bg: "bg-red-500/20", text: "text-red-400" },
   ops_override_granted: { bg: "bg-emerald-500/20", text: "text-emerald-400" },
   ops_override_denied: { bg: "bg-red-500/20", text: "text-red-400" },
   webhook_error: { bg: "bg-red-500/20", text: "text-red-400" },
@@ -23,6 +24,7 @@ const EVENT_TYPES = [
   "payment_initiated",
   "payment_success",
   "payment_failed",
+  "capacity_exceeded",
   "ops_override_granted",
   "ops_override_denied",
   "webhook_error",
@@ -141,7 +143,7 @@ export function EventLogTable() {
                       <div className="text-sm text-slate-400">{event.actor}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-slate-400 max-w-md truncate">
+                      <div className="text-sm text-slate-400 max-w-md">
                         {!!payload.email && (
                           <span className="text-white">{String(payload.email)}</span>
                         )}
@@ -151,8 +153,34 @@ export function EventLogTable() {
                         {!!payload.reason && (
                           <span> - {String(payload.reason)}</span>
                         )}
-                        {!payload.email && !payload.error && !payload.reason && (
-                          <span className="text-slate-500">
+                        {!!payload.note && (
+                          <div className={clsx(
+                            "text-xs mt-1",
+                            payload.type === "refund_failed" ? "text-red-400 font-semibold" :
+                            payload.type === "refund_success" ? "text-emerald-400" :
+                            "text-amber-400"
+                          )}>
+                            {String(payload.note)}
+                          </div>
+                        )}
+                        {!!payload.stripePaymentIntentId && (
+                          <div className="mt-1">
+                            <span className="text-xs text-slate-500">Payment Intent: </span>
+                            <code className="text-xs text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded select-all">
+                              {String(payload.stripePaymentIntentId)}
+                            </code>
+                          </div>
+                        )}
+                        {!!payload.stripeSessionId && (
+                          <div className="mt-0.5">
+                            <span className="text-xs text-slate-500">Session: </span>
+                            <code className="text-xs text-slate-400 bg-white/5 px-1.5 py-0.5 rounded select-all">
+                              {String(payload.stripeSessionId)}
+                            </code>
+                          </div>
+                        )}
+                        {!payload.email && !payload.error && !payload.reason && !payload.stripePaymentIntentId && (
+                          <span className="text-slate-500 truncate block">
                             {event.payload.substring(0, 100)}...
                           </span>
                         )}

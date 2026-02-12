@@ -287,7 +287,7 @@ export function buildCapacityExceededPayload(data: {
     maxMembers: data.maxMembers,
     stripeSessionId: data.stripeSessionId,
     stripePaymentIntentId: data.stripePaymentIntentId,
-    note: "Payment received after capacity was reached. Automatic refund initiated.",
+    note: "Payment received after capacity was reached. Automatic refund pending.",
     timestamp: new Date().toISOString(),
   };
 }
