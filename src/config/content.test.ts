@@ -105,6 +105,19 @@ describe("getLandingContent", () => {
   });
 
   describe("expectations content", () => {
+    it("should not fall back to legacy hardcoded fee copy", () => {
+      const content = getLandingContent(mockConfig);
+
+      expect(content.reservationFeeFormatted).toBe("$100");
+      expect(content.reservationFeeFormatted).not.toBe("$150");
+
+      const reservationExpectation = content.expectations.find(
+        (e) => e.title === "Non Refundable Reservation Fee"
+      );
+      expect(reservationExpectation?.description).toContain("$100");
+      expect(reservationExpectation?.description).not.toContain("$150");
+    });
+
     it("should include reservation fee amount in expectations", () => {
       const customConfig: AppConfig = {
         ...mockConfig,

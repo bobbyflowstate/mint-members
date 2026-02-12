@@ -11,7 +11,7 @@ import { requireOpsPassword } from "./lib/auth";
  * served to both frontend and backend from Convex.
  * 
  * To override at runtime without redeploying:
- *   npx convex run config:setConfig '{"key": "reservationFeeCents", "value": "20000"}'
+ *   npx convex run config:setConfig '{"key": "paymentsEnabled", "value": "true"}'
  */
 export const CONFIG_DEFAULTS: Record<string, string> = {
   // Camp identity
@@ -30,6 +30,7 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   departureCutoff: "2026-09-06",
 
   // Reservation fee in cents (10000 = $100.00)
+  // NOTE: This key is intentionally NOT runtime-overridable.
   reservationFeeCents: "10000",
 
   // Capacity (0 = unlimited)
@@ -44,6 +45,35 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   // Email allowlist enforcement
   allowlistEnabled: "false",
 };
+
+/**
+ * Config keys that must always come from CONFIG_DEFAULTS.
+ * We keep reservationFeeCents immutable to prevent stale runtime overrides
+ * from drifting user-facing pricing copy away from the repo source of truth.
+ */
+const NON_OVERRIDABLE_CONFIG_KEYS = new Set(["reservationFeeCents"]);
+
+export function isRuntimeConfigOverrideAllowed(key: string): boolean {
+  return !NON_OVERRIDABLE_CONFIG_KEYS.has(key);
+}
+
+export function mergeConfigValues(
+  defaults: Record<string, string>,
+  overrides: Record<string, string>
+): Record<string, string> {
+  const merged = {
+    ...defaults,
+    ...overrides,
+  };
+
+  for (const key of NON_OVERRIDABLE_CONFIG_KEYS) {
+    if (key in defaults) {
+      merged[key] = defaults[key];
+    }
+  }
+
+  return merged;
+}
 
 /**
  * Parse maxMembers from a config string, with NaN guard.
@@ -77,11 +107,8 @@ export const getConfig = query({
       dbConfigMap[config.key] = config.value;
     }
     
-    // Merge: defaults first, then database overrides
-    return {
-      ...CONFIG_DEFAULTS,
-      ...dbConfigMap,
-    };
+    // Merge defaults with DB values, then enforce non-overridable keys.
+    return mergeConfigValues(CONFIG_DEFAULTS, dbConfigMap);
   },
 });
 
@@ -92,6 +119,10 @@ export const getConfig = query({
 export const getConfigByKey = query({
   args: { key: v.string() },
   handler: async (ctx, args) => {
+    if (!isRuntimeConfigOverrideAllowed(args.key)) {
+      return CONFIG_DEFAULTS[args.key] ?? null;
+    }
+
     const dbConfig = await ctx.db
       .query("config")
       .withIndex("by_key", (q) => q.eq("key", args.key))
@@ -116,6 +147,13 @@ export const setConfig = mutation({
   handler: async (ctx, args) => {
     // Verify ops password
     requireOpsPassword(args.opsPassword);
+
+    if (!isRuntimeConfigOverrideAllowed(args.key)) {
+      throw new Error(
+        `Config key "${args.key}" cannot be overridden at runtime. ` +
+        "Edit CONFIG_DEFAULTS in convex/config.ts instead."
+      );
+    }
 
     const existing = await ctx.db
       .query("config")
