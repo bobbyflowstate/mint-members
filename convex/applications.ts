@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { getCurrentUserEmail, requireOpsPassword } from "./lib/auth";
 import {
   logEvent,
   buildFormSubmittedPayload,
@@ -168,6 +169,101 @@ export const createDraftApplication = mutation({
       });
       throw error;
     }
+  },
+});
+
+/**
+ * One-off admin backfill:
+ * Re-evaluate existing applications against the current departure cutoff and
+ * move eligible pending_payment applications into needs_ops_review.
+ */
+export const backfillNeedsOpsReviewFromCutoff = mutation({
+  args: {
+    opsPassword: v.string(),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+
+    const dryRun = args.dryRun ?? false;
+    const now = Date.now();
+    const actor = await getCurrentUserEmail(ctx);
+
+    // Get current cutoff from config (database override or default)
+    const cutoffConfig = await ctx.db
+      .query("config")
+      .withIndex("by_key", (q) => q.eq("key", "departureCutoff"))
+      .first();
+    const departureCutoff = cutoffConfig?.value ?? CONFIG_DEFAULTS.departureCutoff;
+
+    const allApplications = await ctx.db.query("applications").collect();
+
+    let eligibleForReview = 0;
+    let alreadyNeedsReview = 0;
+    let skippedNonPendingPayment = 0;
+    let wouldUpdate = 0;
+    let updated = 0;
+
+    const cutoffDate = new Date(departureCutoff);
+
+    for (const application of allApplications) {
+      const departureDate = new Date(application.departure);
+      const requiresOpsReview = departureDate < cutoffDate;
+
+      if (!requiresOpsReview) {
+        continue;
+      }
+
+      eligibleForReview += 1;
+
+      if (application.status === "needs_ops_review") {
+        alreadyNeedsReview += 1;
+        continue;
+      }
+
+      if (application.status !== "pending_payment") {
+        skippedNonPendingPayment += 1;
+        continue;
+      }
+
+      wouldUpdate += 1;
+
+      if (dryRun) {
+        continue;
+      }
+
+      await ctx.db.patch(application._id, {
+        status: "needs_ops_review",
+        earlyDepartureRequested: true,
+        paymentAllowed: false,
+        updatedAt: now,
+      });
+
+      await logEvent(ctx, {
+        applicationId: application._id,
+        eventType: "invalid_departure",
+        payload: buildInvalidDeparturePayload({
+          email: application.email,
+          requestedDeparture: application.departure,
+          cutoffDate: departureCutoff,
+        }),
+        actor,
+      });
+
+      updated += 1;
+    }
+
+    return {
+      success: true,
+      dryRun,
+      departureCutoff,
+      scanned: allApplications.length,
+      eligibleForReview,
+      alreadyNeedsReview,
+      skippedNonPendingPayment,
+      wouldUpdate,
+      updated,
+    };
   },
 });
 
