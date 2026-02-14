@@ -46,6 +46,7 @@ export default function OpsHomePage() {
   );
   const [showBackfillDialog, setShowBackfillDialog] = useState(false);
   const [backfillConfirmationText, setBackfillConfirmationText] = useState("");
+  const [backfillDryRun, setBackfillDryRun] = useState(true);
 
   const paymentsEnabled = isFlagEnabled(config?.paymentsEnabled);
 
@@ -117,7 +118,7 @@ export default function OpsHomePage() {
     try {
       const result = await runCutoffBackfill({
         opsPassword,
-        dryRun: false,
+        dryRun: backfillDryRun,
       });
       setBackfillResult(result as BackfillResult);
     } catch (error) {
@@ -218,6 +219,12 @@ export default function OpsHomePage() {
 
           {backfillResult && (
             <div className="mt-4 rounded-lg bg-slate-900/60 p-4 ring-1 ring-white/10">
+              <p className="text-xs text-slate-400">
+                Mode:{" "}
+                <span className="font-semibold text-white">
+                  {backfillResult.dryRun ? "Dry run (no updates applied)" : "Live update"}
+                </span>
+              </p>
               <p className="text-sm text-slate-200">
                 Cutoff:{" "}
                 <span className="font-mono text-white">
@@ -376,6 +383,18 @@ export default function OpsHomePage() {
                 <span className="font-mono text-amber-300">needs_ops_review</span>{" "}
                 and disable payment for those records.
               </p>
+              <label className="flex items-start gap-3 rounded-lg bg-slate-800/70 px-3 py-3 ring-1 ring-white/10">
+                <input
+                  type="checkbox"
+                  checked={backfillDryRun}
+                  onChange={(e) => setBackfillDryRun(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                />
+                <span className="text-sm text-slate-200">
+                  Run as <span className="font-semibold text-white">dry run</span>{" "}
+                  (preview only, do not modify applications)
+                </span>
+              </label>
               <p className="text-sm text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg p-3">
                 This action is intended as a one-off migration and should only be run
                 when needed.
@@ -414,7 +433,7 @@ export default function OpsHomePage() {
                 disabled={!isBackfillConfirmationValid || isBackfillRunning}
                 className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-amber-600"
               >
-                Run Backfill
+                {backfillDryRun ? "Run Dry Run" : "Run Backfill"}
               </button>
             </div>
           </div>
