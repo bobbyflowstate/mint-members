@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
-import type { ArrivalDepartureTime } from "../lib/applications/types";
-import { ARRIVAL_DEPARTURE_TIMES } from "../lib/applications/types";
+import type { ArrivalDepartureTime } from "@/lib/applications/types";
+import { ARRIVAL_DEPARTURE_TIMES } from "@/lib/applications/types";
 
 /**
  * Configuration type from Convex config query
