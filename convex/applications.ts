@@ -340,6 +340,29 @@ export const listNeedingReview = query({
 });
 
 /**
+ * List all signups ordered by creation date (newest first)
+ */
+export const listSignups = query({
+  args: {},
+  handler: async (ctx) => {
+    const signups = await ctx.db
+      .query("applications")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .collect();
+
+    return signups.map((signup) => ({
+      _id: signup._id,
+      firstName: signup.firstName,
+      lastName: signup.lastName,
+      email: signup.email,
+      phone: signup.phone,
+      createdAt: signup.createdAt,
+    }));
+  },
+});
+
+/**
  * List all applications with optional status filter
  */
 export const list = query({
