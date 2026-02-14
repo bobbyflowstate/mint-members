@@ -8,7 +8,7 @@ import {
 const DEFAULTS = {
   reservationFeeCents: "10000",
   paymentsEnabled: "false",
-  departureCutoff: "2026-09-07",
+  departureCutoff: "2026-09-06",
 };
 
 describe("config override policy", () => {

@@ -11,6 +11,9 @@ import type {
 } from "./types";
 import { DIETARY_PREFERENCES, ARRIVAL_DEPARTURE_TIMES } from "./types";
 
+const LAST_DEPARTURE_TIME =
+  ARRIVAL_DEPARTURE_TIMES[ARRIVAL_DEPARTURE_TIMES.length - 1];
+
 /**
  * Normalize phone number by removing spaces, dashes, and parentheses
  */
@@ -161,9 +164,17 @@ export function validateApplicationInput(
       });
     }
 
-    // Check for early departure (before cutoff)
+    // Check for early departure (before cutoff date, or on cutoff date before final time slot)
     const cutoff = dayjs(config.departureCutoff);
-    if (departure.isBefore(cutoff, "day")) {
+    const departureTime = trimmedInput.departureTime as ArrivalDepartureTime | undefined;
+    const departsBeforeFinalCutoffSlot =
+      departure.isSame(cutoff, "day") &&
+      !!departureTime &&
+      ARRIVAL_DEPARTURE_TIMES.includes(departureTime) &&
+      ARRIVAL_DEPARTURE_TIMES.indexOf(departureTime) <
+        ARRIVAL_DEPARTURE_TIMES.indexOf(LAST_DEPARTURE_TIME);
+
+    if (departure.isBefore(cutoff, "day") || departsBeforeFinalCutoffSlot) {
       requiresOpsReview = true;
       errors.push({
         field: "departure",

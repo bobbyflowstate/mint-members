@@ -18,11 +18,39 @@ import { CONFIG_DEFAULTS, parseMaxMembers } from "./config";
 /**
  * Time of arrival/departure options
  */
+const ARRIVAL_DEPARTURE_TIMES = [
+  "12:01 am to 11.00 am",
+  "11.01 am to 6.00 pm",
+  "6.01 pm to 12.00 am",
+] as const;
+
 const arrivalDepartureTime = v.union(
-  v.literal("12:01 am to 11.00 am"),
-  v.literal("11.01 am to 6.00 pm"),
-  v.literal("6.01 pm to 12.00 am")
+  v.literal(ARRIVAL_DEPARTURE_TIMES[0]),
+  v.literal(ARRIVAL_DEPARTURE_TIMES[1]),
+  v.literal(ARRIVAL_DEPARTURE_TIMES[2])
 );
+
+const LAST_DEPARTURE_TIME =
+  ARRIVAL_DEPARTURE_TIMES[ARRIVAL_DEPARTURE_TIMES.length - 1];
+
+function requiresOpsReviewForDeparture(
+  departureDate: string,
+  departureTime: (typeof ARRIVAL_DEPARTURE_TIMES)[number],
+  departureCutoff: string
+): boolean {
+  if (departureDate < departureCutoff) {
+    return true;
+  }
+
+  if (departureDate > departureCutoff) {
+    return false;
+  }
+
+  return (
+    ARRIVAL_DEPARTURE_TIMES.indexOf(departureTime) <
+    ARRIVAL_DEPARTURE_TIMES.indexOf(LAST_DEPARTURE_TIME)
+  );
+}
 
 export const createDraftApplication = mutation({
   args: {
@@ -89,10 +117,12 @@ export const createDraftApplication = mutation({
       .first();
     const departureCutoff = cutoffConfig?.value ?? CONFIG_DEFAULTS.departureCutoff;
 
-    // Check if departure is before cutoff (requires ops review)
-    const departureDate = new Date(args.departure);
-    const cutoffDate = new Date(departureCutoff);
-    const requiresOpsReview = departureDate < cutoffDate;
+    // Check if departure is before cutoff (date-only), or on cutoff day before final time slot
+    const requiresOpsReview = requiresOpsReviewForDeparture(
+      args.departure,
+      args.departureTime,
+      departureCutoff
+    );
 
     // Determine initial status and payment allowed
     const status = requiresOpsReview ? "needs_ops_review" : "pending_payment";

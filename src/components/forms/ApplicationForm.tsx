@@ -110,8 +110,15 @@ function ApplicationFormInner({
   });
 
   const watchDeparture = watch("departure");
+  const watchDepartureTime = watch("departureTime");
   const watchAllergyFlag = watch("allergyFlag");
-  const showEarlyDepartureWarning = watchDeparture && requiresOpsReview(watchDeparture, config.departureCutoff);
+  const showEarlyDepartureWarning =
+    !!watchDeparture &&
+    requiresOpsReview(
+      watchDeparture,
+      watchDepartureTime || undefined,
+      config.departureCutoff
+    );
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
