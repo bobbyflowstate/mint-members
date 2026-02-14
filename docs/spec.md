@@ -20,7 +20,7 @@ Basic landing page
 3. Email   
 4. Phone number (This should be the number you use WhatsApp on.  If you don’t use WhatsApp, install it now- it is required)  
 5. Select Arrival Date and time  
-6. Select Departure Date and time (if dept date is before Sunday at X, payment is disabled.  Message instructs users to reach out via email to OPS for early departure authorization). OPS can then authorize (or not)  
+6. Select Departure Date and time (if dept date is before Monday at X, payment is disabled.  Message instructs users to reach out via email to OPS for early departure authorization). OPS can then authorize (or not)  
 7. Food allergy  
    1. Yes / No   
    2. If yes, please describe.   
