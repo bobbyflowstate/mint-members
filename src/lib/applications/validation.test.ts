@@ -16,7 +16,7 @@ const validInput: ApplicationFormInput = {
   arrival: "2025-08-22",
   arrivalTime: "12:01 am to 11.00 am",
   departure: "2025-09-01",
-  departureTime: "6.01 pm to 12.00 am",
+  departureTime: "12:01 am to 11.00 am",
   dietaryPreference: "omnivore",
   allergyFlag: false,
 };
@@ -503,21 +503,6 @@ describe("validateApplicationInput", () => {
       );
       expect(earlyDepartureError).toBeDefined();
       expect(result.success).toBe(true); // Still succeeds
-    });
-
-    it("should require ops review on cutoff date when departing before final slot", () => {
-      const input = {
-        ...validInput,
-        departure: "2025-09-01",
-        departureTime: "11.01 am to 6.00 pm",
-      };
-      const result = validateApplicationInput(input, testConfig);
-
-      expect(result.success).toBe(true);
-      expect(result.requiresOpsReview).toBe(true);
-      expect(
-        result.errors.some((e) => e.code === ErrorCodes.EARLY_DEPARTURE)
-      ).toBe(true);
     });
 
     it("should handle departure exactly on cutoff", () => {

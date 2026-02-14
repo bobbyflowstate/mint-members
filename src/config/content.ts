@@ -1,6 +1,4 @@
 import dayjs from "dayjs";
-import type { ArrivalDepartureTime } from "@/lib/applications/types";
-import { ARRIVAL_DEPARTURE_TIMES } from "@/lib/applications/types";
 
 /**
  * Configuration type from Convex config query
@@ -55,9 +53,6 @@ export interface LandingContent {
     description: string;
   }[];
 }
-
-const LAST_DEPARTURE_TIME =
-  ARRIVAL_DEPARTURE_TIMES[ARRIVAL_DEPARTURE_TIMES.length - 1];
 
 /**
  * Format a date string for display
@@ -157,26 +152,10 @@ export function getLandingContent(config: AppConfig): LandingContent {
  */
 export function requiresOpsReview(
   departureDate: string,
-  departureTime: ArrivalDepartureTime | "" | undefined,
   departureCutoff: string
 ): boolean {
   const departure = dayjs(departureDate);
   const cutoff = dayjs(departureCutoff);
-
-  if (departure.isBefore(cutoff, "day")) {
-    return true;
-  }
-
-  if (departure.isAfter(cutoff, "day")) {
-    return false;
-  }
-
-  if (!departureTime) {
-    return false;
-  }
-
-  return (
-    ARRIVAL_DEPARTURE_TIMES.indexOf(departureTime) <
-    ARRIVAL_DEPARTURE_TIMES.indexOf(LAST_DEPARTURE_TIME)
-  );
+  
+  return departure.isBefore(cutoff, "day");
 }

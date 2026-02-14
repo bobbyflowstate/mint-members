@@ -150,57 +150,28 @@ describe("getLandingContent", () => {
 
 describe("requiresOpsReview", () => {
   it("should return true when departure is before cutoff", () => {
-    const result = requiresOpsReview(
-      "2025-08-30",
-      "6.01 pm to 12.00 am",
-      "2025-09-01"
-    );
+    const result = requiresOpsReview("2025-08-30", "2025-09-01");
     expect(result).toBe(true);
   });
 
-  it("should return true when departure is on cutoff date but before last time slot", () => {
-    const result = requiresOpsReview(
-      "2025-09-01",
-      "11.01 am to 6.00 pm",
-      "2025-09-01"
-    );
-    expect(result).toBe(true);
-  });
-
-  it("should return false when departure is on cutoff date in the last time slot", () => {
-    const result = requiresOpsReview(
-      "2025-09-01",
-      "6.01 pm to 12.00 am",
-      "2025-09-01"
-    );
+  it("should return false when departure is on cutoff date", () => {
+    const result = requiresOpsReview("2025-09-01", "2025-09-01");
     expect(result).toBe(false);
   });
 
   it("should return false when departure is after cutoff", () => {
-    const result = requiresOpsReview(
-      "2025-09-02",
-      "12:01 am to 11.00 am",
-      "2025-09-01"
-    );
+    const result = requiresOpsReview("2025-09-02", "2025-09-01");
     expect(result).toBe(false);
   });
 
   it("should handle year boundaries correctly", () => {
     // Departure in previous year should require review
-    const result = requiresOpsReview(
-      "2024-12-31",
-      "6.01 pm to 12.00 am",
-      "2025-01-01"
-    );
+    const result = requiresOpsReview("2024-12-31", "2025-01-01");
     expect(result).toBe(true);
   });
 
   it("should handle one day before cutoff", () => {
-    const result = requiresOpsReview(
-      "2025-08-31",
-      "12:01 am to 11.00 am",
-      "2025-09-01"
-    );
+    const result = requiresOpsReview("2025-08-31", "2025-09-01");
     expect(result).toBe(true);
   });
 });
