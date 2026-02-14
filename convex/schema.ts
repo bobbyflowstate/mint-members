@@ -88,7 +88,8 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_email", ["email"])
     .index("by_arrival", ["arrival"])
-    .index("by_departure", ["departure"]),
+    .index("by_departure", ["departure"])
+    .index("by_createdAt", ["createdAt"]),
 
   /**
    * Ops authorizations - tracks approval/denial of early departure requests
