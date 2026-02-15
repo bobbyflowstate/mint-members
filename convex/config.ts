@@ -38,7 +38,7 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   latestDeparture: "2026-09-09",
 
   // Departure cutoff - leaving before this requires ops approval
-  departureCutoff: "2026-09-06",
+  departureCutoff: "2026-09-07",
 
   // Reservation fee in cents (10000 = $100.00)
   // NOTE: This key is intentionally NOT runtime-overridable.
