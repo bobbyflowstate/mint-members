@@ -24,9 +24,11 @@ function formatDateForDisplay(dateValue: string | undefined) {
 }
 
 export function SignupsTable() {
-  const signups = useQuery(api.applications.listSignups);
+  // Pull full application docs so ops can see attendance fields even if the
+  // lightweight signup projection is stale in an older backend deployment.
+  const applications = useQuery(api.applications.list, { limit: 5000 });
 
-  if (signups === undefined) {
+  if (applications === undefined) {
     return (
       <div className="text-center py-12">
         <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto" />
@@ -34,6 +36,10 @@ export function SignupsTable() {
       </div>
     );
   }
+
+  const signups = [...applications].sort(
+    (a, b) => (b.createdAt ?? b._creationTime) - (a.createdAt ?? a._creationTime)
+  );
 
   return (
     <div className="space-y-4">
