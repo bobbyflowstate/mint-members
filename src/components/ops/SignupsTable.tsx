@@ -3,6 +3,26 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
+function formatDateForDisplay(dateValue: string | undefined) {
+  if (!dateValue) {
+    return "Not specified";
+  }
+
+  const parts = dateValue.split("-");
+  if (parts.length === 3) {
+    const [year, month, day] = parts.map(Number);
+    if ([year, month, day].every(Number.isFinite)) {
+      return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+  }
+
+  return dateValue;
+}
+
 export function SignupsTable() {
   const signups = useQuery(api.applications.listSignups);
 
@@ -44,6 +64,12 @@ export function SignupsTable() {
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Phone #
                 </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Arrival (Date / Time)
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Departure (Date / Time)
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -60,6 +86,22 @@ export function SignupsTable() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                     {signup.phone}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-slate-300">
+                      {formatDateForDisplay(signup.arrival)}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {signup.arrivalTime ?? "Not specified"}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-slate-300">
+                      {formatDateForDisplay(signup.departure)}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {signup.departureTime ?? "Not specified"}
+                    </div>
                   </td>
                 </tr>
               ))}
