@@ -453,6 +453,10 @@ export const listSignups = query({
       lastName: signup.lastName,
       email: signup.email,
       phone: signup.phone,
+      arrival: signup.arrival,
+      arrivalTime: signup.arrivalTime,
+      departure: signup.departure,
+      departureTime: signup.departureTime,
       createdAt: signup.createdAt,
     }));
   },
