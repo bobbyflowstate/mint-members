@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AuthGate } from "@/components/ops/AuthGate";
@@ -20,11 +20,12 @@ const navigation = [
 
 export default function OpsLayout({ children }: OpsLayoutProps) {
   const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileMenuPath, setMobileMenuPath] = useState<string | null>(null);
+  const isMobileMenuOpen = mobileMenuPath === pathname;
 
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+  const toggleMobileMenu = () => {
+    setMobileMenuPath((currentPath) => (currentPath === pathname ? null : pathname));
+  };
 
   return (
     <AuthGate>
@@ -65,7 +66,7 @@ export default function OpsLayout({ children }: OpsLayoutProps) {
               </nav>
               <button
                 type="button"
-                onClick={() => setIsMobileMenuOpen((open) => !open)}
+                onClick={toggleMobileMenu}
                 aria-expanded={isMobileMenuOpen}
                 aria-controls="ops-mobile-navigation"
                 aria-label="Toggle ops navigation menu"
@@ -104,6 +105,7 @@ export default function OpsLayout({ children }: OpsLayoutProps) {
                     <Link
                       key={item.name}
                       href={item.href}
+                      onClick={() => setMobileMenuPath(null)}
                       className={clsx(
                         "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                         pathname === item.href
