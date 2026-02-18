@@ -5,16 +5,22 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import clsx from "clsx";
 
-function formatDateForDisplay(dateValue: string | undefined) {
+function formatDateForDisplay(
+  dateValue: string | undefined,
+  options?: { includeWeekday?: boolean }
+) {
   if (!dateValue) {
     return "Not specified";
   }
+
+  const { includeWeekday = false } = options ?? {};
 
   const parts = dateValue.split("-");
   if (parts.length === 3) {
     const [year, month, day] = parts.map(Number);
     if ([year, month, day].every(Number.isFinite)) {
       return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+        ...(includeWeekday ? { weekday: "short" } : {}),
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -84,7 +90,9 @@ function DateFilterSection({
                     : "ring-white/10 bg-white/5 hover:bg-white/10 text-slate-200"
                 )}
               >
-                <div className="text-xs">{formatDateForDisplay(stat.date)}</div>
+                <div className="text-xs">
+                  {formatDateForDisplay(stat.date, { includeWeekday: true })}
+                </div>
                 <div className="mt-1 text-lg font-semibold">{stat.count}</div>
               </button>
             );
