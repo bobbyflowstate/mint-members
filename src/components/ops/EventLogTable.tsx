@@ -33,6 +33,68 @@ const EVENT_TYPES = [
 
 type EventType = (typeof EVENT_TYPES)[number];
 
+function parseEventPayload(rawPayload: string) {
+  try {
+    return JSON.parse(rawPayload) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function renderEventDetails(payload: Record<string, unknown>, rawPayload: string) {
+  return (
+    <div className="text-sm text-slate-400 max-w-md">
+      {!!payload.email && (
+        <span className="text-white">{String(payload.email)}</span>
+      )}
+      {!!payload.error && (
+        <span className="text-red-400"> {String(payload.error)}</span>
+      )}
+      {!!payload.reason && (
+        <span> - {String(payload.reason)}</span>
+      )}
+      {!!payload.note && (
+        <div
+          className={clsx(
+            "text-xs mt-1",
+            payload.type === "refund_failed"
+              ? "text-red-400 font-semibold"
+              : payload.type === "refund_success"
+                ? "text-emerald-400"
+                : "text-amber-400"
+          )}
+        >
+          {String(payload.note)}
+        </div>
+      )}
+      {!!payload.stripePaymentIntentId && (
+        <div className="mt-1">
+          <span className="text-xs text-slate-500">Payment Intent: </span>
+          <code className="text-xs text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded select-all">
+            {String(payload.stripePaymentIntentId)}
+          </code>
+        </div>
+      )}
+      {!!payload.stripeSessionId && (
+        <div className="mt-0.5">
+          <span className="text-xs text-slate-500">Session: </span>
+          <code className="text-xs text-slate-400 bg-white/5 px-1.5 py-0.5 rounded select-all">
+            {String(payload.stripeSessionId)}
+          </code>
+        </div>
+      )}
+      {!payload.email &&
+        !payload.error &&
+        !payload.reason &&
+        !payload.stripePaymentIntentId && (
+          <span className="text-slate-500 truncate block">
+            {rawPayload.substring(0, 100)}...
+          </span>
+        )}
+    </div>
+  );
+}
+
 export function EventLogTable() {
   const [selectedType, setSelectedType] = useState<EventType | "all">("all");
   const [limit, setLimit] = useState(50);
@@ -57,11 +119,11 @@ export function EventLogTable() {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <select
           value={selectedType}
           onChange={(e) => setSelectedType(e.target.value as EventType | "all")}
-          className="bg-white/5 border-0 rounded-lg px-4 py-2 text-sm text-white ring-1 ring-white/10 focus:ring-emerald-500"
+          className="w-full sm:w-auto bg-white/5 border-0 rounded-lg px-4 py-2 text-sm text-white ring-1 ring-white/10 focus:ring-emerald-500"
         >
           <option value="all">All Events</option>
           {EVENT_TYPES.map((type) => (
@@ -73,7 +135,7 @@ export function EventLogTable() {
         <select
           value={limit}
           onChange={(e) => setLimit(Number(e.target.value))}
-          className="bg-white/5 border-0 rounded-lg px-4 py-2 text-sm text-white ring-1 ring-white/10 focus:ring-emerald-500"
+          className="w-full sm:w-auto bg-white/5 border-0 rounded-lg px-4 py-2 text-sm text-white ring-1 ring-white/10 focus:ring-emerald-500"
         >
           <option value={25}>25 events</option>
           <option value={50}>50 events</option>
@@ -87,110 +149,104 @@ export function EventLogTable() {
           <p className="text-slate-400">No events found.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10">
-          <table className="min-w-full divide-y divide-white/10">
-            <thead>
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Time
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Actor
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Details
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {events.map((event) => {
-                const styles = EVENT_TYPE_STYLES[event.eventType] || {
-                  bg: "bg-slate-500/20",
-                  text: "text-slate-400",
-                };
-                let payload: Record<string, unknown> = {};
-                try {
-                  payload = JSON.parse(event.payload);
-                } catch {
-                  // Ignore parse errors
-                }
+        <div className="space-y-3">
+          <div className="space-y-3 md:hidden">
+            {events.map((event) => {
+              const styles = EVENT_TYPE_STYLES[event.eventType] || {
+                bg: "bg-slate-500/20",
+                text: "text-slate-400",
+              };
+              const payload = parseEventPayload(event.payload);
 
-                return (
-                  <tr
-                    key={event._id}
-                    className="hover:bg-white/5 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-300">
-                        {new Date(event.createdAt).toLocaleString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={clsx(
-                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                          styles.bg,
-                          styles.text
-                        )}
-                      >
-                        {event.eventType.replace(/_/g, " ")}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-400">{event.actor}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-slate-400 max-w-md">
-                        {!!payload.email && (
-                          <span className="text-white">{String(payload.email)}</span>
-                        )}
-                        {!!payload.error && (
-                          <span className="text-red-400"> {String(payload.error)}</span>
-                        )}
-                        {!!payload.reason && (
-                          <span> - {String(payload.reason)}</span>
-                        )}
-                        {!!payload.note && (
-                          <div className={clsx(
-                            "text-xs mt-1",
-                            payload.type === "refund_failed" ? "text-red-400 font-semibold" :
-                            payload.type === "refund_success" ? "text-emerald-400" :
-                            "text-amber-400"
-                          )}>
-                            {String(payload.note)}
-                          </div>
-                        )}
-                        {!!payload.stripePaymentIntentId && (
-                          <div className="mt-1">
-                            <span className="text-xs text-slate-500">Payment Intent: </span>
-                            <code className="text-xs text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded select-all">
-                              {String(payload.stripePaymentIntentId)}
-                            </code>
-                          </div>
-                        )}
-                        {!!payload.stripeSessionId && (
-                          <div className="mt-0.5">
-                            <span className="text-xs text-slate-500">Session: </span>
-                            <code className="text-xs text-slate-400 bg-white/5 px-1.5 py-0.5 rounded select-all">
-                              {String(payload.stripeSessionId)}
-                            </code>
-                          </div>
-                        )}
-                        {!payload.email && !payload.error && !payload.reason && !payload.stripePaymentIntentId && (
-                          <span className="text-slate-500 truncate block">
-                            {event.payload.substring(0, 100)}...
-                          </span>
-                        )}
-                      </div>
-                    </td>
+              return (
+                <article
+                  key={event._id}
+                  className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span
+                      className={clsx(
+                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                        styles.bg,
+                        styles.text
+                      )}
+                    >
+                      {event.eventType.replace(/_/g, " ")}
+                    </span>
+                    <time className="text-xs text-slate-500">
+                      {new Date(event.createdAt).toLocaleString()}
+                    </time>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Actor: <span className="text-slate-300">{event.actor}</span>
+                  </p>
+                  <div className="mt-2">{renderEventDetails(payload, event.payload)}</div>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block rounded-xl bg-white/5 ring-1 ring-white/10">
+            <div className="overflow-x-auto">
+              <table className="min-w-[860px] divide-y divide-white/10">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Time
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Actor
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Details
+                    </th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {events.map((event) => {
+                    const styles = EVENT_TYPE_STYLES[event.eventType] || {
+                      bg: "bg-slate-500/20",
+                      text: "text-slate-400",
+                    };
+                    const payload = parseEventPayload(event.payload);
+
+                    return (
+                      <tr
+                        key={event._id}
+                        className="hover:bg-white/5 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-slate-300">
+                            {new Date(event.createdAt).toLocaleString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={clsx(
+                              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                              styles.bg,
+                              styles.text
+                            )}
+                          >
+                            {event.eventType.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-slate-400">{event.actor}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {renderEventDetails(payload, event.payload)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>

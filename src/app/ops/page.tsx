@@ -147,7 +147,7 @@ export default function OpsHomePage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-white">Payments</h2>
               <p className="mt-2 text-sm text-slate-400">
@@ -178,7 +178,7 @@ export default function OpsHomePage() {
               {errorMessage}
             </p>
           )}
-          <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
+          <div className="mt-4 flex flex-col gap-2 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
             <span>
               Status:{" "}
               <span className={paymentsEnabled ? "text-emerald-400" : "text-amber-400"}>
@@ -190,7 +190,7 @@ export default function OpsHomePage() {
         </div>
 
         <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-white">
                 Recheck Cutoff Eligibility
@@ -205,7 +205,7 @@ export default function OpsHomePage() {
               type="button"
               onClick={handleBackfillClick}
               disabled={isBackfillRunning}
-              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60 transition"
+              className="w-full sm:w-auto rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60 transition"
             >
               {isBackfillRunning ? "Running..." : "Run backfill"}
             </button>
@@ -231,7 +231,7 @@ export default function OpsHomePage() {
                   {backfillResult.departureCutoff}
                 </span>
               </p>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-300 sm:grid-cols-3">
+              <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-300 sm:grid-cols-2 lg:grid-cols-3">
                 <span>Scanned: {backfillResult.scanned}</span>
                 <span>Eligible: {backfillResult.eligibleForReview}</span>
                 <span>Already flagged: {backfillResult.alreadyNeedsReview}</span>
@@ -246,7 +246,7 @@ export default function OpsHomePage() {
         </div>
         {/* Pending Reviews Card */}
         <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-white">Pending Reviews</h2>
             <Link
               href="/ops/review"
@@ -276,7 +276,7 @@ export default function OpsHomePage() {
 
         {/* Recent Activity Card */}
         <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
             <Link
               href="/ops/logs"
@@ -301,7 +301,7 @@ export default function OpsHomePage() {
               recentEvents.slice(0, 3).map((event) => (
                 <div
                   key={event._id}
-                  className="flex items-center justify-between text-sm"
+                  className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between"
                 >
                   <span className="text-slate-300">
                     {event.eventType.replace(/_/g, " ")}
@@ -350,7 +350,7 @@ export default function OpsHomePage() {
                 />
               </div>
             </div>
-            <div className="mt-6 flex gap-3 justify-end">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={handleCancelToggle}
@@ -419,7 +419,7 @@ export default function OpsHomePage() {
                 />
               </div>
             </div>
-            <div className="mt-6 flex gap-3 justify-end">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={handleCancelBackfill}
