@@ -132,7 +132,7 @@ export default function AllowlistPage() {
 
       {/* Toggle Card */}
       <div className="rounded-xl bg-white/5 ring-1 ring-white/10 p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">Allowlist Enforcement</h2>
             <p className="mt-1 text-sm text-slate-400">
@@ -207,7 +207,7 @@ export default function AllowlistPage() {
             onClick={handleUploadClick}
             disabled={uploading}
             className={clsx(
-              "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+              "w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg transition-colors",
               uploading
                 ? "bg-slate-700 text-slate-400 cursor-not-allowed"
                 : "bg-emerald-500 text-white hover:bg-emerald-400"

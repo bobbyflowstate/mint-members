@@ -142,20 +142,20 @@ export function AllowlistTable({ emails, opsPassword }: AllowlistTableProps) {
   return (
     <div className="space-y-4">
       {/* Search and bulk actions */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <input
           type="text"
           placeholder="Search emails, added by, or notes..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 bg-white/5 border-0 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slate-500 ring-1 ring-white/10 focus:ring-emerald-500"
+          className="w-full sm:flex-1 bg-white/5 border-0 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slate-500 ring-1 ring-white/10 focus:ring-emerald-500"
         />
         {selectedEmails.size > 0 && (
           <button
             onClick={handleRemoveBulk}
             disabled={processing}
             className={clsx(
-              "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+              "w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg transition-colors",
               processing
                 ? "bg-slate-700 text-slate-400 cursor-not-allowed"
                 : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
@@ -166,102 +166,181 @@ export function AllowlistTable({ emails, opsPassword }: AllowlistTableProps) {
         )}
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10">
-        <table className="min-w-full divide-y divide-white/10">
-          <thead>
-            <tr>
-              <th className="px-6 py-4 text-left">
+      <div className="space-y-3 md:hidden">
+        <label className="flex items-center gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={handleSelectAll}
+            disabled={processing || filteredEmails.length === 0}
+            className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+          />
+          <span className="text-sm text-slate-300">
+            Select all filtered emails ({filteredEmails.length})
+          </span>
+        </label>
+
+        {filteredEmails.length === 0 ? (
+          <div className="text-center py-12 rounded-xl bg-white/5 ring-1 ring-white/10">
+            <p className="text-slate-400">No emails match your search.</p>
+          </div>
+        ) : (
+          filteredEmails.map((entry) => (
+            <article
+              key={entry._id}
+              className={clsx(
+                "rounded-xl p-4 ring-1 transition-colors",
+                selectedEmails.has(entry.email)
+                  ? "bg-white/10 ring-white/20"
+                  : "bg-white/5 ring-white/10"
+              )}
+            >
+              <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
-                  checked={allSelected}
-                  onChange={handleSelectAll}
-                  className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                  checked={selectedEmails.has(entry.email)}
+                  onChange={() => handleSelectEmail(entry.email)}
+                  disabled={processing}
+                  className="mt-1 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
                 />
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                Added By
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                Added At
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                Notes
-              </th>
-              <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {filteredEmails.length === 0 ? (
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-white break-all">{entry.email}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Added by <span className="text-slate-300">{entry.addedBy}</span>
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {new Date(entry.addedAt).toLocaleString()}
+                  </p>
+                  <div className="mt-2">
+                    {entry.notes ? (
+                      <p className="text-sm text-slate-300 whitespace-pre-wrap">
+                        {entry.notes}
+                      </p>
+                    ) : (
+                      <span className="text-xs text-slate-500 italic">No notes</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleRemoveSingle(entry.email)}
+                disabled={processing}
+                className={clsx(
+                  "mt-3 w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                  processing
+                    ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                    : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                )}
+              >
+                {processing ? "..." : "Remove"}
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="hidden md:block rounded-xl bg-white/5 ring-1 ring-white/10">
+        <div className="overflow-x-auto">
+          <table className="min-w-[920px] divide-y divide-white/10">
+            <thead>
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-400">
-                  No emails match your search.
-                </td>
+                <th className="px-6 py-4 text-left">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={handleSelectAll}
+                    disabled={processing || filteredEmails.length === 0}
+                    className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                  />
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Added By
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Added At
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Notes
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
-            ) : (
-              filteredEmails.map((entry) => (
-                <tr
-                  key={entry._id}
-                  className={clsx(
-                    "transition-colors",
-                    selectedEmails.has(entry.email) ? "bg-white/10" : "hover:bg-white/5"
-                  )}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      checked={selectedEmails.has(entry.email)}
-                      onChange={() => handleSelectEmail(entry.email)}
-                      className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-white">{entry.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-slate-300">{entry.addedBy}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-slate-300">
-                      {new Date(entry.addedAt).toLocaleDateString()}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {new Date(entry.addedAt).toLocaleTimeString()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs">
-                      {entry.notes ? (
-                        <p className="text-sm text-slate-300 truncate">{entry.notes}</p>
-                      ) : (
-                        <span className="text-xs text-slate-500 italic">No notes</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <button
-                      onClick={() => handleRemoveSingle(entry.email)}
-                      disabled={processing}
-                      className={clsx(
-                        "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",
-                        processing
-                          ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                          : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                      )}
-                    >
-                      {processing ? "..." : "Remove"}
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filteredEmails.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-400">
+                    No emails match your search.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredEmails.map((entry) => (
+                  <tr
+                    key={entry._id}
+                    className={clsx(
+                      "transition-colors",
+                      selectedEmails.has(entry.email) ? "bg-white/10" : "hover:bg-white/5"
+                    )}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedEmails.has(entry.email)}
+                        onChange={() => handleSelectEmail(entry.email)}
+                        disabled={processing}
+                        className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-white break-all">
+                        {entry.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-slate-300">{entry.addedBy}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-slate-300">
+                        {new Date(entry.addedAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {new Date(entry.addedAt).toLocaleTimeString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs">
+                        {entry.notes ? (
+                          <p className="text-sm text-slate-300 truncate">{entry.notes}</p>
+                        ) : (
+                          <span className="text-xs text-slate-500 italic">No notes</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => handleRemoveSingle(entry.email)}
+                        disabled={processing}
+                        className={clsx(
+                          "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",
+                          processing
+                            ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                            : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                        )}
+                      >
+                        {processing ? "..." : "Remove"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Results info */}
