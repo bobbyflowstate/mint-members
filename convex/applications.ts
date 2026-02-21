@@ -279,11 +279,6 @@ export const setOpsOverride = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const reviewableStatuses = [
-      "needs_ops_review",
-      "pending_payment",
-      "rejected",
-    ] as const;
 
     // Get the application
     const application = await ctx.db.get(args.applicationId);
@@ -295,7 +290,11 @@ export const setOpsOverride = mutation({
       throw new Error("Application does not require ops review");
     }
 
-    if (!reviewableStatuses.includes(application.status)) {
+    const isReviewableStatus =
+      application.status === "needs_ops_review" ||
+      application.status === "pending_payment" ||
+      application.status === "rejected";
+    if (!isReviewableStatus) {
       throw new Error("Application cannot be reviewed in its current status");
     }
 
