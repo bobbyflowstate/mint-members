@@ -51,6 +51,19 @@ function buildDateStats(dateValues: Array<string | undefined>) {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function getPaymentStatus(signupStatus: string | undefined) {
+  return signupStatus === "confirmed";
+}
+
+function getPaymentStatusBadgeClasses(isPaid: boolean) {
+  return clsx(
+    "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1",
+    isPaid
+      ? "bg-emerald-500/15 text-emerald-300 ring-emerald-400/40"
+      : "bg-slate-500/10 text-slate-300 ring-slate-400/30"
+  );
+}
+
 interface DateFilterSectionProps {
   title: string;
   emptyMessage: string;
@@ -242,67 +255,81 @@ export function SignupsTable() {
           ) : (
             <>
               <div className="space-y-3 md:hidden">
-                {filteredSignups.map((signup) => (
-                  <article
-                    key={signup._id}
-                    className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-base font-semibold text-white">
-                          {signup.firstName} {signup.lastName}
-                        </h3>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Created{" "}
-                          {new Date(
-                            signup.createdAt ?? signup._creationTime
-                          ).toLocaleString()}
-                        </p>
+                {filteredSignups.map((signup) => {
+                  const isPaid = getPaymentStatus(signup.status);
+
+                  return (
+                    <article
+                      key={signup._id}
+                      className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-base font-semibold text-white">
+                            {signup.firstName} {signup.lastName}
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Created{" "}
+                            {new Date(
+                              signup.createdAt ?? signup._creationTime
+                            ).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <dl className="mt-3 space-y-2 text-sm">
-                      <div>
-                        <dt className="text-xs uppercase tracking-wide text-slate-500">
-                          Email
-                        </dt>
-                        <dd className="text-slate-200 break-all">{signup.email}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs uppercase tracking-wide text-slate-500">
-                          Phone
-                        </dt>
-                        <dd className="text-slate-300">{signup.phone}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs uppercase tracking-wide text-slate-500">
-                          Arrival
-                        </dt>
-                        <dd className="text-slate-200">
-                          {formatDateForDisplay(signup.arrival)}
-                        </dd>
-                        <dd className="text-xs text-slate-500">
-                          {signup.arrivalTime ?? "Not specified"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs uppercase tracking-wide text-slate-500">
-                          Departure
-                        </dt>
-                        <dd className="text-slate-200">
-                          {formatDateForDisplay(signup.departure)}
-                        </dd>
-                        <dd className="text-xs text-slate-500">
-                          {signup.departureTime ?? "Not specified"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </article>
-                ))}
+                      <dl className="mt-3 space-y-2 text-sm">
+                        <div>
+                          <dt className="text-xs uppercase tracking-wide text-slate-500">
+                            Email
+                          </dt>
+                          <dd className="text-slate-200 break-all">{signup.email}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs uppercase tracking-wide text-slate-500">
+                            Phone
+                          </dt>
+                          <dd className="text-slate-300">{signup.phone}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs uppercase tracking-wide text-slate-500">
+                            Payment Status
+                          </dt>
+                          <dd className="mt-1">
+                            <span className={getPaymentStatusBadgeClasses(isPaid)}>
+                              {isPaid ? "Paid" : "Not paid"}
+                            </span>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs uppercase tracking-wide text-slate-500">
+                            Arrival
+                          </dt>
+                          <dd className="text-slate-200">
+                            {formatDateForDisplay(signup.arrival)}
+                          </dd>
+                          <dd className="text-xs text-slate-500">
+                            {signup.arrivalTime ?? "Not specified"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs uppercase tracking-wide text-slate-500">
+                            Departure
+                          </dt>
+                          <dd className="text-slate-200">
+                            {formatDateForDisplay(signup.departure)}
+                          </dd>
+                          <dd className="text-xs text-slate-500">
+                            {signup.departureTime ?? "Not specified"}
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
+                  );
+                })}
               </div>
 
               <div className="hidden md:block rounded-xl bg-white/5 ring-1 ring-white/10">
                 <div className="overflow-x-auto">
-                  <table className="min-w-[900px] divide-y divide-white/10">
+                  <table className="min-w-[1040px] divide-y divide-white/10">
                     <thead>
                       <tr>
                         <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -318,6 +345,9 @@ export function SignupsTable() {
                           Phone #
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Payment Status
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                           Arrival (Date / Time)
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -326,38 +356,47 @@ export function SignupsTable() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {filteredSignups.map((signup) => (
-                        <tr key={signup._id} className="hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                            {signup.firstName}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                            {signup.lastName}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                            {signup.email}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                            {signup.phone}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-slate-300">
-                              {formatDateForDisplay(signup.arrival)}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {signup.arrivalTime ?? "Not specified"}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-slate-300">
-                              {formatDateForDisplay(signup.departure)}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {signup.departureTime ?? "Not specified"}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredSignups.map((signup) => {
+                        const isPaid = getPaymentStatus(signup.status);
+
+                        return (
+                          <tr key={signup._id} className="hover:bg-white/5 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                              {signup.firstName}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                              {signup.lastName}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                              {signup.email}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                              {signup.phone}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={getPaymentStatusBadgeClasses(isPaid)}>
+                                {isPaid ? "Paid" : "Not paid"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-slate-300">
+                                {formatDateForDisplay(signup.arrival)}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {signup.arrivalTime ?? "Not specified"}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-slate-300">
+                                {formatDateForDisplay(signup.departure)}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {signup.departureTime ?? "Not specified"}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
