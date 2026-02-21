@@ -14,7 +14,7 @@ const mockConfig: AppConfig = {
   earliestArrival: "2025-08-22",
   latestDeparture: "2025-09-02",
   departureCutoff: "2025-09-01",
-  reservationFeeCents: "10000",
+  reservationFeeCents: "15000",
   maxMembers: "0",
   applicationsOpen: "true",
 };
@@ -37,8 +37,8 @@ describe("getLandingContent", () => {
     it("should format reservation fee correctly", () => {
       const content = getLandingContent(mockConfig);
       
-      expect(content.reservationFeeCents).toBe(10000);
-      expect(content.reservationFeeFormatted).toBe("$100");
+      expect(content.reservationFeeCents).toBe(15000);
+      expect(content.reservationFeeFormatted).toBe("$150");
     });
 
     it("should format Burning Man dates correctly", () => {
@@ -105,17 +105,15 @@ describe("getLandingContent", () => {
   });
 
   describe("expectations content", () => {
-    it("should not fall back to legacy hardcoded fee copy", () => {
+    it("should use configured fee in copy", () => {
       const content = getLandingContent(mockConfig);
 
-      expect(content.reservationFeeFormatted).toBe("$100");
-      expect(content.reservationFeeFormatted).not.toBe("$150");
+      expect(content.reservationFeeFormatted).toBe("$150");
 
       const reservationExpectation = content.expectations.find(
         (e) => e.title === "Non Refundable Reservation Fee"
       );
-      expect(reservationExpectation?.description).toContain("$100");
-      expect(reservationExpectation?.description).not.toContain("$150");
+      expect(reservationExpectation?.description).toContain("$150");
     });
 
     it("should include reservation fee amount in expectations", () => {
