@@ -286,8 +286,16 @@ export const setOpsOverride = mutation({
       throw new Error("Application not found");
     }
 
-    if (application.status !== "needs_ops_review") {
-      throw new Error("Application is not pending ops review");
+    if (!application.earlyDepartureRequested) {
+      throw new Error("Application does not require ops review");
+    }
+
+    const isReviewableStatus =
+      application.status === "needs_ops_review" ||
+      application.status === "pending_payment" ||
+      application.status === "rejected";
+    if (!isReviewableStatus) {
+      throw new Error("Application cannot be reviewed in its current status");
     }
 
     // Create ops authorization record
@@ -324,6 +332,7 @@ export const setOpsOverride = mutation({
       // Update application to rejected
       await ctx.db.patch(args.applicationId, {
         status: "rejected",
+        paymentAllowed: false,
         updatedAt: now,
       });
 
@@ -418,6 +427,33 @@ export const getByEmail = query({
       .query("applications")
       .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
       .first();
+  },
+});
+
+/**
+ * List review queue applications (pending and reviewed early departure requests)
+ */
+export const listReviewQueue = query({
+  args: {},
+  handler: async (ctx) => {
+    const [needsReview, approved, denied] = await Promise.all([
+      ctx.db
+        .query("applications")
+        .withIndex("by_status", (q) => q.eq("status", "needs_ops_review"))
+        .collect(),
+      ctx.db
+        .query("applications")
+        .withIndex("by_status", (q) => q.eq("status", "pending_payment"))
+        .collect(),
+      ctx.db
+        .query("applications")
+        .withIndex("by_status", (q) => q.eq("status", "rejected"))
+        .collect(),
+    ]);
+
+    return [...needsReview, ...approved, ...denied]
+      .filter((application) => application.earlyDepartureRequested)
+      .sort((a, b) => b.createdAt - a.createdAt);
   },
 });
 
