@@ -122,6 +122,7 @@ export function SignupsTable() {
   const applications = useQuery(api.applications.list, { limit: 5000 });
   const [selectedArrivalDates, setSelectedArrivalDates] = useState<string[]>([]);
   const [selectedDepartureDates, setSelectedDepartureDates] = useState<string[]>([]);
+  const [showOnlyPaid, setShowOnlyPaid] = useState(false);
   const signups = useMemo(() => {
     if (!applications) {
       return [];
@@ -131,6 +132,10 @@ export function SignupsTable() {
       (a, b) => (b.createdAt ?? b._creationTime) - (a.createdAt ?? a._creationTime)
     );
   }, [applications]);
+  const paidSignupsCount = useMemo(
+    () => signups.filter((signup) => getPaymentStatus(signup.status)).length,
+    [signups]
+  );
 
   const arrivalStats = useMemo(
     () => buildDateStats(signups.map((signup) => signup.arrival)),
@@ -149,13 +154,15 @@ export function SignupsTable() {
       const matchesDeparture =
         selectedDepartureDates.length === 0 ||
         (signup.departure ? selectedDepartureDates.includes(signup.departure) : false);
+      const matchesPayment = !showOnlyPaid || getPaymentStatus(signup.status);
 
-      return matchesArrival && matchesDeparture;
+      return matchesArrival && matchesDeparture && matchesPayment;
     });
-  }, [signups, selectedArrivalDates, selectedDepartureDates]);
+  }, [signups, selectedArrivalDates, selectedDepartureDates, showOnlyPaid]);
 
-  const hasActiveFilters =
+  const hasActiveDateFilters =
     selectedArrivalDates.length > 0 || selectedDepartureDates.length > 0;
+  const hasActiveFilters = hasActiveDateFilters || showOnlyPaid;
 
   const toggleArrivalDate = (date: string) => {
     setSelectedArrivalDates((previousSelection) =>
@@ -173,9 +180,10 @@ export function SignupsTable() {
     );
   };
 
-  const clearAllDateFilters = () => {
+  const clearAllFilters = () => {
     setSelectedArrivalDates([]);
     setSelectedDepartureDates([]);
+    setShowOnlyPaid(false);
   };
 
   if (applications === undefined) {
@@ -190,11 +198,44 @@ export function SignupsTable() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white/5 ring-1 ring-white/10 p-6">
-        <div className="text-sm text-slate-400">Total Signups</div>
-        <div className="mt-1 text-3xl font-bold text-white">{signups.length}</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg bg-black/20 ring-1 ring-white/10 p-4">
+            <div className="text-sm text-slate-400">Total Signups</div>
+            <div className="mt-1 text-3xl font-bold text-white">{signups.length}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowOnlyPaid((previousValue) => !previousValue)}
+            aria-pressed={showOnlyPaid}
+            className={clsx(
+              "rounded-lg p-4 text-left transition-colors ring-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70",
+              showOnlyPaid
+                ? "bg-emerald-500/15 ring-emerald-400/50 text-emerald-100"
+                : "bg-black/20 ring-white/10 hover:bg-emerald-500/10 hover:ring-emerald-400/40"
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-slate-300">Paid</span>
+              <span
+                className={clsx(
+                  "text-[11px] font-semibold uppercase tracking-wide",
+                  showOnlyPaid ? "text-emerald-200" : "text-slate-500"
+                )}
+              >
+                {showOnlyPaid ? "Filtered" : "Click to filter"}
+              </span>
+            </div>
+            <div className="mt-1 text-3xl font-bold text-white">{paidSignupsCount}</div>
+            <p className="mt-2 text-xs text-slate-400">
+              {showOnlyPaid
+                ? "Showing only paid signups. Click to clear."
+                : "Click to show only paid signups."}
+            </p>
+          </button>
+        </div>
         <p className="mt-2 text-xs text-slate-500">
           {hasActiveFilters
-            ? `Showing ${filteredSignups.length} of ${signups.length} signups by selected dates.`
+            ? `Showing ${filteredSignups.length} of ${signups.length} signups by selected filters.`
             : "Ordered by creation date (newest first)."}
         </p>
       </div>
@@ -209,7 +250,7 @@ export function SignupsTable() {
           </div>
           <button
             type="button"
-            onClick={clearAllDateFilters}
+            onClick={clearAllFilters}
             disabled={!hasActiveFilters}
             className={clsx(
               "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",
@@ -218,7 +259,7 @@ export function SignupsTable() {
                 : "bg-white/5 text-slate-500 cursor-not-allowed"
             )}
           >
-            Clear selections
+            Clear filters
           </button>
         </div>
 
@@ -250,7 +291,7 @@ export function SignupsTable() {
         <div className="space-y-3">
           {filteredSignups.length === 0 ? (
             <div className="text-center py-12 rounded-xl bg-white/5 ring-1 ring-white/10">
-              <p className="text-slate-400">No signups match the selected dates.</p>
+              <p className="text-slate-400">No signups match the selected filters.</p>
             </div>
           ) : (
             <>
