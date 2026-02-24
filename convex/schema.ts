@@ -54,7 +54,8 @@ const eventType = v.union(
   v.literal("allowlist_emails_added"),
   v.literal("allowlist_email_removed"),
   v.literal("allowlist_emails_removed_bulk"),
-  v.literal("capacity_exceeded")
+  v.literal("capacity_exceeded"),
+  v.literal("confirmed_member_updated")
 );
 
 export default defineSchema({
@@ -90,6 +91,23 @@ export default defineSchema({
     .index("by_arrival", ["arrival"])
     .index("by_departure", ["departure"])
     .index("by_createdAt", ["createdAt"]),
+
+  /**
+   * Confirmed member details - post-confirmation logistics data
+   */
+  confirmed_members: defineTable({
+    userId: v.id("users"),
+    applicationId: v.id("applications"),
+    hasBurningManTicket: v.boolean(),
+    hasVehiclePass: v.boolean(),
+    requests: v.optional(v.string()),
+    // Backward compatibility for early records before rename.
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_applicationId", ["applicationId"]),
 
   /**
    * Ops authorizations - tracks approval/denial of early departure requests

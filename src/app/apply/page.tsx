@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ApplicationForm } from "@/components/forms";
+import { ConfirmedMemberDetailsForm } from "@/components/forms/ConfirmedMemberDetailsForm";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthModal, UserButton } from "@/components/auth";
 import { getLandingContent, AppConfig } from "@/config/content";
@@ -11,6 +12,7 @@ import { api } from "../../../convex/_generated/api";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { isFlagEnabled } from "@/lib/config/flags";
 import { Expectations } from "@/components/marketing";
+import { formatDateWithWeekday } from "@/lib/dates/formatDateWithWeekday";
 
 export default function ApplyPage() {
   const config = useQuery(api.config.getConfig);
@@ -284,7 +286,8 @@ function ApplicationFormWithCheck({
           <div className="flex justify-between text-sm mt-2">
             <span className="text-slate-400">Dates:</span>
             <span className="text-white">
-              {existingApplication.arrival} → {existingApplication.departure}
+              {formatDateWithWeekday(existingApplication.arrival)} →{" "}
+              {formatDateWithWeekday(existingApplication.departure)}
             </span>
           </div>
         </div>
@@ -318,9 +321,12 @@ function ApplicationFormWithCheck({
         )}
 
         {existingApplication.status === "confirmed" && (
-          <p className="mt-6 text-sm text-emerald-400">
-            Your reservation is confirmed! See you at {content.campName}!
-          </p>
+          <>
+            <p className="mt-6 text-sm text-emerald-400">
+              Your reservation is confirmed! See you at {content.campName}!
+            </p>
+            <ConfirmedMemberDetailsForm />
+          </>
         )}
       </div>
     );

@@ -18,6 +18,7 @@ export const EVENT_TYPES = [
   "allowlist_email_removed",
   "allowlist_emails_removed_bulk",
   "capacity_exceeded",
+  "confirmed_member_updated",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -216,6 +217,25 @@ export function buildMutationFailedPayload(data: {
     mutationName: data.mutationName,
     error: data.error,
     input: data.input,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build payload for confirmed_member_updated event
+ */
+export function buildConfirmedMemberUpdatedPayload(data: {
+  email: string;
+  hasBurningManTicket: boolean;
+  hasVehiclePass: boolean;
+  requests?: string;
+}) {
+  return {
+    type: "confirmed_member_updated" as const,
+    email: data.email,
+    hasBurningManTicket: data.hasBurningManTicket,
+    hasVehiclePass: data.hasVehiclePass,
+    requests: data.requests,
     timestamp: new Date().toISOString(),
   };
 }

@@ -9,6 +9,7 @@ import {
   buildOpsOverrideDeniedPayload,
   buildWebhookErrorPayload,
   buildMutationFailedPayload,
+  buildConfirmedMemberUpdatedPayload,
   EVENT_TYPES,
 } from "../../../convex/lib/events";
 
@@ -33,6 +34,7 @@ describe("Event Payload Builders", () => {
       expect(EVENT_TYPES).toContain("ops_override_denied");
       expect(EVENT_TYPES).toContain("webhook_error");
       expect(EVENT_TYPES).toContain("mutation_failed");
+      expect(EVENT_TYPES).toContain("confirmed_member_updated");
     });
   });
 
@@ -219,6 +221,24 @@ describe("Event Payload Builders", () => {
     });
   });
 
+  describe("buildConfirmedMemberUpdatedPayload", () => {
+    it("should build correct payload for confirmed-member updates", () => {
+      const payload = buildConfirmedMemberUpdatedPayload({
+        email: "member@example.com",
+        hasBurningManTicket: true,
+        hasVehiclePass: false,
+        requests: "Can help with build crew on Monday",
+      });
+
+      expect(payload.type).toBe("confirmed_member_updated");
+      expect(payload.email).toBe("member@example.com");
+      expect(payload.hasBurningManTicket).toBe(true);
+      expect(payload.hasVehiclePass).toBe(false);
+      expect(payload.requests).toBe("Can help with build crew on Monday");
+      expect(payload.timestamp).toBeDefined();
+    });
+  });
+
   describe("payload serialization", () => {
     it("all payloads should be JSON serializable", () => {
       const payloads = [
@@ -264,6 +284,11 @@ describe("Event Payload Builders", () => {
         buildMutationFailedPayload({
           mutationName: "test",
           error: "Test error",
+        }),
+        buildConfirmedMemberUpdatedPayload({
+          email: "member@example.com",
+          hasBurningManTicket: true,
+          hasVehiclePass: true,
         }),
       ];
 

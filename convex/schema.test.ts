@@ -18,6 +18,10 @@ describe('Convex Schema', () => {
     it('should export config table', () => {
       expect(schema.tables).toHaveProperty('config');
     });
+
+    it('should export confirmed_members table', () => {
+      expect(schema.tables).toHaveProperty('confirmed_members');
+    });
   });
 
   describe('applications table', () => {
