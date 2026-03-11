@@ -38,7 +38,10 @@ const DEFAULT_EXPORT_VIEW_UI_STATE: ExportViewUiState = {
 };
 
 function isFilterOperatorValue(value: unknown): value is (typeof FILTER_OPERATORS)[number] {
-  return typeof value === "string" && FILTER_OPERATORS.includes(value);
+  return (
+    typeof value === "string" &&
+    (FILTER_OPERATORS as readonly string[]).includes(value)
+  );
 }
 
 function isSearchField(value: unknown): value is SearchField {
