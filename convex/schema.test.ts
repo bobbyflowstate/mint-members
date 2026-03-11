@@ -22,6 +22,10 @@ describe('Convex Schema', () => {
     it('should export confirmed_members table', () => {
       expect(schema.tables).toHaveProperty('confirmed_members');
     });
+
+    it('should export ops_signup_rows table', () => {
+      expect(schema.tables).toHaveProperty('ops_signup_rows');
+    });
   });
 
   describe('applications table', () => {

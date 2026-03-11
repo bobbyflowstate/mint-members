@@ -9,6 +9,7 @@ import {
   buildCapacityExceededPayload,
 } from "./lib/events";
 import { CONFIG_DEFAULTS, parseMaxMembers } from "./config";
+import { upsertOpsSignupRow } from "./opsSignupRows";
 
 /**
  * Update application with checkout session (internal mutation)
@@ -26,6 +27,7 @@ export const updateApplicationCheckout = mutation({
       // Status stays as "pending_payment" until Stripe webhook confirms
       updatedAt: Date.now(),
     });
+    await upsertOpsSignupRow(ctx, args.applicationId);
   },
 });
 
@@ -167,6 +169,7 @@ export const handleCheckoutSuccess = mutation({
       status: "confirmed",
       updatedAt: Date.now(),
     });
+    await upsertOpsSignupRow(ctx, application._id);
 
     // Log success event
     await logEvent(ctx, {
@@ -211,6 +214,7 @@ export const handleCheckoutFailed = mutation({
       checkoutSessionId: undefined,
       updatedAt: Date.now(),
     });
+    await upsertOpsSignupRow(ctx, application._id);
 
     // Log failure event
     await logEvent(ctx, {
@@ -316,6 +320,7 @@ export const resetToPendingPayment = mutation({
       checkoutSessionId: undefined,
       updatedAt: Date.now(),
     });
+    await upsertOpsSignupRow(ctx, args.applicationId);
 
     return { success: true, applicationId: args.applicationId };
   },
@@ -347,6 +352,7 @@ export const manuallyConfirmPayment = mutation({
       status: "confirmed",
       updatedAt: Date.now(),
     });
+    await upsertOpsSignupRow(ctx, args.applicationId);
 
     // Log manual confirmation
     await logEvent(ctx, {

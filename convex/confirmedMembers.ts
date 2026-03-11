@@ -4,6 +4,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { normalizeConfirmedMemberDetails } from "../src/lib/confirmedMembers/normalize";
 import { buildConfirmedMemberUpdatedPayload, logEvent } from "./lib/events";
 import { requireOpsPassword } from "./lib/auth";
+import { upsertOpsSignupRow } from "./opsSignupRows";
 
 export const getMine = query({
   args: {},
@@ -125,6 +126,7 @@ export const upsertMine = mutation({
         }),
         actor: confirmedApplication.email,
       });
+      await upsertOpsSignupRow(ctx, confirmedApplication._id);
       return existingRecord._id;
     }
 
@@ -147,6 +149,7 @@ export const upsertMine = mutation({
       }),
       actor: confirmedApplication.email,
     });
+    await upsertOpsSignupRow(ctx, confirmedApplication._id);
 
     return recordId;
   },

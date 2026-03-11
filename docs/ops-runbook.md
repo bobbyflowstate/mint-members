@@ -37,6 +37,45 @@ npx convex run config:setConfig --args '{"key": "opsEmails", "value": "[\"ops@de
 2. Review recent `payment_failed` events - may need to contact applicants
 3. Verify `payment_success` events are being recorded properly
 
+### 3. Signups Views And Export
+
+Use two separate ops pages:
+
+- **`/ops/signups`**: Legacy signups dashboard (date-breakdown cards + quick filtering)
+- **`/ops/export`**: Flexible table view for custom filtering, sorting, and CSV export
+
+#### `/ops/export` workflow
+
+1. Choose visible columns in **Columns and Sort**
+2. Apply filters:
+   - arrival/departure date operators
+   - status
+   - name/email/phone text search
+3. Set sort field + direction
+4. Click **Export current view**
+
+The CSV export is WYSIWYG for the flexible table:
+- exports only current filtered rows
+- keeps current sort order
+- includes currently visible columns (in display order)
+
+#### Date-picker bounds
+
+Arrival and departure pickers are constrained to an event window:
+- minimum date = earliest arrival in signup data
+- maximum date = latest departure in signup data
+
+This prevents selecting dates outside any known signup window.
+
+#### Saved view preferences
+
+`/ops/export` persists view settings in browser localStorage:
+- visible columns
+- filter values
+- sort field/direction
+
+Refreshing the page restores the last saved view on that browser.
+
 ## Handling Early Departure Requests
 
 When an applicant requests to leave before the cutoff date (default: September 1):
@@ -106,6 +145,9 @@ npx convex run applications:list
 # List applications needing review
 npx convex run applications:listNeedingReview
 
+# List projection-backed signups view (requires ops password)
+npx convex run applications:listSignupsForOpsView --args '{"opsPassword":"<OPS_PWD>","viewState":{"visibleColumns":["firstName","email"],"filters":[],"sort":{"field":"createdAt","direction":"desc"},"limit":5000}}'
+
 # Get recent events
 npx convex run eventLogs:listRecent --args '{"limit": 100}'
 
@@ -137,6 +179,40 @@ npx convex run config:setConfig --args '{"key": "latestDeparture", "value": "202
 
 > **Note**: `reservationFeeCents` is pinned to `convex/config.ts` (`CONFIG_DEFAULTS`) as a single source of truth.
 > To change the reservation fee, edit `convex/config.ts` and redeploy.
+
+## Projection Maintenance (`ops_signup_rows`)
+
+Flexible export reads from the denormalized `ops_signup_rows` table.
+
+### When to rebuild projection rows
+
+Rebuild if:
+- projection schema changed
+- rows appear stale/missing
+- post-migration validation indicates inconsistencies
+
+### Rebuild from Ops UI
+
+1. Go to `/ops`
+2. Use **Rebuild Signup Projection**
+3. Run dry-run first
+4. Run live rebuild if counts look correct
+
+### Rebuild via CLI
+
+```bash
+# Dry run
+npx convex run opsSignupRows:backfillOpsSignupRows --args '{"opsPassword":"<OPS_PWD>","dryRun":true}'
+
+# Live update
+npx convex run opsSignupRows:backfillOpsSignupRows --args '{"opsPassword":"<OPS_PWD>","dryRun":false}'
+```
+
+### Known v1 limitations
+
+- Filters currently combine with logical **AND** only
+- Very large result sets are capped server-side (UI warns when truncated)
+- Query interpreter / natural-language parsing is not enabled in v1
 
 ## Emergency Procedures
 

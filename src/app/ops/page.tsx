@@ -20,6 +20,16 @@ interface BackfillResult {
   updated: number;
 }
 
+interface ProjectionBackfillResult {
+  success: boolean;
+  dryRun: boolean;
+  scanned: number;
+  inserted: number;
+  updated: number;
+  skipped: number;
+  sourceVersion: number;
+}
+
 export default function OpsHomePage() {
   const [opsPassword] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -35,6 +45,9 @@ export default function OpsHomePage() {
   const runCutoffBackfill = useMutation(
     api.applications.backfillNeedsOpsReviewFromCutoff
   );
+  const runProjectionBackfill = useMutation(
+    api.opsSignupRows.backfillOpsSignupRows
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -47,6 +60,14 @@ export default function OpsHomePage() {
   const [showBackfillDialog, setShowBackfillDialog] = useState(false);
   const [backfillConfirmationText, setBackfillConfirmationText] = useState("");
   const [backfillDryRun, setBackfillDryRun] = useState(true);
+  const [isProjectionBackfillRunning, setIsProjectionBackfillRunning] = useState(false);
+  const [projectionBackfillError, setProjectionBackfillError] = useState<string | null>(null);
+  const [projectionBackfillResult, setProjectionBackfillResult] =
+    useState<ProjectionBackfillResult | null>(null);
+  const [showProjectionBackfillDialog, setShowProjectionBackfillDialog] = useState(false);
+  const [projectionBackfillConfirmationText, setProjectionBackfillConfirmationText] =
+    useState("");
+  const [projectionBackfillDryRun, setProjectionBackfillDryRun] = useState(true);
 
   const paymentsEnabled = isFlagEnabled(config?.paymentsEnabled);
 
@@ -133,8 +154,52 @@ export default function OpsHomePage() {
     }
   };
 
+  const handleProjectionBackfillClick = () => {
+    setProjectionBackfillError(null);
+    setShowProjectionBackfillDialog(true);
+    setProjectionBackfillConfirmationText("");
+  };
+
+  const handleCancelProjectionBackfill = () => {
+    setShowProjectionBackfillDialog(false);
+    setProjectionBackfillConfirmationText("");
+  };
+
+  const handleConfirmProjectionBackfill = async () => {
+    if (!opsPassword) {
+      setProjectionBackfillError(
+        "Ops password is missing. Please refresh and sign in again."
+      );
+      return;
+    }
+
+    setProjectionBackfillError(null);
+    setIsProjectionBackfillRunning(true);
+    setShowProjectionBackfillDialog(false);
+    setProjectionBackfillConfirmationText("");
+
+    try {
+      const result = await runProjectionBackfill({
+        opsPassword,
+        dryRun: projectionBackfillDryRun,
+      });
+      setProjectionBackfillResult(result as ProjectionBackfillResult);
+    } catch (error) {
+      console.error("Failed to run ops signup projection backfill", error);
+      setProjectionBackfillError(
+        error instanceof Error
+          ? error.message
+          : "Failed to rebuild ops signup projection. Please try again."
+      );
+    } finally {
+      setIsProjectionBackfillRunning(false);
+    }
+  };
+
   const isConfirmationValid = confirmationText === "minted2026";
   const isBackfillConfirmationValid = backfillConfirmationText === "reclassify";
+  const isProjectionBackfillConfirmationValid =
+    projectionBackfillConfirmationText === "rebuild_projection";
 
   return (
     <div className="space-y-8">
@@ -240,6 +305,60 @@ export default function OpsHomePage() {
                 <span className="font-semibold text-emerald-300">
                   Updated: {backfillResult.updated}
                 </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Rebuild Signup Projection
+              </h2>
+              <p className="mt-2 text-sm text-slate-400">
+                Rebuild the <span className="font-mono text-slate-300">ops_signup_rows</span>{" "}
+                table used by the flexible signups view/export. Use this after projection
+                schema changes or if projection data appears stale.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleProjectionBackfillClick}
+              disabled={isProjectionBackfillRunning}
+              className="w-full sm:w-auto rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60 transition"
+            >
+              {isProjectionBackfillRunning ? "Running..." : "Run rebuild"}
+            </button>
+          </div>
+
+          {projectionBackfillError && (
+            <p className="mt-3 text-sm text-red-400" role="alert">
+              {projectionBackfillError}
+            </p>
+          )}
+
+          {projectionBackfillResult && (
+            <div className="mt-4 rounded-lg bg-slate-900/60 p-4 ring-1 ring-white/10">
+              <p className="text-xs text-slate-400">
+                Mode:{" "}
+                <span className="font-semibold text-white">
+                  {projectionBackfillResult.dryRun
+                    ? "Dry run (no updates applied)"
+                    : "Live update"}
+                </span>
+              </p>
+              <p className="text-sm text-slate-200">
+                Source Version:{" "}
+                <span className="font-mono text-white">
+                  {projectionBackfillResult.sourceVersion}
+                </span>
+              </p>
+              <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-300 sm:grid-cols-2 lg:grid-cols-3">
+                <span>Scanned: {projectionBackfillResult.scanned}</span>
+                <span>Inserted: {projectionBackfillResult.inserted}</span>
+                <span>Updated: {projectionBackfillResult.updated}</span>
+                <span>Skipped: {projectionBackfillResult.skipped}</span>
               </div>
             </div>
           )}
@@ -434,6 +553,78 @@ export default function OpsHomePage() {
                 className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-amber-600"
               >
                 {backfillDryRun ? "Run Dry Run" : "Run Backfill"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showProjectionBackfillDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-xl bg-slate-900 p-6 ring-1 ring-white/10 shadow-2xl">
+            <h3 className="text-xl font-bold text-white">
+              Rebuild Signup Projection
+            </h3>
+            <div className="mt-4 space-y-3">
+              <p className="text-slate-300">
+                This will rebuild rows in{" "}
+                <span className="font-mono text-sky-300">ops_signup_rows</span> from current
+                application and confirmed-member data.
+              </p>
+              <label className="flex items-start gap-3 rounded-lg bg-slate-800/70 px-3 py-3 ring-1 ring-white/10">
+                <input
+                  type="checkbox"
+                  checked={projectionBackfillDryRun}
+                  onChange={(e) => setProjectionBackfillDryRun(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-slate-900 text-sky-500 focus:ring-sky-500"
+                />
+                <span className="text-sm text-slate-200">
+                  Run as <span className="font-semibold text-white">dry run</span>{" "}
+                  (preview only, do not modify projection rows)
+                </span>
+              </label>
+              <p className="text-sm text-sky-300 bg-sky-500/10 border border-sky-500/20 rounded-lg p-3">
+                This action is idempotent and safe to rerun when projection fields change.
+              </p>
+              <div className="mt-4">
+                <label
+                  htmlFor="projection-backfill-confirmation"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
+                  Type{" "}
+                  <span className="font-mono font-bold text-white">
+                    rebuild_projection
+                  </span>{" "}
+                  to confirm:
+                </label>
+                <input
+                  id="projection-backfill-confirmation"
+                  type="text"
+                  value={projectionBackfillConfirmationText}
+                  onChange={(e) => setProjectionBackfillConfirmationText(e.target.value)}
+                  placeholder="rebuild_projection"
+                  className="w-full rounded-lg bg-slate-800 px-4 py-2 text-white placeholder:text-slate-500 border border-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={handleCancelProjectionBackfill}
+                className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmProjectionBackfill}
+                disabled={
+                  !isProjectionBackfillConfirmationValid || isProjectionBackfillRunning
+                }
+                className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-500 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-sky-600"
+              >
+                {projectionBackfillDryRun ? "Run Dry Run" : "Run Rebuild"}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { internalMutation } from "./_generated/server";
+import { upsertOpsSignupRow } from "./opsSignupRows";
 
 /**
  * Migration: Update arrival/departure time format
@@ -46,6 +47,7 @@ export const migrateTimeFormat = internalMutation({
       // Update the record if needed
       if (needsUpdate) {
         await ctx.db.patch(app._id, updates);
+        await upsertOpsSignupRow(ctx, app._id);
         updatedCount++;
         console.log(`Updated application ${app._id}: ${app.arrivalTime} -> ${updates.arrivalTime}, ${app.departureTime} -> ${updates.departureTime}`);
       }

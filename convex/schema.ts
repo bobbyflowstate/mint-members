@@ -110,6 +110,40 @@ export default defineSchema({
     .index("by_applicationId", ["applicationId"]),
 
   /**
+   * Ops signup projection rows - denormalized row per application for
+   * cross-table ops querying and export.
+   */
+  ops_signup_rows: defineTable({
+    applicationId: v.id("applications"),
+    userId: v.id("users"),
+    email: v.string(),
+    firstName: v.string(),
+    lastName: v.string(),
+    fullName: v.string(),
+    phone: v.string(),
+    arrival: v.string(),
+    arrivalTime: arrivalDepartureTime,
+    departure: v.string(),
+    departureTime: arrivalDepartureTime,
+    status: applicationStatus,
+    paymentAllowed: v.boolean(),
+    earlyDepartureRequested: v.boolean(),
+    hasBurningManTicket: v.boolean(),
+    hasVehiclePass: v.boolean(),
+    requests: v.string(),
+    applicationCreatedAt: v.number(),
+    updatedAt: v.number(),
+    sourceVersion: v.number(),
+  })
+    .index("by_applicationId", ["applicationId"])
+    .index("by_userId", ["userId"])
+    .index("by_email", ["email"])
+    .index("by_status", ["status"])
+    .index("by_arrival", ["arrival"])
+    .index("by_departure", ["departure"])
+    .index("by_createdAt", ["applicationCreatedAt"]),
+
+  /**
    * Ops authorizations - tracks approval/denial of early departure requests
    */
   ops_authorizations: defineTable({

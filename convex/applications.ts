@@ -11,6 +11,12 @@ import {
   buildMutationFailedPayload,
 } from "./lib/events";
 import { CONFIG_DEFAULTS, parseMaxMembers } from "./config";
+import { upsertOpsSignupRow } from "./opsSignupRows";
+import { normalizeSignupViewState } from "../src/lib/opsSignupsView/types";
+import {
+  compareSignups,
+  matchesSignupFilters,
+} from "../src/lib/opsSignupsView/evaluate";
 
 /**
  * Create a draft application from form submission
@@ -121,6 +127,7 @@ export const createDraftApplication = mutation({
         createdAt: now,
         updatedAt: now,
       });
+      await upsertOpsSignupRow(ctx, applicationId);
 
       // Log form submitted event
       await logEvent(ctx, {
@@ -238,6 +245,7 @@ export const backfillNeedsOpsReviewFromCutoff = mutation({
         paymentAllowed: false,
         updatedAt: now,
       });
+      await upsertOpsSignupRow(ctx, application._id);
 
       await logEvent(ctx, {
         applicationId: application._id,
@@ -315,6 +323,7 @@ export const setOpsOverride = mutation({
         paymentAllowed: true,
         updatedAt: now,
       });
+      await upsertOpsSignupRow(ctx, args.applicationId);
 
       // Log approval event
       await logEvent(ctx, {
@@ -335,6 +344,7 @@ export const setOpsOverride = mutation({
         paymentAllowed: false,
         updatedAt: now,
       });
+      await upsertOpsSignupRow(ctx, args.applicationId);
 
       // Log denial event
       await logEvent(ctx, {
@@ -495,6 +505,58 @@ export const listSignups = query({
       departureTime: signup.departureTime,
       createdAt: signup.createdAt,
     }));
+  },
+});
+
+const MAX_OPS_SIGNUPS_VIEW_LIMIT = 5000;
+
+/**
+ * List ops signup projection rows using normalized view-state filtering/sorting.
+ */
+export const listSignupsForOpsView = query({
+  args: {
+    opsPassword: v.string(),
+    viewState: v.optional(v.any()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+
+    const normalizedViewState = normalizeSignupViewState(args.viewState ?? {});
+    const requestedLimit = args.limit ?? normalizedViewState.limit;
+    const limit = Math.max(
+      1,
+      Math.min(MAX_OPS_SIGNUPS_VIEW_LIMIT, Math.floor(requestedLimit))
+    );
+    const queryLimit = limit + 1;
+
+    const projectionRowsWithExtra = await ctx.db
+      .query("ops_signup_rows")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .take(queryLimit);
+    const truncated = projectionRowsWithExtra.length > limit;
+    const projectionRows = truncated
+      ? projectionRowsWithExtra.slice(0, limit)
+      : projectionRowsWithExtra;
+
+    const rowsWithCreatedAt = projectionRows.map((row) => ({
+      ...row,
+      createdAt: row.applicationCreatedAt,
+    }));
+    const filteredRows = rowsWithCreatedAt.filter((row) =>
+      matchesSignupFilters(row, normalizedViewState.filters)
+    );
+    const sortedRows = [...filteredRows].sort((a, b) =>
+      compareSignups(normalizedViewState.sort, a, b)
+    );
+
+    return {
+      rows: sortedRows,
+      totalBeforeFilter: projectionRows.length,
+      totalAfterFilter: sortedRows.length,
+      truncated,
+    };
   },
 });
 

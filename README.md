@@ -9,6 +9,7 @@ A modern reservation and signup system for DeMentha camp at Burning Man. Built w
 - 💳 **Stripe Payments** - Secure payment processing via Stripe Checkout
 - 📱 **WhatsApp Integration** - Phone validation with auto-formatting for WhatsApp communication
 - 👥 **Ops Portal** - Admin dashboard for reviewing applications and viewing logs
+- 📤 **Flexible Export View** - Custom column/filter/sort controls with CSV export
 - 📊 **Event Logging** - Complete audit trail of all actions
 
 ## Tech Stack
@@ -112,7 +113,7 @@ npm run lint         # Run ESLint
 ├── src/
 │   ├── app/            # Next.js App Router pages
 │   │   ├── apply/      # Application form & confirmation pages
-│   │   ├── ops/        # Ops admin portal
+│   │   ├── ops/        # Ops admin portal (review/signups/export/logs)
 │   │   └── api/        # API routes (Stripe webhook)
 │   ├── components/     # React components
 │   │   ├── marketing/  # Landing page components
@@ -150,6 +151,26 @@ View event logs via:
 - Ops Portal: `/ops/logs`
 - Convex Dashboard: Browse `event_logs` table
 - CLI: `npx convex run eventLogs:listRecent`
+
+## Ops Export
+
+There are two ops signup experiences:
+
+- `/ops/signups`: existing quick-view signups dashboard
+- `/ops/export`: flexible export-focused view
+
+`/ops/export` supports:
+- choosing visible columns
+- applying filters (arrival, departure, status, text search)
+- sorting by selectable fields
+- exporting **current view** to CSV
+
+CSV export behavior:
+- uses current filtered row set
+- preserves current sort order
+- includes visible columns only
+
+The export view stores preferences in browser localStorage so settings persist across refreshes.
 
 ### Log Types
 
