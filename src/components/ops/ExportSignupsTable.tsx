@@ -139,6 +139,62 @@ const DATE_OPERATORS: Array<{ value: FilterOperator; label: string }> = [
   { value: "eq", label: "On" },
 ];
 
+const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "pending_payment", label: "Pending payment" },
+  { value: "needs_ops_review", label: "Needs ops review" },
+  { value: "rejected", label: "Rejected" },
+] as const;
+
+type BooleanQuickFilter = "any" | "yes" | "no";
+type RequestsQuickFilter = "any" | "has_requests";
+
+function cycleBooleanQuickFilter(current: BooleanQuickFilter): BooleanQuickFilter {
+  if (current === "any") {
+    return "yes";
+  }
+  if (current === "yes") {
+    return "no";
+  }
+  return "any";
+}
+
+function getBooleanQuickFilterLabel(value: BooleanQuickFilter): string {
+  if (value === "yes") {
+    return "Yes";
+  }
+  if (value === "no") {
+    return "No";
+  }
+  return "Any";
+}
+
+function cycleRequestsQuickFilter(current: RequestsQuickFilter): RequestsQuickFilter {
+  return current === "any" ? "has_requests" : "any";
+}
+
+function getRequestsQuickFilterLabel(value: RequestsQuickFilter): string {
+  return value === "has_requests" ? "Has requests" : "Any";
+}
+
+function cycleStatusFilter(current: string): string {
+  const index = STATUS_FILTER_OPTIONS.findIndex((option) => option.value === current);
+  const resolvedIndex = index === -1 ? 0 : index;
+  const nextIndex = (resolvedIndex + 1) % STATUS_FILTER_OPTIONS.length;
+  return STATUS_FILTER_OPTIONS[nextIndex].value;
+}
+
+function getStatusFilterLabel(value: string): string {
+  if (value === "all") {
+    return "Any";
+  }
+  return (
+    STATUS_FILTER_OPTIONS.find((option) => option.value === value)?.label ??
+    "Any"
+  );
+}
+
 function formatDateForDisplay(dateValue?: string) {
   if (!dateValue) {
     return "Not specified";
@@ -218,6 +274,22 @@ export function ExportSignupsTable() {
   const [sortDirection, setSortDirection] = useState<SortDirection>(
     storedViewState?.sortDirection ?? DEFAULT_SIGNUPS_VIEW_STATE.sort.direction
   );
+  const [hasBurningManTicketFilter, setHasBurningManTicketFilter] =
+    useState<BooleanQuickFilter>(
+      storedViewState?.hasBurningManTicketFilter ?? "any"
+    );
+  const [hasVehiclePassFilter, setHasVehiclePassFilter] = useState<BooleanQuickFilter>(
+    storedViewState?.hasVehiclePassFilter ?? "any"
+  );
+  const [requestsFilter, setRequestsFilter] = useState<RequestsQuickFilter>(
+    storedViewState?.requestsFilter ?? "any"
+  );
+  const [lastResolvedSignupsResult, setLastResolvedSignupsResult] = useState<
+    SignupsViewResult | undefined
+  >(undefined);
+  const [lastResolvedBoundsResult, setLastResolvedBoundsResult] = useState<
+    SignupsViewResult | undefined
+  >(undefined);
 
   const filters = useMemo(() => {
     const nextFilters: SignupFilter[] = [];
@@ -254,6 +326,41 @@ export function ExportSignupsTable() {
       });
     }
 
+    if (hasBurningManTicketFilter === "yes") {
+      nextFilters.push({
+        field: "hasBurningManTicket",
+        operator: "eq",
+        value: "true",
+      });
+    } else if (hasBurningManTicketFilter === "no") {
+      nextFilters.push({
+        field: "hasBurningManTicket",
+        operator: "eq",
+        value: "false",
+      });
+    }
+
+    if (hasVehiclePassFilter === "yes") {
+      nextFilters.push({
+        field: "hasVehiclePass",
+        operator: "eq",
+        value: "true",
+      });
+    } else if (hasVehiclePassFilter === "no") {
+      nextFilters.push({
+        field: "hasVehiclePass",
+        operator: "eq",
+        value: "false",
+      });
+    }
+
+    if (requestsFilter === "has_requests") {
+      nextFilters.push({
+        field: "requests",
+        operator: "not_empty",
+      });
+    }
+
     return nextFilters;
   }, [
     arrivalDate,
@@ -263,6 +370,9 @@ export function ExportSignupsTable() {
     searchField,
     searchValue,
     statusFilter,
+    hasBurningManTicketFilter,
+    hasVehiclePassFilter,
+    requestsFilter,
   ]);
 
   const serverViewState = useMemo(
@@ -307,9 +417,23 @@ export function ExportSignupsTable() {
       : "skip"
   ) as SignupsViewResult | undefined;
 
-  const resolvedResult = signupsResult;
-  const isLoading = signupsResult === undefined;
-  const eventWindowDateBounds = getEventWindowDateBounds(boundsResult?.rows ?? []);
+  useEffect(() => {
+    if (signupsResult !== undefined) {
+      setLastResolvedSignupsResult(signupsResult);
+    }
+  }, [signupsResult]);
+
+  useEffect(() => {
+    if (boundsResult !== undefined) {
+      setLastResolvedBoundsResult(boundsResult);
+    }
+  }, [boundsResult]);
+
+  const resolvedResult = signupsResult ?? lastResolvedSignupsResult;
+  const isInitialLoading = signupsResult === undefined && !lastResolvedSignupsResult;
+  const isRefreshing = signupsResult === undefined && !!lastResolvedSignupsResult;
+  const resolvedBoundsResult = boundsResult ?? lastResolvedBoundsResult;
+  const eventWindowDateBounds = getEventWindowDateBounds(resolvedBoundsResult?.rows ?? []);
 
   const selectedColumns = useMemo(() => {
     const selected = COLUMN_DEFINITIONS.filter((column) =>
@@ -330,6 +454,9 @@ export function ExportSignupsTable() {
       searchValue,
       sortField,
       sortDirection,
+      hasBurningManTicketFilter,
+      hasVehiclePassFilter,
+      requestsFilter,
     });
   }, [
     arrivalDate,
@@ -342,6 +469,9 @@ export function ExportSignupsTable() {
     sortField,
     statusFilter,
     visibleColumns,
+    hasBurningManTicketFilter,
+    hasVehiclePassFilter,
+    requestsFilter,
   ]);
 
   const clearFilters = () => {
@@ -354,6 +484,9 @@ export function ExportSignupsTable() {
     setSearchValue("");
     setSortField(DEFAULT_SIGNUPS_VIEW_STATE.sort.field);
     setSortDirection(DEFAULT_SIGNUPS_VIEW_STATE.sort.direction);
+    setHasBurningManTicketFilter("any");
+    setHasVehiclePassFilter("any");
+    setRequestsFilter("any");
   };
 
   const toggleColumn = (columnId: SignupColumnId) => {
@@ -367,6 +500,16 @@ export function ExportSignupsTable() {
 
       return [...currentColumns, columnId];
     });
+  };
+
+  const handleToggleHeaderBooleanFilter = (
+    columnId: "hasBurningManTicket" | "hasVehiclePass"
+  ) => {
+    if (columnId === "hasBurningManTicket") {
+      setHasBurningManTicketFilter((current) => cycleBooleanQuickFilter(current));
+      return;
+    }
+    setHasVehiclePassFilter((current) => cycleBooleanQuickFilter(current));
   };
 
   const handleExportCurrentView = () => {
@@ -409,16 +552,16 @@ export function ExportSignupsTable() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {isLoading && (
+            {isRefreshing && (
               <span className="text-xs text-slate-400">Refreshing...</span>
             )}
             <button
               type="button"
               onClick={handleExportCurrentView}
-              disabled={isLoading || !resolvedResult || resolvedResult.rows.length === 0}
+              disabled={isRefreshing || !resolvedResult || resolvedResult.rows.length === 0}
               className={clsx(
                 "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",
-                isLoading || !resolvedResult || resolvedResult.rows.length === 0
+                isRefreshing || !resolvedResult || resolvedResult.rows.length === 0
                   ? "bg-emerald-500/20 text-emerald-200/60 cursor-not-allowed"
                   : "bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30"
               )}
@@ -507,11 +650,11 @@ export function ExportSignupsTable() {
                   onChange={(event) => setStatusFilter(event.target.value)}
                   className="mt-1 w-full rounded bg-slate-900 border border-white/10 px-2 py-1.5 text-sm text-white"
                 >
-                  <option value="all">All</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="pending_payment">Pending payment</option>
-                  <option value="needs_ops_review">Needs ops review</option>
-                  <option value="rejected">Rejected</option>
+                  {STATUS_FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="text-xs text-slate-300">
@@ -606,14 +749,10 @@ export function ExportSignupsTable() {
         </div>
       </div>
 
-      {isLoading ? (
+      {isInitialLoading || !resolvedResult ? (
         <div className="text-center py-12 rounded-xl bg-white/5 ring-1 ring-white/10">
           <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto" />
           <p className="mt-4 text-slate-400">Loading signups view...</p>
-        </div>
-      ) : resolvedResult && resolvedResult.rows.length === 0 ? (
-        <div className="text-center py-12 rounded-xl bg-white/5 ring-1 ring-white/10">
-          <p className="text-slate-400">No signups match the selected view settings.</p>
         </div>
       ) : (
         <div className="rounded-xl bg-white/5 ring-1 ring-white/10 overflow-hidden">
@@ -626,28 +765,97 @@ export function ExportSignupsTable() {
                       key={column.id}
                       className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider"
                     >
-                      {column.label}
+                      <div className="flex flex-col gap-1">
+                        <span>{column.label}</span>
+                        {column.id === "hasBurningManTicket" && (
+                          <button
+                            type="button"
+                            aria-label={`Filter Has BM Ticket: ${getBooleanQuickFilterLabel(
+                              hasBurningManTicketFilter
+                            )}`}
+                            onClick={() =>
+                              handleToggleHeaderBooleanFilter("hasBurningManTicket")
+                            }
+                            className="w-fit rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-slate-200 hover:bg-white/20"
+                          >
+                            Filter: {getBooleanQuickFilterLabel(hasBurningManTicketFilter)}
+                          </button>
+                        )}
+                        {column.id === "hasVehiclePass" && (
+                          <button
+                            type="button"
+                            aria-label={`Filter Has Vehicle Pass: ${getBooleanQuickFilterLabel(
+                              hasVehiclePassFilter
+                            )}`}
+                            onClick={() =>
+                              handleToggleHeaderBooleanFilter("hasVehiclePass")
+                            }
+                            className="w-fit rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-slate-200 hover:bg-white/20"
+                          >
+                            Filter: {getBooleanQuickFilterLabel(hasVehiclePassFilter)}
+                          </button>
+                        )}
+                        {column.id === "requests" && (
+                          <button
+                            type="button"
+                            aria-label={`Filter Requests: ${getRequestsQuickFilterLabel(
+                              requestsFilter
+                            )}`}
+                            onClick={() =>
+                              setRequestsFilter((current) =>
+                                cycleRequestsQuickFilter(current)
+                              )
+                            }
+                            className="w-fit rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-slate-200 hover:bg-white/20"
+                          >
+                            Filter: {getRequestsQuickFilterLabel(requestsFilter)}
+                          </button>
+                        )}
+                        {column.id === "status" && (
+                          <button
+                            type="button"
+                            aria-label={`Filter Status: ${getStatusFilterLabel(statusFilter)}`}
+                            onClick={() =>
+                              setStatusFilter((current) => cycleStatusFilter(current))
+                            }
+                            className="w-fit rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-slate-200 hover:bg-white/20"
+                          >
+                            Filter: {getStatusFilterLabel(statusFilter)}
+                          </button>
+                        )}
+                      </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {resolvedResult?.rows.map((row) => (
-                  <tr key={row._id} className="hover:bg-white/5 transition-colors">
-                    {selectedColumns.map((column) => (
-                      <td
-                        key={`${row._id}:${column.id}`}
-                        className="px-4 py-3 text-sm text-slate-200"
-                      >
-                        {column.render(row)}
-                      </td>
-                    ))}
+                {resolvedResult.rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={selectedColumns.length}
+                      className="px-4 py-8 text-center text-sm text-slate-400"
+                    >
+                      No signups match the selected view settings.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  resolvedResult.rows.map((row) => (
+                    <tr key={row._id} className="hover:bg-white/5 transition-colors">
+                      {selectedColumns.map((column) => (
+                        <td
+                          key={`${row._id}:${column.id}`}
+                          className="px-4 py-3 text-sm text-slate-200"
+                        >
+                          {column.render(row)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-          {isLoading && (
+          {isRefreshing && (
             <div className="border-t border-white/10 bg-black/20 px-4 py-2 text-xs text-slate-400">
               Updating table...
             </div>

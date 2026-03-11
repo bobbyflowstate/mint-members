@@ -24,6 +24,7 @@ export default function OpsLayout({ children }: OpsLayoutProps) {
   const pathname = usePathname();
   const [mobileMenuPath, setMobileMenuPath] = useState<string | null>(null);
   const isMobileMenuOpen = mobileMenuPath === pathname;
+  const isExportPage = pathname === "/ops/export";
 
   const toggleMobileMenu = () => {
     setMobileMenuPath((currentPath) => (currentPath === pathname ? null : pathname));
@@ -126,7 +127,14 @@ export default function OpsLayout({ children }: OpsLayoutProps) {
 
         {/* Main content */}
         <main className="py-8">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
+          <div
+            className={clsx(
+              "mx-auto px-4 sm:px-6 lg:px-8",
+              isExportPage ? "max-w-none" : "max-w-7xl"
+            )}
+          >
+            {children}
+          </div>
         </main>
       </div>
     </AuthGate>

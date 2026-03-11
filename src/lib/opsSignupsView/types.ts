@@ -25,6 +25,7 @@ export const FILTER_OPERATORS = [
   "on_or_before",
   "on_or_after",
   "in",
+  "not_empty",
 ] as const;
 
 export type FilterOperator = (typeof FILTER_OPERATORS)[number];
@@ -147,6 +148,11 @@ function normalizeFilters(input: unknown): SignupFilter[] {
         return normalizedFilters;
       }
       normalizedFilters.push({ field: filter.field, operator: filter.operator, values });
+      return normalizedFilters;
+    }
+
+    if (filter.operator === "not_empty") {
+      normalizedFilters.push({ field: filter.field, operator: filter.operator });
       return normalizedFilters;
     }
 

@@ -18,6 +18,9 @@ const VALID_STATE: ExportViewUiState = {
   searchValue: "example.com",
   sortField: "arrival",
   sortDirection: "asc",
+  hasBurningManTicketFilter: "yes",
+  hasVehiclePassFilter: "no",
+  requestsFilter: "has_requests",
 };
 
 describe("opsSignupsView storage", () => {
@@ -42,11 +45,14 @@ describe("opsSignupsView storage", () => {
         arrivalDate: 123,
         departureOperator: "before",
         departureDate: "",
-        statusFilter: 9,
+        statusFilter: "bad_status",
         searchField: "oops",
         searchValue: null,
         sortField: "also_bad",
         sortDirection: "neither",
+        hasBurningManTicketFilter: "maybe",
+        hasVehiclePassFilter: 5,
+        requestsFilter: "nope",
       })
     );
 
@@ -62,6 +68,9 @@ describe("opsSignupsView storage", () => {
       searchValue: "",
       sortField: "createdAt",
       sortDirection: "desc",
+      hasBurningManTicketFilter: "any",
+      hasVehiclePassFilter: "any",
+      requestsFilter: "any",
     });
   });
 

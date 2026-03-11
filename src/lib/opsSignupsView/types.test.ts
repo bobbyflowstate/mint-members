@@ -46,6 +46,7 @@ describe("opsSignupsView/types", () => {
         "on_or_before",
         "on_or_after",
         "in",
+        "not_empty",
       ])
     );
   });

@@ -141,6 +141,18 @@ describe("matchesSignupFilters", () => {
     expect(matchesSignupFilters(alex, filters)).toBe(true);
     expect(matchesSignupFilters(jordan, filters)).toBe(false);
   });
+
+  it("supports not_empty operator", () => {
+    const filters: SignupFilter[] = [
+      {
+        field: "requests",
+        operator: "not_empty",
+      },
+    ];
+
+    expect(matchesSignupFilters(alex, filters)).toBe(true);
+    expect(matchesSignupFilters(jordan, filters)).toBe(false);
+  });
 });
 
 describe("compareSignups", () => {

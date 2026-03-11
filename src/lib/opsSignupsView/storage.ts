@@ -10,6 +10,15 @@ export const EXPORT_SIGNUPS_VIEW_STORAGE_KEY = "ops_signups_export_view_v1";
 
 const ALLOWED_SEARCH_FIELDS = ["fullName", "email", "phone"] as const;
 type SearchField = (typeof ALLOWED_SEARCH_FIELDS)[number];
+type BooleanQuickFilter = "any" | "yes" | "no";
+type RequestsQuickFilter = "any" | "has_requests";
+const ALLOWED_STATUS_FILTERS = [
+  "all",
+  "confirmed",
+  "pending_payment",
+  "needs_ops_review",
+  "rejected",
+] as const;
 
 export interface ExportViewUiState {
   visibleColumns: SignupColumnId[];
@@ -22,6 +31,9 @@ export interface ExportViewUiState {
   searchValue: string;
   sortField: SignupColumnId;
   sortDirection: SortDirection;
+  hasBurningManTicketFilter: BooleanQuickFilter;
+  hasVehiclePassFilter: BooleanQuickFilter;
+  requestsFilter: RequestsQuickFilter;
 }
 
 const DEFAULT_EXPORT_VIEW_UI_STATE: ExportViewUiState = {
@@ -35,7 +47,18 @@ const DEFAULT_EXPORT_VIEW_UI_STATE: ExportViewUiState = {
   searchValue: "",
   sortField: DEFAULT_SIGNUPS_VIEW_STATE.sort.field,
   sortDirection: DEFAULT_SIGNUPS_VIEW_STATE.sort.direction,
+  hasBurningManTicketFilter: "any",
+  hasVehiclePassFilter: "any",
+  requestsFilter: "any",
 };
+
+function isBooleanQuickFilter(value: unknown): value is BooleanQuickFilter {
+  return value === "any" || value === "yes" || value === "no";
+}
+
+function isRequestsQuickFilter(value: unknown): value is RequestsQuickFilter {
+  return value === "any" || value === "has_requests";
+}
 
 function isFilterOperatorValue(value: unknown): value is (typeof FILTER_OPERATORS)[number] {
   return (
@@ -46,6 +69,13 @@ function isFilterOperatorValue(value: unknown): value is (typeof FILTER_OPERATOR
 
 function isSearchField(value: unknown): value is SearchField {
   return typeof value === "string" && (ALLOWED_SEARCH_FIELDS as readonly string[]).includes(value);
+}
+
+function isStatusFilter(value: unknown): value is ExportViewUiState["statusFilter"] {
+  return (
+    typeof value === "string" &&
+    (ALLOWED_STATUS_FILTERS as readonly string[]).includes(value)
+  );
 }
 
 function normalizeState(raw: unknown): ExportViewUiState {
@@ -70,10 +100,9 @@ function normalizeState(raw: unknown): ExportViewUiState {
       ? maybe.departureOperator
       : DEFAULT_EXPORT_VIEW_UI_STATE.departureOperator,
     departureDate: typeof maybe.departureDate === "string" ? maybe.departureDate : "",
-    statusFilter:
-      typeof maybe.statusFilter === "string"
-        ? maybe.statusFilter
-        : DEFAULT_EXPORT_VIEW_UI_STATE.statusFilter,
+    statusFilter: isStatusFilter(maybe.statusFilter)
+      ? maybe.statusFilter
+      : DEFAULT_EXPORT_VIEW_UI_STATE.statusFilter,
     searchField: isSearchField(maybe.searchField)
       ? maybe.searchField
       : DEFAULT_EXPORT_VIEW_UI_STATE.searchField,
@@ -87,6 +116,15 @@ function normalizeState(raw: unknown): ExportViewUiState {
       maybe.sortDirection === "asc" || maybe.sortDirection === "desc"
         ? maybe.sortDirection
         : DEFAULT_EXPORT_VIEW_UI_STATE.sortDirection,
+    hasBurningManTicketFilter: isBooleanQuickFilter(maybe.hasBurningManTicketFilter)
+      ? maybe.hasBurningManTicketFilter
+      : DEFAULT_EXPORT_VIEW_UI_STATE.hasBurningManTicketFilter,
+    hasVehiclePassFilter: isBooleanQuickFilter(maybe.hasVehiclePassFilter)
+      ? maybe.hasVehiclePassFilter
+      : DEFAULT_EXPORT_VIEW_UI_STATE.hasVehiclePassFilter,
+    requestsFilter: isRequestsQuickFilter(maybe.requestsFilter)
+      ? maybe.requestsFilter
+      : DEFAULT_EXPORT_VIEW_UI_STATE.requestsFilter,
   };
 }
 

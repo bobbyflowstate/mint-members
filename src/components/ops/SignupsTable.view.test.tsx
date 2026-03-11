@@ -212,4 +212,224 @@ describe("ExportSignupsTable view controls", () => {
     expect(screen.getByLabelText("Search Field")).toHaveValue("email");
     expect(screen.getByLabelText("Search")).toHaveValue("alex@");
   });
+
+  it("cycles Has BM Ticket header filter between any, yes, and no", () => {
+    render(<ExportSignupsTable />);
+
+    fireEvent.click(screen.getByLabelText("Show Has BM Ticket"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Has BM Ticket: Any" }));
+    let callWithYesFilter = mockUseQuery.mock.calls.find((call) => {
+      const args = call[1] as {
+        viewState?: { filters?: Array<{ field: string; operator: string; value?: string }> };
+      };
+      return args?.viewState?.filters?.some(
+        (filter) =>
+          filter.field === "hasBurningManTicket" &&
+          filter.operator === "eq" &&
+          filter.value === "true"
+      );
+    });
+    expect(callWithYesFilter).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Has BM Ticket: Yes" }));
+    const callWithNoFilter = mockUseQuery.mock.calls.find((call) => {
+      const args = call[1] as {
+        viewState?: { filters?: Array<{ field: string; operator: string; value?: string }> };
+      };
+      return args?.viewState?.filters?.some(
+        (filter) =>
+          filter.field === "hasBurningManTicket" &&
+          filter.operator === "eq" &&
+          filter.value === "false"
+      );
+    });
+    expect(callWithNoFilter).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Has BM Ticket: No" }));
+    const callAfterClear = mockUseQuery.mock.calls[mockUseQuery.mock.calls.length - 1];
+    const argsAfterClear = callAfterClear?.[1] as {
+      viewState?: { filters?: Array<{ field: string; operator: string; value?: string }> };
+    };
+    expect(
+      argsAfterClear.viewState?.filters?.some(
+        (filter) => filter.field === "hasBurningManTicket"
+      )
+    ).toBe(false);
+  });
+
+  it("toggles Requests header filter to only non-empty values", () => {
+    render(<ExportSignupsTable />);
+
+    fireEvent.click(screen.getByLabelText("Show Requests"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Requests: Any" }));
+
+    const callWithRequestsFilter = mockUseQuery.mock.calls.find((call) => {
+      const args = call[1] as {
+        viewState?: { filters?: Array<{ field: string; operator: string }> };
+      };
+      return args?.viewState?.filters?.some(
+        (filter) => filter.field === "requests" && filter.operator === "not_empty"
+      );
+    });
+    expect(callWithRequestsFilter).toBeTruthy();
+  });
+
+  it("cycles Status header filter through values and back to any", () => {
+    render(<ExportSignupsTable />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Status: Any" }));
+
+    const callWithConfirmed = mockUseQuery.mock.calls.find((call) => {
+      const args = call[1] as {
+        viewState?: { filters?: Array<{ field: string; operator: string; value?: string }> };
+      };
+      return args?.viewState?.filters?.some(
+        (filter) =>
+          filter.field === "status" &&
+          filter.operator === "eq" &&
+          filter.value === "confirmed"
+      );
+    });
+    expect(callWithConfirmed).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Status: Confirmed" }));
+    const callWithPending = mockUseQuery.mock.calls.find((call) => {
+      const args = call[1] as {
+        viewState?: { filters?: Array<{ field: string; operator: string; value?: string }> };
+      };
+      return args?.viewState?.filters?.some(
+        (filter) =>
+          filter.field === "status" &&
+          filter.operator === "eq" &&
+          filter.value === "pending_payment"
+      );
+    });
+    expect(callWithPending).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Status: Pending payment" }));
+    fireEvent.click(screen.getByRole("button", { name: "Filter Status: Needs ops review" }));
+    fireEvent.click(screen.getByRole("button", { name: "Filter Status: Rejected" }));
+
+    const callAfterClear = mockUseQuery.mock.calls[mockUseQuery.mock.calls.length - 1];
+    const argsAfterClear = callAfterClear?.[1] as {
+      viewState?: { filters?: Array<{ field: string; operator: string; value?: string }> };
+    };
+    expect(
+      argsAfterClear.viewState?.filters?.some((filter) => filter.field === "status")
+    ).toBe(false);
+  });
+
+  it("keeps table visible while refreshing after a header filter change", () => {
+    const baseResult = {
+      rows: [
+        {
+          _id: "row_1",
+          firstName: "Alex",
+          lastName: "Rivera",
+          fullName: "Alex Rivera",
+          email: "alex@example.com",
+          phone: "+15551231234",
+          arrival: "2026-08-29",
+          arrivalTime: "11.01 am to 6.00 pm",
+          departure: "2026-09-06",
+          departureTime: "6.01 pm to 12.00 am",
+          status: "confirmed",
+          applicationCreatedAt: 100,
+          createdAt: 100,
+          hasBurningManTicket: true,
+          hasVehiclePass: false,
+          requests: "",
+        },
+      ],
+      totalBeforeFilter: 1,
+      totalAfterFilter: 1,
+      truncated: false,
+    };
+
+    mockUseQuery.mockImplementation((_query, args) => {
+      if (args === "skip") {
+        return undefined;
+      }
+      const viewState = (args as { viewState?: { filters?: Array<{ field: string }> } })
+        .viewState;
+      const hasBurningManTicketFilter = viewState?.filters?.some(
+        (filter) => filter.field === "hasBurningManTicket"
+      );
+      if (hasBurningManTicketFilter) {
+        return undefined;
+      }
+      return baseResult;
+    });
+
+    render(<ExportSignupsTable />);
+    fireEvent.click(screen.getByLabelText("Show Has BM Ticket"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Has BM Ticket: Any" }));
+
+    expect(
+      screen.queryByText("Loading signups view...", { exact: false })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filter Has BM Ticket: Yes" })).toBeInTheDocument();
+    expect(screen.getByText("Updating table...")).toBeInTheDocument();
+  });
+
+  it("keeps header filter controls visible when current filters return zero rows", () => {
+    const baseResult = {
+      rows: [
+        {
+          _id: "row_1",
+          firstName: "Alex",
+          lastName: "Rivera",
+          fullName: "Alex Rivera",
+          email: "alex@example.com",
+          phone: "+15551231234",
+          arrival: "2026-08-29",
+          arrivalTime: "11.01 am to 6.00 pm",
+          departure: "2026-09-06",
+          departureTime: "6.01 pm to 12.00 am",
+          status: "confirmed",
+          applicationCreatedAt: 100,
+          createdAt: 100,
+          hasBurningManTicket: true,
+          hasVehiclePass: false,
+          requests: "",
+        },
+      ],
+      totalBeforeFilter: 1,
+      totalAfterFilter: 1,
+      truncated: false,
+    };
+    const emptyResult = {
+      ...baseResult,
+      rows: [],
+      totalAfterFilter: 0,
+    };
+
+    mockUseQuery.mockImplementation((_query, args) => {
+      if (args === "skip") {
+        return undefined;
+      }
+      const viewState = (args as {
+        viewState?: { filters?: Array<{ field: string; operator: string }> };
+      }).viewState;
+      const hasRequestsFilter = viewState?.filters?.some(
+        (filter) => filter.field === "requests" && filter.operator === "not_empty"
+      );
+      if (hasRequestsFilter) {
+        return emptyResult;
+      }
+      return baseResult;
+    });
+
+    render(<ExportSignupsTable />);
+    fireEvent.click(screen.getByLabelText("Show Requests"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter Requests: Any" }));
+
+    expect(screen.getByText("No signups match the selected view settings.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filter Requests: Has requests" })).toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
+  });
 });

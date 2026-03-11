@@ -64,6 +64,9 @@ function matchesFilter(row: Record<string, unknown>, filter: SignupFilter): bool
       const candidate = asString(rowValue).toLowerCase();
       return filter.values.some((value) => value.toLowerCase() === candidate);
     }
+    case "not_empty": {
+      return asString(rowValue).trim().length > 0;
+    }
     default:
       return false;
   }
