@@ -70,6 +70,7 @@ export default function OpsHomePage() {
   const [projectionBackfillDryRun, setProjectionBackfillDryRun] = useState(true);
 
   const paymentsEnabled = isFlagEnabled(config?.paymentsEnabled);
+  const newbieInvitesEnabled = isFlagEnabled(config?.newbieInvitesEnabled);
 
   const handlePaymentToggle = () => {
     if (!config) {
@@ -78,6 +79,33 @@ export default function OpsHomePage() {
     // Show confirmation dialog instead of toggling directly
     setShowConfirmDialog(true);
     setConfirmationText("");
+  };
+
+  const handleNewbieInvitesToggle = async () => {
+    if (!config || !opsPassword) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSaving(true);
+
+    try {
+      await updateConfig({
+        key: "newbieInvitesEnabled",
+        value: newbieInvitesEnabled ? "false" : "true",
+        description: "Controls whether confirmed alumni can sponsor newbies",
+        opsPassword,
+      });
+    } catch (error) {
+      console.error("Failed to toggle newbie invites", error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to save newbie invites setting. Please try again."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleConfirmToggle = async () => {
@@ -251,6 +279,40 @@ export default function OpsHomePage() {
               </span>
             </span>
             {isSaving && <span className="text-slate-500">Saving...</span>}
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Newbie Invites</h2>
+              <p className="mt-2 text-sm text-slate-400">
+                Control whether confirmed alumni members can sponsor newbies.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={newbieInvitesEnabled}
+              aria-label="Toggle newbie invites"
+              onClick={handleNewbieInvitesToggle}
+              disabled={!config || isSaving}
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+                newbieInvitesEnabled ? "bg-emerald-500" : "bg-slate-600"
+              } ${isSaving ? "opacity-70" : ""} disabled:cursor-not-allowed`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  newbieInvitesEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-sm">
+            <span className="text-slate-400">Current status</span>
+            <span className={newbieInvitesEnabled ? "text-emerald-400" : "text-amber-400"}>
+              {newbieInvitesEnabled ? "Enabled" : "Disabled"}
+            </span>
           </div>
         </div>
 

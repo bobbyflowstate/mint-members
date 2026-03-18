@@ -8,6 +8,7 @@ import {
 const DEFAULTS = {
   reservationFeeCents: "10000",
   paymentsEnabled: "false",
+  newbieInvitesEnabled: "true",
   departureCutoff: "2026-09-07",
 };
 
@@ -18,6 +19,7 @@ describe("config override policy", () => {
 
   it("allows runtime overrides for mutable keys", () => {
     expect(isRuntimeConfigOverrideAllowed("paymentsEnabled")).toBe(true);
+    expect(isRuntimeConfigOverrideAllowed("newbieInvitesEnabled")).toBe(true);
     expect(isRuntimeConfigOverrideAllowed("departureCutoff")).toBe(true);
   });
 });

@@ -48,6 +48,8 @@ export const addEmails = mutation({
           email,
           addedBy: opsEmail,
           addedAt: now,
+          memberType: "alumni",
+          source: "ops",
           notes: args.notes,
         });
         addedCount++;

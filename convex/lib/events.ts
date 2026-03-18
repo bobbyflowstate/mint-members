@@ -19,6 +19,9 @@ export const EVENT_TYPES = [
   "allowlist_emails_removed_bulk",
   "capacity_exceeded",
   "confirmed_member_updated",
+  "newbie_invited",
+  "newbie_invite_email_sent",
+  "newbie_invite_email_failed",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -285,6 +288,52 @@ export function buildAllowlistEmailsRemovedBulkPayload(data: {
     type: "allowlist_emails_removed_bulk" as const,
     count: data.count,
     removedBy: data.removedBy,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export function buildNewbieInvitedPayload(data: {
+  sponsorEmail: string;
+  sponsorName: string;
+  newbieEmail: string;
+  newbieName: string;
+}) {
+  return {
+    type: "newbie_invited" as const,
+    sponsorEmail: data.sponsorEmail,
+    sponsorName: data.sponsorName,
+    newbieEmail: data.newbieEmail,
+    newbieName: data.newbieName,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export function buildNewbieInviteEmailSentPayload(data: {
+  sponsorEmail: string;
+  sponsorName: string;
+  newbieEmail: string;
+}) {
+  return {
+    type: "newbie_invite_email_sent" as const,
+    sponsorEmail: data.sponsorEmail,
+    sponsorName: data.sponsorName,
+    newbieEmail: data.newbieEmail,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export function buildNewbieInviteEmailFailedPayload(data: {
+  sponsorEmail: string;
+  sponsorName: string;
+  newbieEmail: string;
+  error: string;
+}) {
+  return {
+    type: "newbie_invite_email_failed" as const,
+    sponsorEmail: data.sponsorEmail,
+    sponsorName: data.sponsorName,
+    newbieEmail: data.newbieEmail,
+    error: data.error,
     timestamp: new Date().toISOString(),
   };
 }

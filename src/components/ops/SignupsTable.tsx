@@ -332,6 +332,24 @@ export function SignupsTable() {
                         </div>
                         <div>
                           <dt className="text-xs uppercase tracking-wide text-slate-500">
+                            Member Type
+                          </dt>
+                          <dd className="mt-1">
+                            <span className="inline-flex rounded-full bg-sky-500/10 px-2 py-1 text-xs font-medium text-sky-200 ring-1 ring-sky-400/30">
+                              {signup.memberType === "newbie" ? "Newbie" : "Alumni"}
+                            </span>
+                          </dd>
+                        </div>
+                        {signup.sponsorName && (
+                          <div>
+                            <dt className="text-xs uppercase tracking-wide text-slate-500">
+                              Sponsor
+                            </dt>
+                            <dd className="text-slate-300">{signup.sponsorName}</dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt className="text-xs uppercase tracking-wide text-slate-500">
                             Payment Status
                           </dt>
                           <dd className="mt-1">
@@ -386,6 +404,12 @@ export function SignupsTable() {
                           Phone #
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Member Type
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Sponsor
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                           Payment Status
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -413,6 +437,14 @@ export function SignupsTable() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                               {signup.phone}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex rounded-full bg-sky-500/10 px-2 py-1 text-xs font-medium text-sky-200 ring-1 ring-sky-400/30">
+                                {signup.memberType === "newbie" ? "Newbie" : "Alumni"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                              {signup.sponsorName ?? "—"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={getPaymentStatusBadgeClasses(isPaid)}>

@@ -53,6 +53,9 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   // Whether payments are enabled
   paymentsEnabled: "false",
 
+  // Whether confirmed alumni can sponsor newbies
+  newbieInvitesEnabled: "true",
+
   // Email allowlist enforcement
   allowlistEnabled: "false",
 };

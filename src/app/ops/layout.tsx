@@ -16,6 +16,7 @@ const navigation = [
   { name: "Sign Ups", href: "/ops/signups" },
   { name: "Export", href: "/ops/export" },
   { name: "Confirmed", href: "/ops/confirmed" },
+  { name: "Invites", href: "/ops/invites" },
   { name: "Event Logs", href: "/ops/logs" },
   { name: "Email Allowlist", href: "/ops/allowlist" },
 ];

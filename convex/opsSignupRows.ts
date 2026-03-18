@@ -33,6 +33,14 @@ export async function upsertOpsSignupRow(
     .withIndex("by_applicationId", (q) => q.eq("applicationId", applicationId))
     .first();
 
+  const newbieInvite =
+    application.memberType === "newbie"
+      ? await ctx.db
+          .query("newbie_invites")
+          .withIndex("by_newbieEmail", (q) => q.eq("newbieEmail", application.email))
+          .first()
+      : null;
+
   const requests = confirmedMember?.requests ?? confirmedMember?.notes ?? "";
   const mergedRow = {
     applicationId: application._id,
@@ -52,6 +60,9 @@ export async function upsertOpsSignupRow(
     hasBurningManTicket: confirmedMember?.hasBurningManTicket ?? false,
     hasVehiclePass: confirmedMember?.hasVehiclePass ?? false,
     requests,
+    memberType: application.memberType ?? "alumni",
+    sponsorName: newbieInvite?.sponsorName,
+    sponsorEmail: newbieInvite?.sponsorEmail,
     applicationCreatedAt: application.createdAt,
     updatedAt: Date.now(),
     sourceVersion: OPS_SIGNUP_ROW_SOURCE_VERSION,

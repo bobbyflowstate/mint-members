@@ -10,6 +10,7 @@ import {
   buildWebhookErrorPayload,
   buildMutationFailedPayload,
   buildConfirmedMemberUpdatedPayload,
+  buildNewbieInvitedPayload,
   EVENT_TYPES,
 } from "../../../convex/lib/events";
 
@@ -35,6 +36,9 @@ describe("Event Payload Builders", () => {
       expect(EVENT_TYPES).toContain("webhook_error");
       expect(EVENT_TYPES).toContain("mutation_failed");
       expect(EVENT_TYPES).toContain("confirmed_member_updated");
+      expect(EVENT_TYPES).toContain("newbie_invited");
+      expect(EVENT_TYPES).toContain("newbie_invite_email_sent");
+      expect(EVENT_TYPES).toContain("newbie_invite_email_failed");
     });
   });
 
@@ -87,6 +91,24 @@ describe("Event Payload Builders", () => {
       expect(payload.amountCents).toBe(35000);
       expect(payload.stripeSessionId).toBe("cs_test_123");
       expect(payload.timestamp).toBeDefined();
+    });
+  });
+
+  describe("buildNewbieInvitedPayload", () => {
+    it("should build correct payload for sponsor invites", () => {
+      const payload = buildNewbieInvitedPayload({
+        sponsorEmail: "alex@example.com",
+        sponsorName: "Alex Rivera",
+        newbieEmail: "sam@example.com",
+        newbieName: "Sam Patel",
+      });
+
+      expect(payload.type).toBe("newbie_invited");
+      expect(payload.sponsorEmail).toBe("alex@example.com");
+      expect(payload.sponsorName).toBe("Alex Rivera");
+      expect(payload.newbieEmail).toBe("sam@example.com");
+      expect(payload.newbieName).toBe("Sam Patel");
+      expect(payload.timestamp).toBe("2025-08-15T12:00:00.000Z");
     });
   });
 

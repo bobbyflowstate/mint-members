@@ -63,6 +63,14 @@ describe("upsertOpsSignupRow", () => {
             };
           }
 
+          if (table === "newbie_invites") {
+            return {
+              withIndex: () => ({
+                first: vi.fn().mockResolvedValue(null),
+              }),
+            };
+          }
+
           throw new Error(`Unexpected query table ${table}`);
         }),
         insert: insertSpy,
@@ -132,6 +140,13 @@ describe("upsertOpsSignupRow", () => {
             return {
               withIndex: () => ({
                 first: vi.fn().mockResolvedValue({ _id: "ops_row_2" }),
+              }),
+            };
+          }
+          if (table === "newbie_invites") {
+            return {
+              withIndex: () => ({
+                first: vi.fn().mockResolvedValue(null),
               }),
             };
           }

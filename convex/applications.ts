@@ -66,15 +66,15 @@ export const createDraftApplication = mutation({
       .first();
     const allowlistEnabled = allowlistConfig?.value === "true";
 
-    if (allowlistEnabled) {
-      const emailEntry = await ctx.db
-        .query("email_allowlist")
-        .withIndex("by_email", (q) => q.eq("email", userEmail))
-        .first();
+    const emailEntry = await ctx.db
+      .query("email_allowlist")
+      .withIndex("by_email", (q) => q.eq("email", userEmail))
+      .first();
 
-      if (!emailEntry) {
-        throw new Error("Applications are currently only open to alumni members.");
-      }
+    if (allowlistEnabled && !emailEntry) {
+      throw new Error(
+        "Applications are currently only open to approved alumni or sponsored newbies."
+      );
     }
 
     // Check if user already has an application
@@ -104,6 +104,7 @@ export const createDraftApplication = mutation({
     // Determine initial status and payment allowed
     const status = requiresOpsReview ? "needs_ops_review" : "pending_payment";
     const paymentAllowed = !requiresOpsReview;
+    const memberType = emailEntry?.memberType ?? "alumni";
 
     try {
       // Insert the application
@@ -124,9 +125,24 @@ export const createDraftApplication = mutation({
         earlyDepartureRequested: requiresOpsReview,
         earlyDepartureReason: requiresOpsReview ? args.earlyDepartureReason?.trim() : undefined,
         paymentAllowed,
+        memberType,
         createdAt: now,
         updatedAt: now,
       });
+
+      if (memberType === "newbie") {
+        const invite = await ctx.db
+          .query("newbie_invites")
+          .withIndex("by_newbieEmail", (q) => q.eq("newbieEmail", userEmail))
+          .first();
+
+        if (invite && !invite.applicationId) {
+          await ctx.db.patch(invite._id, {
+            applicationId,
+            updatedAt: now,
+          });
+        }
+      }
       await upsertOpsSignupRow(ctx, applicationId);
 
       // Log form submitted event
@@ -497,6 +513,7 @@ export const listSignups = query({
       _id: signup._id,
       firstName: signup.firstName,
       lastName: signup.lastName,
+      memberType: signup.memberType ?? "alumni",
       email: signup.email,
       phone: signup.phone,
       arrival: signup.arrival,
@@ -581,13 +598,39 @@ export const list = query({
     const limit = args.limit ?? 50;
 
     if (args.status) {
-      return await ctx.db
+      const applications = await ctx.db
         .query("applications")
         .withIndex("by_status", (q) => q.eq("status", args.status!))
         .order("desc")
         .take(limit);
+      const newbieInvites = await ctx.db.query("newbie_invites").collect();
+      const invitesByEmail = new Map(
+        newbieInvites.map((invite) => [invite.newbieEmail, invite])
+      );
+
+      return applications.map((application) => ({
+        ...application,
+        memberType: application.memberType ?? "alumni",
+        sponsorName:
+          (application.memberType ?? "alumni") === "newbie"
+            ? invitesByEmail.get(application.email)?.sponsorName
+            : undefined,
+      }));
     }
 
-    return await ctx.db.query("applications").order("desc").take(limit);
+    const applications = await ctx.db.query("applications").order("desc").take(limit);
+    const newbieInvites = await ctx.db.query("newbie_invites").collect();
+    const invitesByEmail = new Map(
+      newbieInvites.map((invite) => [invite.newbieEmail, invite])
+    );
+
+    return applications.map((application) => ({
+      ...application,
+      memberType: application.memberType ?? "alumni",
+      sponsorName:
+        (application.memberType ?? "alumni") === "newbie"
+          ? invitesByEmail.get(application.email)?.sponsorName
+          : undefined,
+    }));
   },
 });

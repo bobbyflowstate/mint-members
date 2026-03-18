@@ -10,6 +10,8 @@ interface AllowlistEntry {
   email: string;
   addedBy: string;
   addedAt: number;
+  memberType?: "alumni" | "newbie";
+  sponsorName?: string;
   notes?: string;
 }
 
@@ -209,6 +211,14 @@ export function AllowlistTable({ emails, opsPassword }: AllowlistTableProps) {
                     Added by <span className="text-slate-300">{entry.addedBy}</span>
                   </p>
                   <p className="text-xs text-slate-500">
+                    Type: <span className="text-slate-300">{entry.memberType === "newbie" ? "Newbie" : "Alumni"}</span>
+                  </p>
+                  {entry.sponsorName && (
+                    <p className="text-xs text-slate-500">
+                      Sponsored by <span className="text-slate-300">{entry.sponsorName}</span>
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-500">
                     {new Date(entry.addedAt).toLocaleString()}
                   </p>
                   <div className="mt-2">
@@ -258,6 +268,12 @@ export function AllowlistTable({ emails, opsPassword }: AllowlistTableProps) {
                   Email
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Sponsor
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Added By
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -274,7 +290,7 @@ export function AllowlistTable({ emails, opsPassword }: AllowlistTableProps) {
             <tbody className="divide-y divide-white/5">
               {filteredEmails.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-400">
+                  <td colSpan={8} className="px-6 py-12 text-center text-sm text-slate-400">
                     No emails match your search.
                   </td>
                 </tr>
@@ -300,6 +316,14 @@ export function AllowlistTable({ emails, opsPassword }: AllowlistTableProps) {
                       <div className="text-sm font-medium text-white break-all">
                         {entry.email}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-slate-300">
+                        {entry.memberType === "newbie" ? "Newbie" : "Alumni"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-slate-300">{entry.sponsorName ?? "—"}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-slate-300">{entry.addedBy}</div>

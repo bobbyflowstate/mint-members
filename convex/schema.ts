@@ -20,6 +20,10 @@ const applicationStatus = v.union(
   v.literal("rejected")
 );
 
+const memberType = v.union(v.literal("alumni"), v.literal("newbie"));
+
+const allowlistSource = v.union(v.literal("ops"), v.literal("sponsor_invite"));
+
 /**
  * Ops authorization status for early departure requests
  */
@@ -55,7 +59,10 @@ const eventType = v.union(
   v.literal("allowlist_email_removed"),
   v.literal("allowlist_emails_removed_bulk"),
   v.literal("capacity_exceeded"),
-  v.literal("confirmed_member_updated")
+  v.literal("confirmed_member_updated"),
+  v.literal("newbie_invited"),
+  v.literal("newbie_invite_email_sent"),
+  v.literal("newbie_invite_email_failed")
 );
 
 export default defineSchema({
@@ -82,6 +89,7 @@ export default defineSchema({
     earlyDepartureRequested: v.boolean(),
     earlyDepartureReason: v.optional(v.string()),
     paymentAllowed: v.boolean(),
+    memberType: v.optional(memberType),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -131,6 +139,9 @@ export default defineSchema({
     hasBurningManTicket: v.boolean(),
     hasVehiclePass: v.boolean(),
     requests: v.string(),
+    memberType: v.optional(memberType),
+    sponsorName: v.optional(v.string()),
+    sponsorEmail: v.optional(v.string()),
     applicationCreatedAt: v.number(),
     updatedAt: v.number(),
     sourceVersion: v.number(),
@@ -192,8 +203,35 @@ export default defineSchema({
     email: v.string(),        // Normalized to lowercase
     addedBy: v.string(),      // Email of ops user who added
     addedAt: v.number(),
+    memberType: v.optional(memberType),
+    source: v.optional(allowlistSource),
+    sponsorUserId: v.optional(v.id("users")),
+    sponsorApplicationId: v.optional(v.id("applications")),
+    sponsorEmail: v.optional(v.string()),
+    sponsorName: v.optional(v.string()),
+    invitedAt: v.optional(v.number()),
     notes: v.optional(v.string()),
   })
     .index("by_email", ["email"])
     .index("by_addedAt", ["addedAt"]),
+
+  newbie_invites: defineTable({
+    sponsorUserId: v.id("users"),
+    sponsorApplicationId: v.id("applications"),
+    sponsorEmail: v.string(),
+    sponsorName: v.string(),
+    newbieName: v.string(),
+    newbieEmail: v.string(),
+    newbiePhone: v.string(),
+    whyTheyBelong: v.string(),
+    preparednessAcknowledged: v.boolean(),
+    allowlistEmailId: v.optional(v.id("email_allowlist")),
+    applicationId: v.optional(v.id("applications")),
+    inviteEmailSentAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_newbieEmail", ["newbieEmail"])
+    .index("by_sponsorUserId", ["sponsorUserId"])
+    .index("by_createdAt", ["createdAt"]),
 });

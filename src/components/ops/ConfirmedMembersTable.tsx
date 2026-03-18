@@ -13,6 +13,8 @@ interface ConfirmedMemberRow {
   fullName: string;
   email: string;
   phone: string;
+  memberType: "alumni" | "newbie";
+  sponsorName?: string;
   requests: string;
   attendance: string;
   hasBurningManTicket: boolean;
@@ -55,6 +57,8 @@ export function ConfirmedMembersTable() {
       fullName: member.fullName,
       email: member.email,
       phone: member.phone,
+      memberType: member.memberType ?? "alumni",
+      sponsorName: member.sponsorName,
       requests: member.requests,
       attendance: formatAttendance(
         member.arrival,
@@ -97,6 +101,8 @@ export function ConfirmedMembersTableView({ rows }: { rows: ConfirmedMemberRow[]
               <th className="px-4 py-3">Full Name</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Phone #</th>
+              <th className="px-4 py-3">Member Type</th>
+              <th className="px-4 py-3">Sponsor</th>
               <th className="px-4 py-3">Requests</th>
               <th className="px-4 py-3">Arrival / Departure</th>
               <th className="px-4 py-3">Has Burning Man Ticket</th>
@@ -111,6 +117,14 @@ export function ConfirmedMembersTableView({ rows }: { rows: ConfirmedMemberRow[]
                   <td className="px-4 py-3 font-medium text-white">{row.fullName}</td>
                   <td className="px-4 py-3">{row.email}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{row.phone}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex rounded-full bg-sky-500/10 px-2 py-1 text-xs font-medium text-sky-200 ring-1 ring-sky-400/30">
+                      {row.memberType === "newbie" ? "Newbie" : "Alumni"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-300">
+                    {row.sponsorName ?? "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={
@@ -140,6 +154,12 @@ export function ConfirmedMembersTableView({ rows }: { rows: ConfirmedMemberRow[]
               <h3 className="text-base font-semibold text-white">{row.fullName}</h3>
               <p className="text-sm text-slate-300">{row.email}</p>
               <p className="text-sm text-slate-300">{row.phone}</p>
+              <p className="text-sm text-slate-300">
+                Member Type: <span className="text-white">{row.memberType === "newbie" ? "Newbie" : "Alumni"}</span>
+              </p>
+              <p className="text-sm text-slate-300">
+                Sponsor: <span className="text-white">{row.sponsorName ?? "—"}</span>
+              </p>
               <p className="text-sm text-slate-300">{row.attendance}</p>
               <p className="text-sm text-slate-300">
                 Has Burning Man Ticket:{" "}

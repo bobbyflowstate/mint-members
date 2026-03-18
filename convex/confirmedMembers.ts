@@ -32,6 +32,7 @@ export const getMine = query({
       hasBurningManTicket: existingRecord?.hasBurningManTicket ?? false,
       hasVehiclePass: existingRecord?.hasVehiclePass ?? false,
       requests: existingRecord?.requests ?? existingRecord?.notes,
+      memberType: confirmedApplication.memberType ?? "alumni",
     };
   },
 });
@@ -57,10 +58,16 @@ export const listForOps = query({
     const membersByApplicationId = new Map(
       confirmedMembers.map((member) => [member.applicationId, member])
     );
+    const newbieInvites = await ctx.db.query("newbie_invites").collect();
+    const invitesByEmail = new Map(
+      newbieInvites.map((invite) => [invite.newbieEmail, invite])
+    );
 
     return confirmedApplications.map((application) => {
       const memberRecord = membersByApplicationId.get(application._id);
       const requests = memberRecord?.requests ?? memberRecord?.notes ?? "";
+      const memberType = application.memberType ?? "alumni";
+      const sponsor = memberType === "newbie" ? invitesByEmail.get(application.email) : undefined;
 
       return {
         _id: application._id,
@@ -68,6 +75,8 @@ export const listForOps = query({
         email: application.email,
         phone: application.phone,
         requests,
+        memberType,
+        sponsorName: sponsor?.sponsorName,
         arrival: application.arrival,
         arrivalTime: application.arrivalTime,
         departure: application.departure,

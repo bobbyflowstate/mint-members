@@ -5,3 +5,4 @@ export { AllowlistTable } from "./AllowlistTable";
 export { SignupsTable } from "./SignupsTable";
 export { ExportSignupsTable } from "./ExportSignupsTable";
 export { ConfirmedMembersTable } from "./ConfirmedMembersTable";
+export { NewbieInvitesTable } from "./NewbieInvitesTable";
