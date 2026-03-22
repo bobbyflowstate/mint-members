@@ -46,7 +46,7 @@ export function Hero({ content }: HeroProps) {
               Reserve Your Spot
             </Link>
             <Link
-              href="#expectations"
+              href="/culture"
               className="text-sm font-semibold leading-6 text-slate-300 hover:text-white transition-colors"
             >
               Learn more <span aria-hidden="true">→</span>
