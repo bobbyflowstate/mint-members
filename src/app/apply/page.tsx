@@ -204,7 +204,7 @@ function ApplicationFormWithCheck({
           Applications Restricted
         </h2>
         <p className="mt-2 text-slate-400 max-w-sm mx-auto">
-          Applications are currently only open to approved alumni and sponsored newbies. If you believe this is an error, please contact us.
+          Applications are currently only open to approved alumni and accepted newbie invites. If you believe this is an error, please contact us.
         </p>
         <div className="mt-6 text-xs text-slate-500">
           Signed in as: {currentUser?.email}

@@ -1,0 +1,145 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NewbieInvitesTable } from "./NewbieInvitesTable";
+
+const mockUseQuery = vi.fn();
+const mockUseMutation = vi.fn();
+const mockUseAction = vi.fn();
+const mockSetInviteDecision = vi.fn();
+const mockSendApprovalEmail = vi.fn();
+
+vi.mock("convex/react", () => ({
+  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+  useAction: (...args: unknown[]) => mockUseAction(...args),
+}));
+
+vi.mock("../../../convex/_generated/api", () => ({
+  api: {
+    newbieInvites: {
+      listForOps: "newbieInvites:listForOps",
+      setInviteDecision: "newbieInvites:setInviteDecision",
+    },
+    newbieInvitesActions: {
+      sendInviteApprovedEmail: "newbieInvitesActions:sendInviteApprovedEmail",
+    },
+  },
+}));
+
+describe("NewbieInvitesTable", () => {
+  beforeEach(() => {
+    mockUseQuery.mockReset();
+    mockUseMutation.mockReset();
+    mockUseAction.mockReset();
+    mockSetInviteDecision.mockReset();
+    mockSendApprovalEmail.mockReset();
+    sessionStorage.setItem("ops_password", "secret");
+
+    mockUseQuery.mockImplementation((query: string) => {
+      if (query === "newbieInvites:listForOps") {
+        return [
+          {
+            _id: "invite_1",
+            sponsorName: "Alex Rivera",
+            sponsorEmail: "alex@example.com",
+            newbieName: "Sam Patel",
+            newbieEmail: "sam@example.com",
+            newbiePhone: "+15551231234",
+            whyTheyBelong: "Great fit",
+            preparednessAcknowledged: true,
+            estimatedArrival: "2026-08-24",
+            estimatedDeparture: "2026-09-02",
+            createdAt: 1710000000000,
+            status: "pending",
+          },
+          {
+            _id: "invite_2",
+            sponsorName: "Jordan Lee",
+            sponsorEmail: "jordan@example.com",
+            newbieName: "Taylor Kim",
+            newbieEmail: "taylor@example.com",
+            newbiePhone: "+15557654321",
+            whyTheyBelong: "Applied already",
+            preparednessAcknowledged: true,
+            estimatedArrival: "2026-08-25",
+            estimatedDeparture: "2026-09-01",
+            createdAt: 1710000001000,
+            status: "accepted",
+            applicationId: "app_1",
+          },
+        ];
+      }
+
+      return undefined;
+    });
+
+    mockUseMutation.mockImplementation((mutation: string) => {
+      if (mutation === "newbieInvites:setInviteDecision") {
+        return mockSetInviteDecision;
+      }
+
+      throw new Error(`Unexpected mutation ${mutation}`);
+    });
+
+    mockUseAction.mockImplementation((action: string) => {
+      if (action === "newbieInvitesActions:sendInviteApprovedEmail") {
+        return mockSendApprovalEmail;
+      }
+
+      throw new Error(`Unexpected action ${action}`);
+    });
+  });
+
+  it("shows Accept and Deny actions for pending invites", () => {
+    render(<NewbieInvitesTable />);
+
+    expect(screen.getByText("Estimated Arrival")).toBeInTheDocument();
+    expect(screen.getByText("Estimated Departure")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Accept" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Deny" })).toHaveLength(2);
+  });
+
+  it("confirms before accepting and sends the approval email when needed", async () => {
+    mockSetInviteDecision.mockResolvedValue({
+      success: true,
+      status: "accepted",
+      shouldSendApprovalEmail: true,
+    });
+    mockSendApprovalEmail.mockResolvedValue({ success: true });
+
+    render(<NewbieInvitesTable />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Accept" })[0]);
+
+    expect(
+      screen.getByText(
+        "Are you sure? This will send the newbie an email letting them know they can apply."
+      )
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+
+    await waitFor(() => {
+      expect(mockSetInviteDecision).toHaveBeenCalledWith({
+        inviteId: "invite_1",
+        accepted: true,
+        opsPassword: "secret",
+      });
+    });
+
+    await waitFor(() => {
+      expect(mockSendApprovalEmail).toHaveBeenCalledWith({
+        inviteId: "invite_1",
+        newbieEmail: "sam@example.com",
+        sponsorName: "Alex Rivera",
+      });
+    });
+  });
+
+  it("disables Deny when the newbie has already applied", () => {
+    render(<NewbieInvitesTable />);
+
+    const denyButtons = screen.getAllByRole("button", { name: "Deny" });
+    expect(denyButtons[1]).toBeDisabled();
+  });
+});

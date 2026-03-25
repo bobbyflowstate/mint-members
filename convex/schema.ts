@@ -23,6 +23,7 @@ const applicationStatus = v.union(
 const memberType = v.union(v.literal("alumni"), v.literal("newbie"));
 
 const allowlistSource = v.union(v.literal("ops"), v.literal("sponsor_invite"));
+const newbieInviteStatus = v.union(v.literal("pending"), v.literal("accepted"), v.literal("denied"));
 
 /**
  * Ops authorization status for early departure requests
@@ -220,14 +221,21 @@ export default defineSchema({
     sponsorApplicationId: v.id("applications"),
     sponsorEmail: v.string(),
     sponsorName: v.string(),
+    newbieFirstName: v.optional(v.string()),
+    newbieLastName: v.optional(v.string()),
     newbieName: v.string(),
     newbieEmail: v.string(),
     newbiePhone: v.string(),
+    estimatedArrival: v.optional(v.string()),
+    estimatedDeparture: v.optional(v.string()),
     whyTheyBelong: v.string(),
     preparednessAcknowledged: v.boolean(),
+    status: v.optional(newbieInviteStatus),
     allowlistEmailId: v.optional(v.id("email_allowlist")),
     applicationId: v.optional(v.id("applications")),
     inviteEmailSentAt: v.optional(v.number()),
+    submittedEmailSentAt: v.optional(v.number()),
+    approvalEmailSentAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

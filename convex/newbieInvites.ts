@@ -18,6 +18,10 @@ function normalizeName(name: string): string {
   return name.trim().replace(/\s+/g, " ");
 }
 
+function buildDisplayName(firstName: string, lastName: string): string {
+  return `${firstName} ${lastName}`.trim();
+}
+
 function deriveInviteStatus(applicationStatus?: string | null): "invited" | "applied" | "confirmed" {
   if (!applicationStatus) {
     return "invited";
@@ -30,11 +34,37 @@ function deriveInviteStatus(applicationStatus?: string | null): "invited" | "app
   return "applied";
 }
 
+function getInviteReviewStatus(
+  invite: {
+    status?: "pending" | "accepted" | "denied";
+    allowlistEmailId?: unknown;
+  }
+): "pending" | "accepted" | "denied" {
+  if (invite.status) {
+    return invite.status;
+  }
+
+  return invite.allowlistEmailId ? "accepted" : "pending";
+}
+
+async function listInvitesByEmail(
+  ctx: { db: { query: (table: "newbie_invites") => { withIndex: (index: "by_newbieEmail", cb: (q: any) => any) => { collect: () => Promise<any[]> } } } },
+  newbieEmail: string
+) {
+  return ctx.db
+    .query("newbie_invites")
+    .withIndex("by_newbieEmail", (q) => q.eq("newbieEmail", newbieEmail))
+    .collect();
+}
+
 export const submitInvite = mutation({
   args: {
-    newbieName: v.string(),
+    newbieFirstName: v.string(),
+    newbieLastName: v.string(),
     newbieEmail: v.string(),
     newbiePhone: v.string(),
+    estimatedArrival: v.string(),
+    estimatedDeparture: v.string(),
     whyTheyBelong: v.string(),
     preparednessAcknowledged: v.boolean(),
   },
@@ -71,18 +101,31 @@ export const submitInvite = mutation({
       throw new Error("Only confirmed alumni members can sponsor newbies");
     }
 
-    const newbieName = normalizeName(args.newbieName);
+    const newbieFirstName = normalizeName(args.newbieFirstName);
+    const newbieLastName = normalizeName(args.newbieLastName);
+    const newbieName = buildDisplayName(newbieFirstName, newbieLastName);
     const newbieEmail = normalizeEmail(args.newbieEmail);
     const whyTheyBelong = args.whyTheyBelong.trim();
+    const estimatedArrival = args.estimatedArrival.trim();
+    const estimatedDeparture = args.estimatedDeparture.trim();
 
-    if (!newbieName) {
-      throw new Error("Newbie full name is required");
+    if (!newbieFirstName) {
+      throw new Error("Newbie first name is required");
+    }
+    if (!newbieLastName) {
+      throw new Error("Newbie last name is required");
     }
     if (!newbieEmail) {
       throw new Error("Newbie email is required");
     }
     if (!isValidE164Phone(args.newbiePhone)) {
       throw new Error("Newbie phone must be in E.164 format");
+    }
+    if (!estimatedArrival) {
+      throw new Error("Estimated arrival date is required");
+    }
+    if (!estimatedDeparture) {
+      throw new Error("Estimated departure date is required");
     }
     if (!whyTheyBelong) {
       throw new Error("Please explain why this person would be a good addition");
@@ -91,13 +134,13 @@ export const submitInvite = mutation({
       throw new Error("You must acknowledge sponsorship responsibilities");
     }
 
-    const existingInvite = await ctx.db
-      .query("newbie_invites")
-      .withIndex("by_newbieEmail", (q) => q.eq("newbieEmail", newbieEmail))
-      .first();
+    const existingInvites = await listInvitesByEmail(ctx, newbieEmail);
+    const existingInvite = existingInvites.find(
+      (invite) => getInviteReviewStatus(invite) !== "denied"
+    );
 
     if (existingInvite) {
-      throw new Error(`${newbieName} has already been sponsored by ${existingInvite.sponsorName}.`);
+      throw new Error(`${newbieEmail} has already been sponsored by ${existingInvite.sponsorName}.`);
     }
 
     const sponsorEmail = sponsor.email.toLowerCase();
@@ -106,39 +149,22 @@ export const submitInvite = mutation({
       sponsorEmail;
     const now = Date.now();
 
-    const existingAllowlistEntry = await ctx.db
-      .query("email_allowlist")
-      .withIndex("by_email", (q) => q.eq("email", newbieEmail))
-      .first();
-
-    if (existingAllowlistEntry) {
-      throw new Error("This person is already invited.");
-    }
-
-    const allowlistEmailId = await ctx.db.insert("email_allowlist", {
-      email: newbieEmail,
-      addedBy: sponsorEmail,
-      addedAt: now,
-      memberType: "newbie",
-      source: "sponsor_invite",
-      sponsorUserId: userId,
-      sponsorApplicationId: sponsorApplication._id,
-      sponsorEmail,
-      sponsorName,
-      invitedAt: now,
-    });
-
     const inviteId = await ctx.db.insert("newbie_invites", {
       sponsorUserId: userId,
       sponsorApplicationId: sponsorApplication._id,
       sponsorEmail,
       sponsorName,
+      newbieFirstName,
+      newbieLastName,
       newbieName,
       newbieEmail,
       newbiePhone: args.newbiePhone,
+      estimatedArrival,
+      estimatedDeparture,
       whyTheyBelong,
       preparednessAcknowledged: true,
-      allowlistEmailId,
+      status: "pending",
+      approvalEmailSentAt: undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -183,6 +209,10 @@ export const listMine = query({
 
         return {
           ...invite,
+          newbieName:
+            invite.newbieName ??
+            buildDisplayName(invite.newbieFirstName ?? "", invite.newbieLastName ?? ""),
+          status: getInviteReviewStatus(invite),
           derivedStatus: deriveInviteStatus(application?.status),
         };
       })
@@ -213,6 +243,10 @@ export const listForOps = query({
 
         return {
           ...invite,
+          newbieName:
+            invite.newbieName ??
+            buildDisplayName(invite.newbieFirstName ?? "", invite.newbieLastName ?? ""),
+          status: getInviteReviewStatus(invite),
           derivedStatus: deriveInviteStatus(application?.status),
         };
       })
@@ -220,9 +254,92 @@ export const listForOps = query({
   },
 });
 
+export const setInviteDecision = mutation({
+  args: {
+    inviteId: v.id("newbie_invites"),
+    accepted: v.boolean(),
+    opsPassword: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+
+    const invite = await ctx.db.get(args.inviteId);
+    if (!invite) {
+      throw new Error("Invite not found");
+    }
+
+    if (!args.accepted && invite.applicationId) {
+      throw new Error("Cannot deny an invite after the newbie has applied.");
+    }
+
+    const now = Date.now();
+
+    if (args.accepted) {
+      const existingAllowlistEntry = await ctx.db
+        .query("email_allowlist")
+        .withIndex("by_email", (q) => q.eq("email", invite.newbieEmail))
+        .first();
+
+      let allowlistEmailId = invite.allowlistEmailId;
+      if (!existingAllowlistEntry) {
+        allowlistEmailId = await ctx.db.insert("email_allowlist", {
+          email: invite.newbieEmail,
+          addedBy: invite.sponsorEmail,
+          addedAt: now,
+          memberType: "newbie",
+          source: "sponsor_invite",
+          sponsorUserId: invite.sponsorUserId,
+          sponsorApplicationId: invite.sponsorApplicationId,
+          sponsorEmail: invite.sponsorEmail,
+          sponsorName: invite.sponsorName,
+          invitedAt: invite.createdAt,
+        });
+      }
+
+      await ctx.db.patch(args.inviteId, {
+        status: "accepted",
+        allowlistEmailId,
+        updatedAt: now,
+      });
+
+      return {
+        success: true,
+        status: "accepted" as const,
+        shouldSendApprovalEmail:
+          !(invite as { approvalEmailSentAt?: number; inviteEmailSentAt?: number }).approvalEmailSentAt &&
+          !(invite as { approvalEmailSentAt?: number; inviteEmailSentAt?: number }).inviteEmailSentAt,
+      };
+    }
+
+    if (invite.allowlistEmailId) {
+      const allowlistEntry = await ctx.db.get(invite.allowlistEmailId);
+      if (
+        allowlistEntry &&
+        allowlistEntry.source === "sponsor_invite" &&
+        allowlistEntry.email === invite.newbieEmail &&
+        allowlistEntry.sponsorApplicationId === invite.sponsorApplicationId
+      ) {
+        await ctx.db.delete(invite.allowlistEmailId);
+      }
+    }
+
+    await ctx.db.patch(args.inviteId, {
+      status: "denied",
+      updatedAt: now,
+    });
+
+    return {
+      success: true,
+      status: "denied" as const,
+      shouldSendApprovalEmail: false,
+    };
+  },
+});
+
 export const markInviteEmailOutcome = mutation({
   args: {
     inviteId: v.id("newbie_invites"),
+    emailType: v.union(v.literal("submitted"), v.literal("approved")),
     sent: v.boolean(),
     error: v.optional(v.string()),
   },
@@ -233,12 +350,13 @@ export const markInviteEmailOutcome = mutation({
     }
 
     const now = Date.now();
+    const patch =
+      args.emailType === "approved"
+        ? { approvalEmailSentAt: now, updatedAt: now }
+        : { submittedEmailSentAt: now, updatedAt: now };
 
     if (args.sent) {
-      await ctx.db.patch(args.inviteId, {
-        inviteEmailSentAt: now,
-        updatedAt: now,
-      });
+      await ctx.db.patch(args.inviteId, patch);
 
       await logEvent(ctx, {
         applicationId: invite.sponsorApplicationId,

@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { canonicalizePhoneInput, formatPhoneDisplay } from "../../lib/phone/format";
 import { isValidE164Phone } from "../../lib/applications/validation";
+import { AppConfig, getLandingContent } from "../../config/content";
 
 function getFriendlyErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof Error) || !error.message) {
@@ -31,22 +33,35 @@ function getFriendlyErrorMessage(error: unknown, fallback: string): string {
   return message;
 }
 
+function getInviteStatusClasses(status: string) {
+  if (status === "accepted") {
+    return "bg-emerald-500/10 text-emerald-300 ring-emerald-400/30";
+  }
+  if (status === "denied") {
+    return "bg-red-500/10 text-red-300 ring-red-400/30";
+  }
+  return "bg-amber-500/10 text-amber-300 ring-amber-400/30";
+}
+
 export function ConfirmedMemberDetailsForm() {
   const details = useQuery(api.confirmedMembers.getMine);
   const config = useQuery(api.config.getConfig);
   const invites = useQuery(api.newbieInvites.listMine);
   const upsertDetails = useMutation(api.confirmedMembers.upsertMine);
   const submitInvite = useMutation(api.newbieInvites.submitInvite);
-  const sendInviteEmail = useAction(api.newbieInvitesActions.sendInviteEmail);
+  const sendInviteSubmittedEmail = useAction(api.newbieInvitesActions.sendInviteSubmittedEmail);
 
   const [hasBurningManTicket, setHasBurningManTicket] = useState(false);
   const [hasVehiclePass, setHasVehiclePass] = useState(false);
   const [requests, setRequests] = useState("");
   const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [newbieName, setNewbieName] = useState("");
+  const [newbieFirstName, setNewbieFirstName] = useState("");
+  const [newbieLastName, setNewbieLastName] = useState("");
   const [newbiePhone, setNewbiePhone] = useState("");
   const [newbieEmail, setNewbieEmail] = useState("");
+  const [estimatedArrival, setEstimatedArrival] = useState("");
+  const [estimatedDeparture, setEstimatedDeparture] = useState("");
   const [whyTheyBelong, setWhyTheyBelong] = useState("");
   const [preparednessAcknowledged, setPreparednessAcknowledged] = useState(false);
   const [inviteState, setInviteState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -81,9 +96,15 @@ export function ConfirmedMemberDetailsForm() {
     setInviteState("saving");
     setInviteError(null);
 
-    if (!newbieName.trim()) {
+    if (!newbieFirstName.trim()) {
       setInviteState("error");
-      setInviteError("Newbie full name is required.");
+      setInviteError("Newbie first name is required.");
+      return;
+    }
+
+    if (!newbieLastName.trim()) {
+      setInviteState("error");
+      setInviteError("Newbie last name is required.");
       return;
     }
 
@@ -113,6 +134,18 @@ export function ConfirmedMemberDetailsForm() {
       return;
     }
 
+    if (!estimatedArrival.trim()) {
+      setInviteState("error");
+      setInviteError("Estimated arrival date is required.");
+      return;
+    }
+
+    if (!estimatedDeparture.trim()) {
+      setInviteState("error");
+      setInviteError("Estimated departure date is required.");
+      return;
+    }
+
     if (!preparednessAcknowledged) {
       setInviteState("error");
       setInviteError("You must acknowledge sponsorship responsibilities.");
@@ -121,23 +154,29 @@ export function ConfirmedMemberDetailsForm() {
 
     try {
       const invite = await submitInvite({
-        newbieName,
+        newbieFirstName,
+        newbieLastName,
         newbiePhone: canonicalPhone,
         newbieEmail,
+        estimatedArrival,
+        estimatedDeparture,
         whyTheyBelong,
         preparednessAcknowledged,
       });
 
-      await sendInviteEmail({
+      await sendInviteSubmittedEmail({
         inviteId: invite.inviteId,
         newbieEmail: invite.inviteEmail,
         sponsorName: invite.sponsorName,
       });
 
       setInviteState("saved");
-      setNewbieName("");
+      setNewbieFirstName("");
+      setNewbieLastName("");
       setNewbiePhone("");
       setNewbieEmail("");
+      setEstimatedArrival("");
+      setEstimatedDeparture("");
       setWhyTheyBelong("");
       setPreparednessAcknowledged(false);
     } catch (error) {
@@ -161,6 +200,7 @@ export function ConfirmedMemberDetailsForm() {
 
   const invitesEnabled = (config.newbieInvitesEnabled ?? "true") === "true";
   const canSponsorNewbies = (details.memberType ?? "alumni") === "alumni" && invitesEnabled;
+  const content = getLandingContent(config as AppConfig);
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 rounded-lg bg-white/5 p-4 ring-1 ring-white/10 text-left">
@@ -215,20 +255,33 @@ export function ConfirmedMemberDetailsForm() {
         <div className="mt-8 border-t border-white/10 pt-6">
           <h3 className="text-sm font-semibold text-white">Sponsor a Newbie</h3>
           <p className="mt-1 text-xs text-slate-400">
-            Invite someone new to camp. They will be able to sign in and apply immediately.
+            Submit a newbie for ops review. They will only be able to apply after ops accepts them.
           </p>
 
           <div className="mt-4 space-y-3">
-            <label className="block text-sm text-slate-200">
-              Full Name
-              <input
-                type="text"
-                value={newbieName}
-                onChange={(event) => setNewbieName(event.target.value)}
-                className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-                placeholder="Sam Patel"
-              />
-            </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block text-sm text-slate-200">
+                First Name
+                <input
+                  type="text"
+                  value={newbieFirstName}
+                  onChange={(event) => setNewbieFirstName(event.target.value)}
+                  className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                  placeholder="Sam"
+                />
+              </label>
+
+              <label className="block text-sm text-slate-200">
+                Last Name
+                <input
+                  type="text"
+                  value={newbieLastName}
+                  onChange={(event) => setNewbieLastName(event.target.value)}
+                  className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                  placeholder="Patel"
+                />
+              </label>
+            </div>
 
             <label className="block text-sm text-slate-200">
               Phone Number
@@ -253,6 +306,30 @@ export function ConfirmedMemberDetailsForm() {
             </label>
 
             <label className="block text-sm text-slate-200">
+              Estimated Arrival Date
+              <input
+                type="date"
+                value={estimatedArrival}
+                onChange={(event) => setEstimatedArrival(event.target.value)}
+                min={content.earliestArrival}
+                max={content.latestDeparture}
+                className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              />
+            </label>
+
+            <label className="block text-sm text-slate-200">
+              Estimated Departure Date
+              <input
+                type="date"
+                value={estimatedDeparture}
+                onChange={(event) => setEstimatedDeparture(event.target.value)}
+                min={content.earliestArrival}
+                max={content.latestDeparture}
+                className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              />
+            </label>
+
+            <label className="block text-sm text-slate-200">
               Why would they be a good addition?
               <textarea
                 value={whyTheyBelong}
@@ -270,11 +347,24 @@ export function ConfirmedMemberDetailsForm() {
                 onChange={(event) => setPreparednessAcknowledged(event.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-slate-500 bg-slate-800 text-emerald-500 focus:ring-emerald-500"
               />
-              <span>I have consciously sponsored this person and will properly prepare them.</span>
+              <span>
+                I have consciously sponsored this person and will properly prepare them. Please review our{" "}
+                <Link
+                  href="/culture"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-emerald-300 underline underline-offset-2 hover:text-emerald-200"
+                >
+                  DeMentha Culture & Commitments page
+                </Link>{" "}
+                for more details.
+              </span>
             </label>
 
             {inviteError && <p className="text-xs text-red-400">{inviteError}</p>}
-            {inviteState === "saved" && <p className="text-xs text-emerald-400">Invite sent.</p>}
+            {inviteState === "saved" && (
+              <p className="text-xs text-emerald-400">Invite submitted for review.</p>
+            )}
 
             <button
               type="button"
@@ -284,7 +374,7 @@ export function ConfirmedMemberDetailsForm() {
               disabled={inviteState === "saving"}
               className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-700"
             >
-              {inviteState === "saving" ? "Sending..." : "Send Invite"}
+              {inviteState === "saving" ? "Submitting..." : "Submit Invite for Review"}
             </button>
           </div>
 
@@ -302,9 +392,18 @@ export function ConfirmedMemberDetailsForm() {
                     <div>
                       <p className="font-medium text-white">{invite.newbieName}</p>
                       <p className="text-xs text-slate-400">{invite.newbieEmail}</p>
+                      {invite.derivedStatus !== "invited" && (
+                        <p className="text-xs text-slate-500">
+                          Application: {invite.derivedStatus}
+                        </p>
+                      )}
                     </div>
-                    <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300 ring-1 ring-emerald-400/30">
-                      {invite.derivedStatus}
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs ring-1 ${getInviteStatusClasses(
+                        invite.status
+                      )}`}
+                    >
+                      {invite.status}
                     </span>
                   </div>
                 </div>
