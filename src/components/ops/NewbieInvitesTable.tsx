@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { requiresOpsReview } from "../../config/content";
 
 const OPS_PASSWORD_KEY = "ops_password";
 
@@ -31,6 +32,7 @@ export function NewbieInvitesTable() {
   } | null>(null);
 
   const invites = useQuery(api.newbieInvites.listForOps, opsPassword ? { opsPassword } : "skip");
+  const config = useQuery(api.config.getConfig);
   const setInviteDecision = useMutation(api.newbieInvites.setInviteDecision);
   const sendInviteApprovedEmail = useAction(api.newbieInvitesActions.sendInviteApprovedEmail);
 
@@ -78,7 +80,7 @@ export function NewbieInvitesTable() {
     }
   };
 
-  if (!opsPassword || invites === undefined) {
+  if (!opsPassword || invites === undefined || config === undefined) {
     return (
       <div className="text-center py-12">
         <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto" />
@@ -99,7 +101,7 @@ export function NewbieInvitesTable() {
     <>
       <div className="rounded-xl bg-white/5 ring-1 ring-white/10 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-[1360px] divide-y divide-white/10">
+          <table className="min-w-[1500px] divide-y divide-white/10">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
                 <th className="px-4 py-3">Sponsor</th>
@@ -107,6 +109,7 @@ export function NewbieInvitesTable() {
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Estimated Arrival</th>
                 <th className="px-4 py-3">Estimated Departure</th>
+                <th className="px-4 py-3">Early Departure Reason</th>
                 <th className="px-4 py-3">Why They Belong</th>
                 <th className="px-4 py-3">Acknowledged</th>
                 <th className="px-4 py-3">Status</th>
@@ -118,9 +121,16 @@ export function NewbieInvitesTable() {
               {invites.map((invite) => {
                 const isProcessing = processingInviteId === invite._id;
                 const denyDisabled = isProcessing || Boolean(invite.applicationId);
+                const estimatedDeparture = invite.estimatedDeparture;
+                const isEarlyDeparture = estimatedDeparture
+                  ? requiresOpsReview(estimatedDeparture, config.departureCutoff)
+                  : false;
 
                 return (
-                  <tr key={invite._id}>
+                  <tr
+                    key={invite._id}
+                    className={isEarlyDeparture ? "bg-amber-500/10" : undefined}
+                  >
                     <td className="px-4 py-3">
                       <div className="font-medium text-white">{invite.sponsorName}</div>
                       <div className="text-xs text-slate-400">{invite.sponsorEmail}</div>
@@ -131,7 +141,19 @@ export function NewbieInvitesTable() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{invite.newbiePhone}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{invite.estimatedArrival ?? "—"}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">{invite.estimatedDeparture ?? "—"}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span>{invite.estimatedDeparture ?? "—"}</span>
+                        {isEarlyDeparture && (
+                          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-200 ring-1 ring-amber-300/30">
+                            Early
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 max-w-sm whitespace-pre-wrap">
+                      {invite.earlyDepartureReason ?? "—"}
+                    </td>
                     <td className="px-4 py-3 max-w-sm whitespace-pre-wrap">{invite.whyTheyBelong}</td>
                     <td className="px-4 py-3">{invite.preparednessAcknowledged ? "Yes" : "No"}</td>
                     <td className="px-4 py-3">

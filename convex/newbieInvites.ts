@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { isValidE164Phone } from "../src/lib/applications/validation";
+import { CONFIG_DEFAULTS } from "./config";
 import {
   buildNewbieInviteEmailFailedPayload,
   buildNewbieInviteEmailSentPayload,
@@ -65,6 +66,7 @@ export const submitInvite = mutation({
     newbiePhone: v.string(),
     estimatedArrival: v.string(),
     estimatedDeparture: v.string(),
+    earlyDepartureReason: v.optional(v.string()),
     whyTheyBelong: v.string(),
     preparednessAcknowledged: v.boolean(),
   },
@@ -108,6 +110,7 @@ export const submitInvite = mutation({
     const whyTheyBelong = args.whyTheyBelong.trim();
     const estimatedArrival = args.estimatedArrival.trim();
     const estimatedDeparture = args.estimatedDeparture.trim();
+    const earlyDepartureReason = args.earlyDepartureReason?.trim();
 
     if (!newbieFirstName) {
       throw new Error("Newbie first name is required");
@@ -126,6 +129,16 @@ export const submitInvite = mutation({
     }
     if (!estimatedDeparture) {
       throw new Error("Estimated departure date is required");
+    }
+    const cutoffConfig = await ctx.db
+      .query("config")
+      .withIndex("by_key", (q) => q.eq("key", "departureCutoff"))
+      .first();
+    const departureCutoff = cutoffConfig?.value ?? CONFIG_DEFAULTS.departureCutoff;
+    const requiresEarlyDepartureReason =
+      new Date(estimatedDeparture) < new Date(departureCutoff);
+    if (requiresEarlyDepartureReason && !earlyDepartureReason) {
+      throw new Error("Please explain why this newbie needs to leave before the standard departure date.");
     }
     if (!whyTheyBelong) {
       throw new Error("Please explain why this person would be a good addition");
@@ -161,6 +174,7 @@ export const submitInvite = mutation({
       newbiePhone: args.newbiePhone,
       estimatedArrival,
       estimatedDeparture,
+      earlyDepartureReason: requiresEarlyDepartureReason ? earlyDepartureReason : undefined,
       whyTheyBelong,
       preparednessAcknowledged: true,
       status: "pending",
@@ -305,9 +319,7 @@ export const setInviteDecision = mutation({
       return {
         success: true,
         status: "accepted" as const,
-        shouldSendApprovalEmail:
-          !(invite as { approvalEmailSentAt?: number; inviteEmailSentAt?: number }).approvalEmailSentAt &&
-          !(invite as { approvalEmailSentAt?: number; inviteEmailSentAt?: number }).inviteEmailSentAt,
+        shouldSendApprovalEmail: !invite.approvalEmailSentAt,
       };
     }
 
@@ -339,7 +351,7 @@ export const setInviteDecision = mutation({
 export const markInviteEmailOutcome = mutation({
   args: {
     inviteId: v.id("newbie_invites"),
-    emailType: v.union(v.literal("submitted"), v.literal("approved")),
+    emailType: v.literal("approved"),
     sent: v.boolean(),
     error: v.optional(v.string()),
   },
@@ -350,13 +362,12 @@ export const markInviteEmailOutcome = mutation({
     }
 
     const now = Date.now();
-    const patch =
-      args.emailType === "approved"
-        ? { approvalEmailSentAt: now, updatedAt: now }
-        : { submittedEmailSentAt: now, updatedAt: now };
 
     if (args.sent) {
-      await ctx.db.patch(args.inviteId, patch);
+      await ctx.db.patch(args.inviteId, {
+        approvalEmailSentAt: now,
+        updatedAt: now,
+      });
 
       await logEvent(ctx, {
         applicationId: invite.sponsorApplicationId,

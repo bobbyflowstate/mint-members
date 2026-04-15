@@ -4,7 +4,6 @@ import { ConfirmedMemberDetailsForm } from "./ConfirmedMemberDetailsForm";
 
 const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
-const mockUseAction = vi.fn();
 const mockUpsertDetails = vi.fn();
 const mockSubmitInvite = vi.fn();
 const mockSendInviteSubmittedEmail = vi.fn();
@@ -12,7 +11,6 @@ const mockSendInviteSubmittedEmail = vi.fn();
 vi.mock("convex/react", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
   useMutation: (...args: unknown[]) => mockUseMutation(...args),
-  useAction: (...args: unknown[]) => mockUseAction(...args),
 }));
 
 vi.mock("../../../convex/_generated/api", () => ({
@@ -27,9 +25,6 @@ vi.mock("../../../convex/_generated/api", () => ({
     newbieInvites: {
       listMine: "newbieInvites:listMine",
       submitInvite: "newbieInvites:submitInvite",
-    },
-    newbieInvitesActions: {
-      sendInviteSubmittedEmail: "newbieInvitesActions:sendInviteSubmittedEmail",
     },
   },
 }));
@@ -54,7 +49,6 @@ describe("ConfirmedMemberDetailsForm", () => {
   beforeEach(() => {
     mockUseQuery.mockReset();
     mockUseMutation.mockReset();
-    mockUseAction.mockReset();
     mockUpsertDetails.mockReset();
     mockSubmitInvite.mockReset();
     mockSendInviteSubmittedEmail.mockReset();
@@ -104,17 +98,9 @@ describe("ConfirmedMemberDetailsForm", () => {
 
       throw new Error(`Unexpected mutation ${mutation}`);
     });
-
-    mockUseAction.mockImplementation((action: string) => {
-      if (action === "newbieInvitesActions:sendInviteSubmittedEmail") {
-        return mockSendInviteSubmittedEmail;
-      }
-
-      throw new Error(`Unexpected action ${action}`);
-    });
   });
 
-  it("submits a newbie invite with estimated dates and sends the under-review email", async () => {
+  it("submits a newbie invite with estimated dates without emailing the newbie before approval", async () => {
     mockSubmitInvite.mockResolvedValue({
       inviteId: "invite_1",
       inviteEmail: "newbie@example.com",
@@ -159,18 +145,103 @@ describe("ConfirmedMemberDetailsForm", () => {
         preparednessAcknowledged: true,
         estimatedArrival: "2026-08-24",
         estimatedDeparture: "2026-09-02",
+        earlyDepartureReason: undefined,
       });
     });
 
-    await waitFor(() => {
-      expect(mockSendInviteSubmittedEmail).toHaveBeenCalledWith({
-        inviteId: "invite_1",
-        newbieEmail: "newbie@example.com",
-        sponsorName: "Alex Rivera",
-      });
-    });
+    expect(mockSendInviteSubmittedEmail).not.toHaveBeenCalled();
 
     expect(screen.getByText("Invite submitted for review.")).toBeInTheDocument();
+  });
+
+  it("requires a reason when the estimated departure is before the departure cutoff", async () => {
+    render(<ConfirmedMemberDetailsForm />);
+
+    fireEvent.change(screen.getByLabelText("First Name"), {
+      target: { value: "Sam" },
+    });
+    fireEvent.change(screen.getByLabelText("Last Name"), {
+      target: { value: "Patel" },
+    });
+    fireEvent.change(screen.getByLabelText("Phone Number"), {
+      target: { value: "+1 (555) 123-1234" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "newbie@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Estimated Arrival Date"), {
+      target: { value: "2026-08-24" },
+    });
+    fireEvent.change(screen.getByLabelText("Estimated Departure Date"), {
+      target: { value: "2026-08-31" },
+    });
+    fireEvent.change(screen.getByLabelText("Why would they be a good addition?"), {
+      target: { value: "Strong contributor and aligned with camp values." },
+    });
+    fireEvent.click(screen.getAllByRole("checkbox")[2]);
+
+    expect(screen.getByLabelText("Reason for Early Departure")).toBeInTheDocument();
+    expect(screen.getByLabelText("Reason for Early Departure").closest("label")).toHaveClass(
+      "bg-amber-500/10"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Submit Invite for Review" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Please explain why this newbie needs to leave before the standard departure date.")
+      ).toBeInTheDocument();
+    });
+
+    expect(mockSubmitInvite).not.toHaveBeenCalled();
+  });
+
+  it("submits the reason when an early estimated departure reason is provided", async () => {
+    mockSubmitInvite.mockResolvedValue({
+      inviteId: "invite_1",
+      inviteEmail: "newbie@example.com",
+      sponsorName: "Alex Rivera",
+    });
+    mockSendInviteSubmittedEmail.mockResolvedValue({ success: true });
+
+    render(<ConfirmedMemberDetailsForm />);
+
+    fireEvent.change(screen.getByLabelText("First Name"), {
+      target: { value: "Sam" },
+    });
+    fireEvent.change(screen.getByLabelText("Last Name"), {
+      target: { value: "Patel" },
+    });
+    fireEvent.change(screen.getByLabelText("Phone Number"), {
+      target: { value: "+1 (555) 123-1234" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "newbie@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Estimated Arrival Date"), {
+      target: { value: "2026-08-24" },
+    });
+    fireEvent.change(screen.getByLabelText("Estimated Departure Date"), {
+      target: { value: "2026-08-31" },
+    });
+    fireEvent.change(screen.getByLabelText("Reason for Early Departure"), {
+      target: { value: "They can only get time off through Sunday." },
+    });
+    fireEvent.change(screen.getByLabelText("Why would they be a good addition?"), {
+      target: { value: "Strong contributor and aligned with camp values." },
+    });
+    fireEvent.click(screen.getAllByRole("checkbox")[2]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Submit Invite for Review" }));
+
+    await waitFor(() => {
+      expect(mockSubmitInvite).toHaveBeenCalledWith(
+        expect.objectContaining({
+          estimatedDeparture: "2026-08-31",
+          earlyDepartureReason: "They can only get time off through Sunday.",
+        })
+      );
+    });
   });
 
   it("requires an estimated arrival date", async () => {

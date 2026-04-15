@@ -16,6 +16,9 @@ vi.mock("convex/react", () => ({
 
 vi.mock("../../../convex/_generated/api", () => ({
   api: {
+    config: {
+      getConfig: "config:getConfig",
+    },
     newbieInvites: {
       listForOps: "newbieInvites:listForOps",
       setInviteDecision: "newbieInvites:setInviteDecision",
@@ -36,6 +39,12 @@ describe("NewbieInvitesTable", () => {
     sessionStorage.setItem("ops_password", "secret");
 
     mockUseQuery.mockImplementation((query: string) => {
+      if (query === "config:getConfig") {
+        return {
+          departureCutoff: "2026-09-03",
+        };
+      }
+
       if (query === "newbieInvites:listForOps") {
         return [
           {
@@ -46,6 +55,7 @@ describe("NewbieInvitesTable", () => {
             newbieEmail: "sam@example.com",
             newbiePhone: "+15551231234",
             whyTheyBelong: "Great fit",
+            earlyDepartureReason: "Needs to leave for work.",
             preparednessAcknowledged: true,
             estimatedArrival: "2026-08-24",
             estimatedDeparture: "2026-09-02",
@@ -62,7 +72,7 @@ describe("NewbieInvitesTable", () => {
             whyTheyBelong: "Applied already",
             preparednessAcknowledged: true,
             estimatedArrival: "2026-08-25",
-            estimatedDeparture: "2026-09-01",
+            estimatedDeparture: "2026-09-03",
             createdAt: 1710000001000,
             status: "accepted",
             applicationId: "app_1",
@@ -95,8 +105,18 @@ describe("NewbieInvitesTable", () => {
 
     expect(screen.getByText("Estimated Arrival")).toBeInTheDocument();
     expect(screen.getByText("Estimated Departure")).toBeInTheDocument();
+    expect(screen.getByText("Early Departure Reason")).toBeInTheDocument();
+    expect(screen.getByText("Needs to leave for work.")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Accept" })).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: "Deny" })).toHaveLength(2);
+  });
+
+  it("highlights invites with an estimated departure before the departure cutoff", () => {
+    render(<NewbieInvitesTable />);
+
+    expect(screen.getByText("Early")).toBeInTheDocument();
+    expect(screen.getByText("Sam Patel").closest("tr")).toHaveClass("bg-amber-500/10");
+    expect(screen.getByText("Taylor Kim").closest("tr")).not.toHaveClass("bg-amber-500/10");
   });
 
   it("confirms before accepting and sends the approval email when needed", async () => {

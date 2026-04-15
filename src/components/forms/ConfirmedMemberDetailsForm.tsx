@@ -2,11 +2,11 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { canonicalizePhoneInput, formatPhoneDisplay } from "../../lib/phone/format";
 import { isValidE164Phone } from "../../lib/applications/validation";
-import { AppConfig, getLandingContent } from "../../config/content";
+import { AppConfig, getLandingContent, requiresOpsReview } from "../../config/content";
 
 function getFriendlyErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof Error) || !error.message) {
@@ -49,7 +49,6 @@ export function ConfirmedMemberDetailsForm() {
   const invites = useQuery(api.newbieInvites.listMine);
   const upsertDetails = useMutation(api.confirmedMembers.upsertMine);
   const submitInvite = useMutation(api.newbieInvites.submitInvite);
-  const sendInviteSubmittedEmail = useAction(api.newbieInvitesActions.sendInviteSubmittedEmail);
 
   const [hasBurningManTicket, setHasBurningManTicket] = useState(false);
   const [hasVehiclePass, setHasVehiclePass] = useState(false);
@@ -62,6 +61,7 @@ export function ConfirmedMemberDetailsForm() {
   const [newbieEmail, setNewbieEmail] = useState("");
   const [estimatedArrival, setEstimatedArrival] = useState("");
   const [estimatedDeparture, setEstimatedDeparture] = useState("");
+  const [earlyDepartureReason, setEarlyDepartureReason] = useState("");
   const [whyTheyBelong, setWhyTheyBelong] = useState("");
   const [preparednessAcknowledged, setPreparednessAcknowledged] = useState(false);
   const [inviteState, setInviteState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -95,6 +95,12 @@ export function ConfirmedMemberDetailsForm() {
   const performInviteSubmit = async () => {
     setInviteState("saving");
     setInviteError(null);
+
+    if (!config) {
+      setInviteState("error");
+      setInviteError("Configuration is still loading. Please try again.");
+      return;
+    }
 
     if (!newbieFirstName.trim()) {
       setInviteState("error");
@@ -146,6 +152,13 @@ export function ConfirmedMemberDetailsForm() {
       return;
     }
 
+    const needsEarlyDepartureReason = requiresOpsReview(estimatedDeparture, config.departureCutoff);
+    if (needsEarlyDepartureReason && !earlyDepartureReason.trim()) {
+      setInviteState("error");
+      setInviteError("Please explain why this newbie needs to leave before the standard departure date.");
+      return;
+    }
+
     if (!preparednessAcknowledged) {
       setInviteState("error");
       setInviteError("You must acknowledge sponsorship responsibilities.");
@@ -153,21 +166,16 @@ export function ConfirmedMemberDetailsForm() {
     }
 
     try {
-      const invite = await submitInvite({
+      await submitInvite({
         newbieFirstName,
         newbieLastName,
         newbiePhone: canonicalPhone,
         newbieEmail,
         estimatedArrival,
         estimatedDeparture,
+        earlyDepartureReason: needsEarlyDepartureReason ? earlyDepartureReason.trim() : undefined,
         whyTheyBelong,
         preparednessAcknowledged,
-      });
-
-      await sendInviteSubmittedEmail({
-        inviteId: invite.inviteId,
-        newbieEmail: invite.inviteEmail,
-        sponsorName: invite.sponsorName,
       });
 
       setInviteState("saved");
@@ -177,6 +185,7 @@ export function ConfirmedMemberDetailsForm() {
       setNewbieEmail("");
       setEstimatedArrival("");
       setEstimatedDeparture("");
+      setEarlyDepartureReason("");
       setWhyTheyBelong("");
       setPreparednessAcknowledged(false);
     } catch (error) {
@@ -201,6 +210,8 @@ export function ConfirmedMemberDetailsForm() {
   const invitesEnabled = (config.newbieInvitesEnabled ?? "true") === "true";
   const canSponsorNewbies = (details.memberType ?? "alumni") === "alumni" && invitesEnabled;
   const content = getLandingContent(config as AppConfig);
+  const needsEarlyDepartureReason =
+    estimatedDeparture.trim() !== "" && requiresOpsReview(estimatedDeparture, config.departureCutoff);
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 rounded-lg bg-white/5 p-4 ring-1 ring-white/10 text-left">
@@ -322,12 +333,30 @@ export function ConfirmedMemberDetailsForm() {
               <input
                 type="date"
                 value={estimatedDeparture}
-                onChange={(event) => setEstimatedDeparture(event.target.value)}
+                onChange={(event) => {
+                  setEstimatedDeparture(event.target.value);
+                  if (!requiresOpsReview(event.target.value, config.departureCutoff)) {
+                    setEarlyDepartureReason("");
+                  }
+                }}
                 min={content.earliestArrival}
                 max={content.latestDeparture}
                 className="mt-2 w-full rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
               />
             </label>
+
+            {needsEarlyDepartureReason && (
+              <label className="block rounded-md border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-100 ring-1 ring-amber-400/10">
+                Reason for Early Departure
+                <textarea
+                  value={earlyDepartureReason}
+                  onChange={(event) => setEarlyDepartureReason(event.target.value)}
+                  rows={3}
+                  className="mt-2 w-full rounded-md border border-amber-300/40 bg-slate-950/80 px-3 py-2 text-sm text-white placeholder:text-amber-100/50 focus:border-amber-300 focus:outline-none"
+                  placeholder="Please explain why they need to leave before the standard departure date."
+                />
+              </label>
+            )}
 
             <label className="block text-sm text-slate-200">
               Why would they be a good addition?

@@ -95,7 +95,7 @@ describe("newbieInvites.submitInvite", () => {
       whyTheyBelong: "Great camp contributor.",
       preparednessAcknowledged: true,
       estimatedArrival: "2026-08-24",
-      estimatedDeparture: "2026-09-02",
+      estimatedDeparture: "2026-09-07",
     });
 
     expect(result).toEqual({
@@ -120,9 +120,155 @@ describe("newbieInvites.submitInvite", () => {
         whyTheyBelong: "Great camp contributor.",
         preparednessAcknowledged: true,
         estimatedArrival: "2026-08-24",
-        estimatedDeparture: "2026-09-02",
+        estimatedDeparture: "2026-09-07",
         status: "pending",
         approvalEmailSentAt: undefined,
+      })
+    );
+  });
+
+  it("rejects an early estimated departure without a reason", async () => {
+    getAuthUserId.mockResolvedValue("user_1");
+
+    const ctx = {
+      db: {
+        get: vi.fn().mockResolvedValue({ _id: "user_1", email: "sponsor@example.com" }),
+        query: vi.fn((table: string) => {
+          if (table === "config") {
+            return {
+              withIndex: (_index: string, cb: (q: { eq: (field: string, value: string) => string }) => string) => {
+                const key = cb({ eq: (_field, value) => value });
+                return {
+                  first: vi.fn().mockResolvedValue(
+                    key === "departureCutoff"
+                      ? { key: "departureCutoff", value: "2026-09-01" }
+                      : null
+                  ),
+                };
+              },
+            };
+          }
+
+          if (table === "applications") {
+            return {
+              withIndex: () => ({
+                first: vi.fn().mockResolvedValue({
+                  _id: "app_1",
+                  userId: "user_1",
+                  firstName: "Alex",
+                  lastName: "Rivera",
+                  email: "sponsor@example.com",
+                  status: "confirmed",
+                }),
+              }),
+            };
+          }
+
+          if (table === "newbie_invites") {
+            return {
+              withIndex: () => ({
+                collect: vi.fn().mockResolvedValue([]),
+              }),
+            };
+          }
+
+          throw new Error(`Unexpected table ${table}`);
+        }),
+        insert: vi.fn(),
+      },
+    };
+
+    const handler = getHandler(submitInvite);
+
+    await expect(
+      handler(ctx, {
+        newbieFirstName: "Sam",
+        newbieLastName: "Patel",
+        newbieEmail: "Sam@example.com",
+        newbiePhone: "+15551231234",
+        whyTheyBelong: "Great camp contributor.",
+        preparednessAcknowledged: true,
+        estimatedArrival: "2026-08-24",
+        estimatedDeparture: "2026-08-31",
+      })
+    ).rejects.toThrow("Please explain why this newbie needs to leave before the standard departure date.");
+
+    expect(ctx.db.insert).not.toHaveBeenCalled();
+  });
+
+  it("stores the reason for an early estimated departure", async () => {
+    getAuthUserId.mockResolvedValue("user_1");
+
+    const applicationId = "app_1" as Id<"applications">;
+    const inviteId = "invite_1" as Id<"newbie_invites">;
+    const insertSpy = vi.fn().mockResolvedValueOnce(inviteId).mockResolvedValueOnce("event_1");
+
+    const ctx = {
+      db: {
+        get: vi.fn().mockResolvedValue({ _id: "user_1", email: "sponsor@example.com" }),
+        query: vi.fn((table: string) => {
+          if (table === "config") {
+            return {
+              withIndex: (_index: string, cb: (q: { eq: (field: string, value: string) => string }) => string) => {
+                const key = cb({ eq: (_field, value) => value });
+                return {
+                  first: vi.fn().mockResolvedValue(
+                    key === "departureCutoff"
+                      ? { key: "departureCutoff", value: "2026-09-01" }
+                      : null
+                  ),
+                };
+              },
+            };
+          }
+
+          if (table === "applications") {
+            return {
+              withIndex: () => ({
+                first: vi.fn().mockResolvedValue({
+                  _id: applicationId,
+                  userId: "user_1",
+                  firstName: "Alex",
+                  lastName: "Rivera",
+                  email: "sponsor@example.com",
+                  status: "confirmed",
+                }),
+              }),
+            };
+          }
+
+          if (table === "newbie_invites") {
+            return {
+              withIndex: () => ({
+                collect: vi.fn().mockResolvedValue([]),
+              }),
+            };
+          }
+
+          throw new Error(`Unexpected table ${table}`);
+        }),
+        insert: insertSpy,
+      },
+    };
+
+    const handler = getHandler(submitInvite);
+    await handler(ctx, {
+      newbieFirstName: "Sam",
+      newbieLastName: "Patel",
+      newbieEmail: "Sam@example.com",
+      newbiePhone: "+15551231234",
+      whyTheyBelong: "Great camp contributor.",
+      preparednessAcknowledged: true,
+      estimatedArrival: "2026-08-24",
+      estimatedDeparture: "2026-08-31",
+      earlyDepartureReason: "They can only get time off through Sunday.",
+    });
+
+    expect(insertSpy).toHaveBeenNthCalledWith(
+      1,
+      "newbie_invites",
+      expect.objectContaining({
+        earlyDepartureReason: "They can only get time off through Sunday.",
       })
     );
   });
@@ -189,7 +335,7 @@ describe("newbieInvites.submitInvite", () => {
         whyTheyBelong: "Already sponsored.",
         preparednessAcknowledged: true,
         estimatedArrival: "2026-08-24",
-        estimatedDeparture: "2026-09-02",
+        estimatedDeparture: "2026-09-07",
       })
     ).rejects.toThrow("sam@example.com has already been sponsored by Alex Rivera.");
   });
@@ -257,7 +403,7 @@ describe("newbieInvites.submitInvite", () => {
         whyTheyBelong: "Great fit.",
         preparednessAcknowledged: true,
         estimatedArrival: "2026-08-24",
-        estimatedDeparture: "2026-09-02",
+        estimatedDeparture: "2026-09-07",
       })
     ).resolves.toEqual({
       inviteId,
@@ -333,7 +479,7 @@ describe("newbieInvites.submitInvite", () => {
         whyTheyBelong: "Great fit.",
         preparednessAcknowledged: true,
         estimatedArrival: "2026-08-24",
-        estimatedDeparture: "2026-09-02",
+        estimatedDeparture: "2026-09-07",
       })
     ).rejects.toThrow("sam@example.com has already been sponsored by Current Sponsor.");
   });
@@ -405,7 +551,7 @@ describe("newbieInvites.submitInvite", () => {
         whyTheyBelong: "Great fit.",
         preparednessAcknowledged: true,
         estimatedArrival: "2026-08-24",
-        estimatedDeparture: "2026-09-02",
+        estimatedDeparture: "2026-09-07",
       })
     ).rejects.toThrow("sam@example.com has already been sponsored by Current Sponsor.");
   });
@@ -458,7 +604,7 @@ describe("newbieInvites.submitInvite", () => {
         whyTheyBelong: "Already sponsored.",
         preparednessAcknowledged: true,
         estimatedArrival: "2026-08-24",
-        estimatedDeparture: "2026-09-02",
+        estimatedDeparture: "2026-09-07",
       })
     ).rejects.toThrow("Only confirmed alumni members can sponsor newbies");
   });
@@ -513,7 +659,7 @@ describe("newbieInvites.submitInvite", () => {
         whyTheyBelong: "Great fit.",
         preparednessAcknowledged: true,
         estimatedArrival: "2026-08-24",
-        estimatedDeparture: "2026-09-02",
+        estimatedDeparture: "2026-09-07",
       })
     ).rejects.toThrow("Newbie invites are currently disabled.");
   });
@@ -746,6 +892,48 @@ describe("newbieInvites.setInviteDecision", () => {
     const result = await handler(ctx, { inviteId, accepted: true, opsPassword: "secret" });
 
     expect(result).toEqual({ success: true, status: "accepted", shouldSendApprovalEmail: false });
+  });
+
+  it("sends the approval email when only the legacy invite email was sent", async () => {
+    const inviteId = "invite_1" as Id<"newbie_invites">;
+
+    const ctx = {
+      db: {
+        get: vi.fn().mockResolvedValue({
+          _id: inviteId,
+          sponsorApplicationId: "app_1",
+          sponsorEmail: "sponsor@example.com",
+          sponsorName: "Alex Rivera",
+          sponsorUserId: "user_1",
+          newbieEmail: "sam@example.com",
+          newbieName: "Sam Patel",
+          status: "pending",
+          allowlistEmailId: "allow_1",
+          inviteEmailSentAt: 123,
+          createdAt: 100,
+        }),
+        query: vi.fn((table: string) => {
+          if (table === "email_allowlist") {
+            return {
+              withIndex: () => ({
+                first: vi.fn().mockResolvedValue({
+                  _id: "allow_1",
+                  email: "sam@example.com",
+                }),
+              }),
+            };
+          }
+          throw new Error(`Unexpected table ${table}`);
+        }),
+        insert: vi.fn().mockResolvedValue("event_1"),
+        patch: vi.fn(),
+      },
+    };
+
+    const handler = getHandler(setInviteDecision);
+    const result = await handler(ctx, { inviteId, accepted: true, opsPassword: "secret" });
+
+    expect(result).toEqual({ success: true, status: "accepted", shouldSendApprovalEmail: true });
   });
 
   it("does not delete a preexisting allowlist row when denying an accepted invite", async () => {

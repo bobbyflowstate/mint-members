@@ -10,7 +10,7 @@ async function sendInviteEmail(
   args: {
     inviteId: string;
     newbieEmail: string;
-    emailType: "submitted" | "approved";
+    emailType: "approved";
     subject: string;
     text: string;
   }
@@ -41,39 +41,6 @@ async function sendInviteEmail(
     throw new Error(`Failed to send invite email: ${error.message}`);
   }
 }
-
-export const sendInviteSubmittedEmail = action({
-  args: {
-    inviteId: v.id("newbie_invites"),
-    newbieEmail: v.string(),
-    sponsorName: v.string(),
-  },
-  handler: async (ctx, args) => {
-    try {
-      await sendInviteEmail(ctx, {
-        inviteId: args.inviteId,
-        newbieEmail: args.newbieEmail,
-        emailType: "submitted",
-        subject: "Your DeMentha invite is under review",
-        text: `Your invite to DeMentha was submitted by ${args.sponsorName}. Your application is being reviewed.`,
-      });
-      await ctx.runMutation(api.newbieInvites.markInviteEmailOutcome, {
-        inviteId: args.inviteId,
-        emailType: "submitted",
-        sent: true,
-      });
-      return { success: true };
-    } catch (error) {
-      await ctx.runMutation(api.newbieInvites.markInviteEmailOutcome, {
-        inviteId: args.inviteId,
-        emailType: "submitted",
-        sent: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      throw error;
-    }
-  },
-});
 
 export const sendInviteApprovedEmail = action({
   args: {
