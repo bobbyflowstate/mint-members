@@ -100,7 +100,7 @@ describe("NewbieInvitesTable", () => {
     });
   });
 
-  it("shows Accept and Deny actions for pending invites", () => {
+  it("shows direct Accept and Deny actions only for pending invites", () => {
     render(<NewbieInvitesTable />);
 
     expect(screen.getAllByText("Invite details")).toHaveLength(2);
@@ -108,8 +108,9 @@ describe("NewbieInvitesTable", () => {
     expect(screen.getAllByText("Early departure reason")).toHaveLength(2);
     expect(screen.getAllByText("Preparedness acknowledged")).toHaveLength(2);
     expect(screen.getByText("Needs to leave for work.")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Accept" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Deny" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Accept" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Deny" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Change" })).toBeInTheDocument();
   });
 
   it("highlights invites with an estimated departure before the departure cutoff", () => {
@@ -157,10 +158,16 @@ describe("NewbieInvitesTable", () => {
     });
   });
 
-  it("disables Deny when the newbie has already applied", () => {
+  it("reveals change actions for already decided invites", () => {
     render(<NewbieInvitesTable />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+
+    const acceptButtons = screen.getAllByRole("button", { name: "Accept" });
     const denyButtons = screen.getAllByRole("button", { name: "Deny" });
+
+    expect(acceptButtons).toHaveLength(2);
+    expect(denyButtons).toHaveLength(2);
     expect(denyButtons[1]).toBeDisabled();
   });
 });

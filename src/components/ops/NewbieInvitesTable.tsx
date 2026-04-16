@@ -25,6 +25,7 @@ export function NewbieInvitesTable() {
     return null;
   });
   const [processingInviteId, setProcessingInviteId] = useState<string | null>(null);
+  const [actionMenuInviteId, setActionMenuInviteId] = useState<string | null>(null);
   const [confirmingInvite, setConfirmingInvite] = useState<{
     inviteId: string;
     newbieEmail: string;
@@ -59,6 +60,7 @@ export function NewbieInvitesTable() {
       }
     } finally {
       setProcessingInviteId(null);
+      setActionMenuInviteId(null);
       setConfirmingInvite(null);
     }
   };
@@ -77,6 +79,7 @@ export function NewbieInvitesTable() {
       });
     } finally {
       setProcessingInviteId(null);
+      setActionMenuInviteId(null);
     }
   };
 
@@ -107,6 +110,8 @@ export function NewbieInvitesTable() {
           const isEarlyDeparture = estimatedDeparture
             ? requiresOpsReview(estimatedDeparture, config.departureCutoff)
             : false;
+          const isDecided = invite.status === "accepted" || invite.status === "denied";
+          const isActionMenuOpen = actionMenuInviteId === invite._id;
 
           return (
             <article
@@ -220,32 +225,77 @@ export function NewbieInvitesTable() {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 gap-2 lg:flex-col">
-                  <button
-                    type="button"
-                    disabled={isProcessing}
-                    onClick={() =>
-                      setConfirmingInvite({
-                        inviteId: invite._id,
-                        newbieEmail: invite.newbieEmail,
-                        sponsorName: invite.sponsorName,
-                      })
-                    }
-                    className="rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-                  >
-                    Accept
-                  </button>
-                  <button
-                    type="button"
-                    disabled={denyDisabled}
-                    onClick={() => {
-                      void handleDeny(invite._id);
-                    }}
-                    className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-                  >
-                    Deny
-                  </button>
-                </div>
+                {isDecided ? (
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      aria-expanded={isActionMenuOpen}
+                      onClick={() =>
+                        setActionMenuInviteId((currentId) =>
+                          currentId === invite._id ? null : invite._id
+                        )
+                      }
+                      className="rounded-lg bg-white/8 px-4 py-2 text-sm font-medium text-slate-100 ring-1 ring-white/10 hover:bg-white/12"
+                    >
+                      Change
+                    </button>
+                    {isActionMenuOpen && (
+                      <div className="absolute right-0 z-10 mt-2 flex min-w-40 flex-col gap-2 rounded-xl bg-slate-950 p-2 shadow-2xl ring-1 ring-white/10">
+                        <button
+                          type="button"
+                          disabled={isProcessing}
+                          onClick={() =>
+                            setConfirmingInvite({
+                              inviteId: invite._id,
+                              newbieEmail: invite.newbieEmail,
+                              sponsorName: invite.sponsorName,
+                            })
+                          }
+                          className="rounded-lg bg-emerald-500/20 px-4 py-2 text-left text-sm font-medium text-emerald-300 hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          disabled={denyDisabled}
+                          onClick={() => {
+                            void handleDeny(invite._id);
+                          }}
+                          className="rounded-lg bg-red-500/20 px-4 py-2 text-left text-sm font-medium text-red-300 hover:bg-red-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                        >
+                          Deny
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex shrink-0 gap-2 lg:flex-col">
+                    <button
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() =>
+                        setConfirmingInvite({
+                          inviteId: invite._id,
+                          newbieEmail: invite.newbieEmail,
+                          sponsorName: invite.sponsorName,
+                        })
+                      }
+                      className="rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      disabled={denyDisabled}
+                      onClick={() => {
+                        void handleDeny(invite._id);
+                      }}
+                      className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                    >
+                      Deny
+                    </button>
+                  </div>
+                )}
               </div>
             </article>
           );
