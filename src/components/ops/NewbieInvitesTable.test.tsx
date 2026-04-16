@@ -116,9 +116,14 @@ describe("NewbieInvitesTable", () => {
   it("highlights invites with an estimated departure before the departure cutoff", () => {
     render(<NewbieInvitesTable />);
 
-    expect(screen.getByText("Early")).toBeInTheDocument();
-    expect(screen.getByText("Sam Patel").closest("article")).toHaveClass("bg-amber-500/10");
-    expect(screen.getByText("Taylor Kim").closest("article")).not.toHaveClass("bg-amber-500/10");
+    expect(screen.queryByText("Early")).not.toBeInTheDocument();
+    const earlyDepartureSections = screen.getAllByText("Early departure reason");
+    const estimatedDepartureValues = screen.getAllByText(/2026-09-0[23]/);
+
+    expect(earlyDepartureSections[0].closest("section")).toHaveClass("bg-amber-500/10");
+    expect(earlyDepartureSections[1].closest("section")).not.toHaveClass("bg-amber-500/10");
+    expect(estimatedDepartureValues[0]).toHaveClass("text-amber-200");
+    expect(estimatedDepartureValues[1]).not.toHaveClass("text-amber-200");
   });
 
   it("confirms before accepting and sends the approval email when needed", async () => {

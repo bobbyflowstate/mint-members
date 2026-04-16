@@ -117,9 +117,7 @@ export function NewbieInvitesTable() {
             <article
               key={invite._id}
               className={`rounded-2xl border p-5 shadow-sm ring-1 ${
-                isEarlyDeparture
-                  ? "border-amber-400/20 bg-amber-500/10 ring-amber-300/20"
-                  : "border-white/10 bg-white/5 ring-white/10"
+                "border-white/10 bg-white/5 ring-white/10"
               }`}
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -138,11 +136,6 @@ export function NewbieInvitesTable() {
                       >
                         {invite.status}
                       </span>
-                      {isEarlyDeparture && (
-                        <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-200 ring-1 ring-amber-300/30">
-                          Early
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -185,7 +178,11 @@ export function NewbieInvitesTable() {
                         <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                           Estimated departure
                         </dt>
-                        <dd className="mt-1 text-sm text-slate-200">
+                        <dd
+                          className={`mt-1 text-sm ${
+                            isEarlyDeparture ? "font-medium text-amber-200" : "text-slate-200"
+                          }`}
+                        >
                           {invite.estimatedDeparture ?? "—"}
                         </dd>
                       </div>
@@ -216,7 +213,13 @@ export function NewbieInvitesTable() {
                       </p>
                     </section>
 
-                    <section className="rounded-2xl bg-slate-950/40 p-4 ring-1 ring-white/5">
+                    <section
+                      className={`rounded-2xl p-4 ring-1 ${
+                        isEarlyDeparture
+                          ? "bg-amber-500/10 ring-amber-300/20"
+                          : "bg-slate-950/40 ring-white/5"
+                      }`}
+                    >
                       <h3 className="text-sm font-semibold text-white">Early departure reason</h3>
                       <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
                         {invite.earlyDepartureReason ?? "—"}
