@@ -103,9 +103,10 @@ describe("NewbieInvitesTable", () => {
   it("shows Accept and Deny actions for pending invites", () => {
     render(<NewbieInvitesTable />);
 
-    expect(screen.getByText("Estimated Arrival")).toBeInTheDocument();
-    expect(screen.getByText("Estimated Departure")).toBeInTheDocument();
-    expect(screen.getByText("Early Departure Reason")).toBeInTheDocument();
+    expect(screen.getAllByText("Invite details")).toHaveLength(2);
+    expect(screen.getAllByText("Why they belong")).toHaveLength(2);
+    expect(screen.getAllByText("Early departure reason")).toHaveLength(2);
+    expect(screen.getAllByText("Preparedness acknowledged")).toHaveLength(2);
     expect(screen.getByText("Needs to leave for work.")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Accept" })).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: "Deny" })).toHaveLength(2);
@@ -115,8 +116,8 @@ describe("NewbieInvitesTable", () => {
     render(<NewbieInvitesTable />);
 
     expect(screen.getByText("Early")).toBeInTheDocument();
-    expect(screen.getByText("Sam Patel").closest("tr")).toHaveClass("bg-amber-500/10");
-    expect(screen.getByText("Taylor Kim").closest("tr")).not.toHaveClass("bg-amber-500/10");
+    expect(screen.getByText("Sam Patel").closest("article")).toHaveClass("bg-amber-500/10");
+    expect(screen.getByText("Taylor Kim").closest("article")).not.toHaveClass("bg-amber-500/10");
   });
 
   it("confirms before accepting and sends the approval email when needed", async () => {

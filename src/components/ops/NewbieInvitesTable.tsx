@@ -99,107 +99,157 @@ export function NewbieInvitesTable() {
 
   return (
     <>
-      <div className="rounded-xl bg-white/5 ring-1 ring-white/10 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-[1500px] divide-y divide-white/10">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
-                <th className="px-4 py-3">Sponsor</th>
-                <th className="px-4 py-3">Newbie</th>
-                <th className="px-4 py-3">Phone</th>
-                <th className="px-4 py-3">Estimated Arrival</th>
-                <th className="px-4 py-3">Estimated Departure</th>
-                <th className="px-4 py-3">Early Departure Reason</th>
-                <th className="px-4 py-3">Why They Belong</th>
-                <th className="px-4 py-3">Acknowledged</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Actions</th>
-                <th className="px-4 py-3">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 text-sm text-slate-200">
-              {invites.map((invite) => {
-                const isProcessing = processingInviteId === invite._id;
-                const denyDisabled = isProcessing || Boolean(invite.applicationId);
-                const estimatedDeparture = invite.estimatedDeparture;
-                const isEarlyDeparture = estimatedDeparture
-                  ? requiresOpsReview(estimatedDeparture, config.departureCutoff)
-                  : false;
+      <div className="space-y-4">
+        {invites.map((invite) => {
+          const isProcessing = processingInviteId === invite._id;
+          const denyDisabled = isProcessing || Boolean(invite.applicationId);
+          const estimatedDeparture = invite.estimatedDeparture;
+          const isEarlyDeparture = estimatedDeparture
+            ? requiresOpsReview(estimatedDeparture, config.departureCutoff)
+            : false;
 
-                return (
-                  <tr
-                    key={invite._id}
-                    className={isEarlyDeparture ? "bg-amber-500/10" : undefined}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-white">{invite.sponsorName}</div>
-                      <div className="text-xs text-slate-400">{invite.sponsorEmail}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-white">{invite.newbieName}</div>
-                      <div className="text-xs text-slate-400">{invite.newbieEmail}</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">{invite.newbiePhone}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">{invite.estimatedArrival ?? "—"}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span>{invite.estimatedDeparture ?? "—"}</span>
-                        {isEarlyDeparture && (
-                          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-200 ring-1 ring-amber-300/30">
-                            Early
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 max-w-sm whitespace-pre-wrap">
-                      {invite.earlyDepartureReason ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 max-w-sm whitespace-pre-wrap">{invite.whyTheyBelong}</td>
-                    <td className="px-4 py-3">{invite.preparednessAcknowledged ? "Yes" : "No"}</td>
-                    <td className="px-4 py-3">
+          return (
+            <article
+              key={invite._id}
+              className={`rounded-2xl border p-5 shadow-sm ring-1 ${
+                isEarlyDeparture
+                  ? "border-amber-400/20 bg-amber-500/10 ring-amber-300/20"
+                  : "border-white/10 bg-white/5 ring-white/10"
+              }`}
+            >
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-start gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        Newbie
+                      </p>
+                      <h2 className="mt-1 text-xl font-semibold text-white">{invite.newbieName}</h2>
+                      <p className="text-sm text-slate-300">{invite.newbieEmail}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ${getStatusClasses(invite.status)}`}
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ring-1 ${getStatusClasses(invite.status)}`}
                       >
                         {invite.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          disabled={isProcessing}
-                          onClick={() =>
-                            setConfirmingInvite({
-                              inviteId: invite._id,
-                              newbieEmail: invite.newbieEmail,
-                              sponsorName: invite.sponsorName,
-                            })
-                          }
-                          className="rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          disabled={denyDisabled}
-                          onClick={() => {
-                            void handleDeny(invite._id);
-                          }}
-                          className="rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-                        >
-                          Deny
-                        </button>
+                      {isEarlyDeparture && (
+                        <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-200 ring-1 ring-amber-300/30">
+                          Early
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="rounded-xl bg-slate-950/40 p-3 ring-1 ring-white/5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Sponsor
+                      </p>
+                      <p className="mt-2 font-medium text-white">{invite.sponsorName}</p>
+                      <p className="text-sm text-slate-400">{invite.sponsorEmail}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-950/40 p-3 ring-1 ring-white/5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Phone
+                      </p>
+                      <p className="mt-2 font-medium text-white">{invite.newbiePhone}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-950/40 p-3 ring-1 ring-white/5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Created
+                      </p>
+                      <p className="mt-2 font-medium text-white">
+                        {new Date(invite.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  <section className="rounded-2xl bg-slate-950/40 p-4 ring-1 ring-white/5">
+                    <h3 className="text-sm font-semibold text-white">Invite details</h3>
+                    <dl className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      <div>
+                        <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Estimated arrival
+                        </dt>
+                        <dd className="mt-1 text-sm text-slate-200">
+                          {invite.estimatedArrival ?? "—"}
+                        </dd>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-slate-400">
-                      {new Date(invite.createdAt).toLocaleString()}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <div>
+                        <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Estimated departure
+                        </dt>
+                        <dd className="mt-1 text-sm text-slate-200">
+                          {invite.estimatedDeparture ?? "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Preparedness acknowledged
+                        </dt>
+                        <dd className="mt-1 text-sm text-slate-200">
+                          {invite.preparednessAcknowledged ? "Yes" : "No"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Application
+                        </dt>
+                        <dd className="mt-1 text-sm text-slate-200">
+                          {invite.applicationId ? "Started" : "Not started"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+
+                  <div className="grid gap-3 xl:grid-cols-2">
+                    <section className="rounded-2xl bg-slate-950/40 p-4 ring-1 ring-white/5">
+                      <h3 className="text-sm font-semibold text-white">Why they belong</h3>
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+                        {invite.whyTheyBelong}
+                      </p>
+                    </section>
+
+                    <section className="rounded-2xl bg-slate-950/40 p-4 ring-1 ring-white/5">
+                      <h3 className="text-sm font-semibold text-white">Early departure reason</h3>
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+                        {invite.earlyDepartureReason ?? "—"}
+                      </p>
+                    </section>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 gap-2 lg:flex-col">
+                  <button
+                    type="button"
+                    disabled={isProcessing}
+                    onClick={() =>
+                      setConfirmingInvite({
+                        inviteId: invite._id,
+                        newbieEmail: invite.newbieEmail,
+                        sponsorName: invite.sponsorName,
+                      })
+                    }
+                    className="rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    disabled={denyDisabled}
+                    onClick={() => {
+                      void handleDeny(invite._id);
+                    }}
+                    className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/30 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                  >
+                    Deny
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {confirmingInvite && (
