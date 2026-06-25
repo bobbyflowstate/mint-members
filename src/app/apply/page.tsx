@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ApplicationForm } from "@/components/forms";
 import { ConfirmedMemberDetailsForm } from "@/components/forms/ConfirmedMemberDetailsForm";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthModal, UserButton } from "@/components/auth";
 import { getLandingContent, AppConfig } from "@/config/content";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { isFlagEnabled } from "@/lib/config/flags";
@@ -159,9 +159,22 @@ function ApplicationFormWithCheck({
   paymentsEnabled: boolean;
 }) {
   const existingApplication = useQuery(api.applications.getMyApplication);
+  const pendingInvite = useQuery(api.opsManualInvites.getMyPendingInvite);
+  const claim = useMutation(api.opsManualInvites.claim);
+  const claimAttempted = useRef(false);
+  const [autoClaimError, setAutoClaimError] = useState<string | null>(null);
   const config = useQuery(api.config.getConfig);
   const currentUser = useQuery(api.users.currentUser);
   const capacity = useQuery(api.applications.getCapacityStatus);
+
+  useEffect(() => {
+    if (pendingInvite && !existingApplication && !claimAttempted.current) {
+      claimAttempted.current = true;
+      claim({}).catch((err) => {
+        setAutoClaimError(err instanceof Error ? err.message : "Failed to set up your account");
+      });
+    }
+  }, [pendingInvite, existingApplication, claim]);
 
   // Check if email is allowlisted
   const isEmailAllowed = useQuery(
@@ -170,7 +183,7 @@ function ApplicationFormWithCheck({
   );
 
   // Loading state
-  if (existingApplication === undefined || config === undefined || currentUser === undefined || capacity === undefined) {
+  if (existingApplication === undefined || pendingInvite === undefined || config === undefined || currentUser === undefined || capacity === undefined) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
@@ -178,11 +191,30 @@ function ApplicationFormWithCheck({
     );
   }
 
-  // Check allowlist enforcement
+  // Existing application always wins — show it regardless of allowlist/capacity
+  // (handled further down, but must skip all other gates)
+
+  // Pending invite — ops manually added them, skip all other gates
+  if (!existingApplication && pendingInvite) {
+    if (autoClaimError) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-red-400 text-sm">{autoClaimError}</p>
+          <p className="mt-2 text-slate-500 text-xs">Please contact ops for assistance.</p>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // Skip allowlist + capacity gates for anyone with an existing application
   const allowlistEnabled = config?.allowlistEnabled === "true";
 
-  // If allowlist is enabled and email is not allowed, show blocked message
-  if (allowlistEnabled && isEmailAllowed === false) {
+  if (!existingApplication && allowlistEnabled && isEmailAllowed === false) {
     return (
       <div className="text-center py-8">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 ring-1 ring-amber-500/20">
@@ -213,8 +245,8 @@ function ApplicationFormWithCheck({
     );
   }
 
-  // Camp is full — block everyone except already-confirmed members
-  if (capacity.isFull && existingApplication?.status !== "confirmed") {
+  // Camp is full — only block people who don't have an application yet
+  if (!existingApplication && capacity.isFull) {
     return (
       <div className="text-center py-8">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 ring-1 ring-red-500/20">

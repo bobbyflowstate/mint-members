@@ -59,6 +59,7 @@ export async function upsertOpsSignupRow(
     earlyDepartureRequested: application.earlyDepartureRequested,
     hasBurningManTicket: confirmedMember?.hasBurningManTicket ?? false,
     hasVehiclePass: confirmedMember?.hasVehiclePass ?? false,
+    hasFullPayment: confirmedMember?.hasFullPayment,
     requests,
     memberType: application.memberType ?? "alumni",
     sponsorName: newbieInvite?.sponsorName,

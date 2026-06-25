@@ -91,22 +91,12 @@ const COLUMN_DEFINITIONS: ColumnDefinition[] = [
   {
     id: "arrival",
     label: "Arrival",
-    render: (row) => formatDateForDisplay(row.arrival),
-  },
-  {
-    id: "arrivalTime",
-    label: "Arrival Time",
-    render: (row) => row.arrivalTime,
+    render: (row) => `${formatDateForDisplay(row.arrival)} ${row.arrivalTime}`.trim(),
   },
   {
     id: "departure",
     label: "Departure",
-    render: (row) => formatDateForDisplay(row.departure),
-  },
-  {
-    id: "departureTime",
-    label: "Departure Time",
-    render: (row) => row.departureTime,
+    render: (row) => `${formatDateForDisplay(row.departure)} ${row.departureTime}`.trim(),
   },
   {
     id: "createdAt",

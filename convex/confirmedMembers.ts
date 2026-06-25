@@ -88,6 +88,38 @@ export const listForOps = query({
   },
 });
 
+export const setFullPayment = mutation({
+  args: {
+    opsPassword: v.string(),
+    applicationId: v.id("applications"),
+    hasFullPayment: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+    const now = Date.now();
+    const cm = await ctx.db
+      .query("confirmed_members")
+      .withIndex("by_applicationId", (q) => q.eq("applicationId", args.applicationId))
+      .first();
+    if (cm) {
+      await ctx.db.patch(cm._id, { hasFullPayment: args.hasFullPayment, updatedAt: now });
+    } else {
+      const app = await ctx.db.get(args.applicationId);
+      if (!app) throw new Error("Application not found");
+      await ctx.db.insert("confirmed_members", {
+        userId: app.userId,
+        applicationId: args.applicationId,
+        hasBurningManTicket: false,
+        hasVehiclePass: false,
+        hasFullPayment: args.hasFullPayment,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    await upsertOpsSignupRow(ctx, args.applicationId);
+  },
+});
+
 export const upsertMine = mutation({
   args: {
     hasBurningManTicket: v.optional(v.boolean()),

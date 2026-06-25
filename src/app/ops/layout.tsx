@@ -12,10 +12,8 @@ interface OpsLayoutProps {
 
 const navigation = [
   { name: "Dashboard", href: "/ops" },
+  { name: "Members", href: "/ops/members" },
   { name: "Review Queue", href: "/ops/review" },
-  { name: "Sign Ups", href: "/ops/signups" },
-  { name: "Export", href: "/ops/export" },
-  { name: "Confirmed", href: "/ops/confirmed" },
   { name: "Invites", href: "/ops/invites" },
   { name: "Event Logs", href: "/ops/logs" },
   { name: "Email Allowlist", href: "/ops/allowlist" },
@@ -25,7 +23,6 @@ export default function OpsLayout({ children }: OpsLayoutProps) {
   const pathname = usePathname();
   const [mobileMenuPath, setMobileMenuPath] = useState<string | null>(null);
   const isMobileMenuOpen = mobileMenuPath === pathname;
-  const isExportPage = pathname === "/ops/export";
 
   const toggleMobileMenu = () => {
     setMobileMenuPath((currentPath) => (currentPath === pathname ? null : pathname));
@@ -128,12 +125,7 @@ export default function OpsLayout({ children }: OpsLayoutProps) {
 
         {/* Main content */}
         <main className="py-8">
-          <div
-            className={clsx(
-              "mx-auto px-4 sm:px-6 lg:px-8",
-              isExportPage ? "max-w-none" : "max-w-7xl"
-            )}
-          >
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>

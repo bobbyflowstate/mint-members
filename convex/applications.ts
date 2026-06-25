@@ -577,9 +577,6 @@ export const listSignupsForOpsView = query({
   },
 });
 
-/**
- * List all applications with optional status filter
- */
 export const list = query({
   args: {
     status: v.optional(

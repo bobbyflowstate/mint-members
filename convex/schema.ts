@@ -109,6 +109,7 @@ export default defineSchema({
     applicationId: v.id("applications"),
     hasBurningManTicket: v.boolean(),
     hasVehiclePass: v.boolean(),
+    hasFullPayment: v.optional(v.boolean()),
     requests: v.optional(v.string()),
     // Backward compatibility for early records before rename.
     notes: v.optional(v.string()),
@@ -139,6 +140,7 @@ export default defineSchema({
     earlyDepartureRequested: v.boolean(),
     hasBurningManTicket: v.boolean(),
     hasVehiclePass: v.boolean(),
+    hasFullPayment: v.optional(v.boolean()),
     requests: v.string(),
     memberType: v.optional(memberType),
     sponsorName: v.optional(v.string()),
@@ -215,6 +217,33 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_addedAt", ["addedAt"]),
+
+  /**
+   * Ops-manually-added members — people confirmed outside the normal flow.
+   * Once the person signs in and claims the invite, a confirmed application is created.
+   */
+  ops_manual_invites: defineTable({
+    email: v.string(),
+    firstName: v.string(),
+    lastName: v.string(),
+    phone: v.string(),
+    memberType: memberType,
+    arrival: v.string(),
+    arrivalTime: arrivalDepartureTime,
+    departure: v.string(),
+    departureTime: arrivalDepartureTime,
+    notes: v.optional(v.string()),
+    hasFullPayment: v.optional(v.boolean()),
+    addedBy: v.string(),
+    inviteEmailSentAt: v.optional(v.number()),
+    claimedByUserId: v.optional(v.id("users")),
+    claimedApplicationId: v.optional(v.id("applications")),
+    claimedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_createdAt", ["createdAt"]),
 
   newbie_invites: defineTable({
     sponsorUserId: v.id("users"),
