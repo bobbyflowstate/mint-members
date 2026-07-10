@@ -17,6 +17,7 @@ import {
   compareSignups,
   matchesSignupFilters,
 } from "../src/lib/opsSignupsView/evaluate";
+import { countsTowardCapacity } from "./lib/capacity";
 
 /**
  * Create a draft application from form submission
@@ -405,7 +406,7 @@ export const getCapacityStatus = query({
       .query("applications")
       .withIndex("by_status", (q) => q.eq("status", "confirmed"))
       .collect();
-    const confirmedCount = confirmed.length;
+    const confirmedCount = confirmed.filter(countsTowardCapacity).length;
 
     // 0 means unlimited
     const isFull = maxMembers > 0 && confirmedCount >= maxMembers;

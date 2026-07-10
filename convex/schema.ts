@@ -91,6 +91,7 @@ export default defineSchema({
     earlyDepartureReason: v.optional(v.string()),
     paymentAllowed: v.boolean(),
     memberType: v.optional(memberType),
+    cancelled: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -143,6 +144,7 @@ export default defineSchema({
     hasFullPayment: v.optional(v.boolean()),
     requests: v.string(),
     memberType: v.optional(memberType),
+    cancelled: v.optional(v.boolean()),
     sponsorName: v.optional(v.string()),
     sponsorEmail: v.optional(v.string()),
     applicationCreatedAt: v.number(),
@@ -239,6 +241,7 @@ export default defineSchema({
     claimedByUserId: v.optional(v.id("users")),
     claimedApplicationId: v.optional(v.id("applications")),
     claimedAt: v.optional(v.number()),
+    cancelled: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

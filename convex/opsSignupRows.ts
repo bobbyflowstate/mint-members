@@ -23,13 +23,13 @@ export async function upsertOpsSignupRow(
     return null;
   }
 
-  const confirmedMember = await ctx.db
-    .query("confirmed_members")
+  const existingRow = await ctx.db
+    .query("ops_signup_rows")
     .withIndex("by_applicationId", (q) => q.eq("applicationId", applicationId))
     .first();
 
-  const existingRow = await ctx.db
-    .query("ops_signup_rows")
+  const confirmedMember = await ctx.db
+    .query("confirmed_members")
     .withIndex("by_applicationId", (q) => q.eq("applicationId", applicationId))
     .first();
 
@@ -62,6 +62,7 @@ export async function upsertOpsSignupRow(
     hasFullPayment: confirmedMember?.hasFullPayment,
     requests,
     memberType: application.memberType ?? "alumni",
+    cancelled: application.cancelled,
     sponsorName: newbieInvite?.sponsorName,
     sponsorEmail: newbieInvite?.sponsorEmail,
     applicationCreatedAt: application.createdAt,

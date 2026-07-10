@@ -5,6 +5,7 @@ import {
   claim,
   getMyPendingInvite,
   listUnclaimedForOps,
+  setCancelledForOps,
   setFullPayment,
 } from "./opsManualInvites";
 
@@ -281,6 +282,18 @@ describe("opsManualInvites.claim", () => {
     await expect(handler(ctx, {})).rejects.toThrow("This invite has already been claimed");
   });
 
+  it("throws when the invite has been cancelled", async () => {
+    vi.mocked(getAuthUserId).mockResolvedValue(USER_ID);
+    const handler = getHandler(claim);
+    const { ctx, insertSpy, patchSpy } = makeClaimCtx({
+      invite: { ...BASE_INVITE, cancelled: true },
+    });
+
+    await expect(handler(ctx, {})).rejects.toThrow("This invite has been cancelled");
+    expect(insertSpy).not.toHaveBeenCalled();
+    expect(patchSpy).not.toHaveBeenCalled();
+  });
+
   it("throws when the user already has an application", async () => {
     vi.mocked(getAuthUserId).mockResolvedValue(USER_ID);
     const handler = getHandler(claim);
@@ -394,6 +407,95 @@ describe("opsManualInvites.setFullPayment", () => {
   });
 });
 
+// ─── setCancelledForOps ─────────────────────────────────────────────────────
+
+describe("opsManualInvites ops cancellation", () => {
+  const originalPwd = process.env.OPS_PWD;
+
+  beforeEach(() => {
+    process.env.OPS_PWD = OPS_PWD;
+  });
+
+  afterEach(() => {
+    if (originalPwd === undefined) delete process.env.OPS_PWD;
+    else process.env.OPS_PWD = originalPwd;
+    vi.clearAllMocks();
+  });
+
+  it("marks an unclaimed invite as cancelled", async () => {
+    const handler = getHandler(setCancelledForOps);
+    const patchSpy = vi.fn();
+    const ctx = {
+      db: {
+        get: vi.fn().mockResolvedValue(BASE_INVITE),
+        patch: patchSpy,
+      },
+    };
+
+    await handler(ctx, {
+      opsPassword: OPS_PWD,
+      inviteId: "invite_1" as Id<"ops_manual_invites">,
+      cancelled: true,
+    });
+
+    expect(patchSpy).toHaveBeenCalledWith(
+      "invite_1",
+      expect.objectContaining({
+        cancelled: true,
+        updatedAt: expect.any(Number),
+      })
+    );
+  });
+
+  it("refuses to cancel a claimed invite", async () => {
+    const handler = getHandler(setCancelledForOps);
+    const patchSpy = vi.fn();
+    const ctx = {
+      db: {
+        get: vi.fn().mockResolvedValue({ ...BASE_INVITE, claimedAt: 9999 }),
+        patch: patchSpy,
+      },
+    };
+
+    await expect(
+      handler(ctx, {
+        opsPassword: OPS_PWD,
+        inviteId: "invite_1" as Id<"ops_manual_invites">,
+        cancelled: true,
+      })
+    ).rejects.toThrow("Claimed invites cannot be cancelled from this view");
+    expect(patchSpy).not.toHaveBeenCalled();
+  });
+
+  it("can clear the cancelled flag", async () => {
+    const handler = getHandler(setCancelledForOps);
+    const patchSpy = vi.fn();
+    const ctx = {
+      db: {
+        get: vi.fn().mockResolvedValue({
+          ...BASE_INVITE,
+          cancelled: true,
+        }),
+        patch: patchSpy,
+      },
+    };
+
+    await handler(ctx, {
+      opsPassword: OPS_PWD,
+      inviteId: "invite_1" as Id<"ops_manual_invites">,
+      cancelled: false,
+    });
+
+    expect(patchSpy).toHaveBeenCalledWith(
+      "invite_1",
+      expect.objectContaining({
+        cancelled: false,
+        updatedAt: expect.any(Number),
+      })
+    );
+  });
+});
+
 // ─── listUnclaimedForOps ────────────────────────────────────────────────────
 
 describe("opsManualInvites.listUnclaimedForOps", () => {
@@ -415,12 +517,13 @@ describe("opsManualInvites.listUnclaimedForOps", () => {
     await expect(handler(ctx, { opsPassword: "wrong" })).rejects.toThrow("Unauthorized");
   });
 
-  it("returns only unclaimed invites", async () => {
+  it("returns unclaimed invites including cancelled invites", async () => {
     const handler = getHandler(listUnclaimedForOps);
     const invites = [
       { ...BASE_INVITE, _id: "invite_a" },
       { ...BASE_INVITE, _id: "invite_b", claimedAt: 9999 },
       { ...BASE_INVITE, _id: "invite_c" },
+      { ...BASE_INVITE, _id: "invite_d", cancelled: true },
     ];
     const ctx = {
       db: {
@@ -434,8 +537,8 @@ describe("opsManualInvites.listUnclaimedForOps", () => {
 
     const result = await handler(ctx, { opsPassword: OPS_PWD });
 
-    expect(result).toHaveLength(2);
-    expect(result.map((r: { _id: string }) => r._id)).toEqual(["invite_a", "invite_c"]);
+    expect(result).toHaveLength(3);
+    expect(result.map((r: { _id: string }) => r._id)).toEqual(["invite_a", "invite_c", "invite_d"]);
   });
 });
 
@@ -472,6 +575,24 @@ describe("opsManualInvites.getMyPendingInvite", () => {
         query: vi.fn(() => ({
           withIndex: () => ({
             first: vi.fn().mockResolvedValue({ ...BASE_INVITE, claimedAt: 9999 }),
+          }),
+        })),
+      },
+    };
+
+    const result = await handler(ctx, {});
+    expect(result).toBeNull();
+  });
+
+  it("returns null when the invite has been cancelled", async () => {
+    vi.mocked(getAuthUserId).mockResolvedValue(USER_ID);
+    const handler = getHandler(getMyPendingInvite);
+    const ctx = {
+      db: {
+        get: vi.fn().mockResolvedValue({ email: "sam@example.com" }),
+        query: vi.fn(() => ({
+          withIndex: () => ({
+            first: vi.fn().mockResolvedValue({ ...BASE_INVITE, cancelled: true }),
           }),
         })),
       },

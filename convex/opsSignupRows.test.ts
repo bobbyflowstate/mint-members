@@ -39,6 +39,7 @@ describe("upsertOpsSignupRow", () => {
           status: "pending_payment",
           paymentAllowed: true,
           earlyDepartureRequested: false,
+          cancelled: true,
           createdAt: 1000,
         }),
         query: vi.fn((table: string) => {
@@ -93,6 +94,7 @@ describe("upsertOpsSignupRow", () => {
         status: "pending_payment",
         hasBurningManTicket: true,
         hasVehiclePass: false,
+        cancelled: true,
         requests: "",
         sourceVersion: 1,
       })
@@ -174,6 +176,7 @@ describe("upsertOpsSignupRow", () => {
     );
     expect(insertSpy).not.toHaveBeenCalled();
   });
+
 });
 
 describe("backfillOpsSignupRows", () => {

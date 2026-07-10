@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { listSignupsForOpsView } from "./applications";
+import { getCapacityStatus, listSignupsForOpsView } from "./applications";
 
 type ConvexHandler = (ctx: unknown, args: unknown) => Promise<unknown>;
 interface SignupsViewQueryResult {
@@ -184,5 +184,46 @@ describe("applications.listSignupsForOpsView filtering/sorting", () => {
     expect(result.rows).toHaveLength(2);
     expect(result.totalBeforeFilter).toBe(2);
     expect(result.truncated).toBe(true);
+  });
+});
+
+describe("applications.getCapacityStatus", () => {
+  it("does not count cancelled confirmed applications as filled capacity", async () => {
+    const handler = getHandler(getCapacityStatus);
+    const ctx = {
+      db: {
+        query: vi.fn((table: string) => {
+          if (table === "config") {
+            return {
+              withIndex: vi.fn().mockReturnValue({
+                first: vi.fn().mockResolvedValue({ value: "2" }),
+              }),
+            };
+          }
+
+          if (table === "applications") {
+            return {
+              withIndex: vi.fn().mockReturnValue({
+                collect: vi.fn().mockResolvedValue([
+                  { _id: "app_active", status: "confirmed" },
+                  { _id: "app_cancelled", status: "confirmed", cancelled: true },
+                ]),
+              }),
+            };
+          }
+
+          throw new Error(`Unexpected table: ${table}`);
+        }),
+      },
+    };
+
+    const result = await handler(ctx, {});
+
+    expect(result).toEqual({
+      confirmedCount: 1,
+      maxMembers: 2,
+      isFull: false,
+      spotsRemaining: 1,
+    });
   });
 });

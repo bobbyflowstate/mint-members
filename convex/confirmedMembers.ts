@@ -19,7 +19,11 @@ export const getMine = query({
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .first();
 
-    if (!confirmedApplication || confirmedApplication.status !== "confirmed") {
+    if (
+      !confirmedApplication ||
+      confirmedApplication.status !== "confirmed" ||
+      confirmedApplication.cancelled
+    ) {
       return null;
     }
 
@@ -120,6 +124,30 @@ export const setFullPayment = mutation({
   },
 });
 
+export const setCancelledForOps = mutation({
+  args: {
+    opsPassword: v.string(),
+    applicationId: v.id("applications"),
+    cancelled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+
+    const application = await ctx.db.get(args.applicationId);
+    if (!application) {
+      throw new Error("Application not found");
+    }
+
+    await ctx.db.patch(args.applicationId, {
+      cancelled: args.cancelled,
+      updatedAt: Date.now(),
+    });
+    await upsertOpsSignupRow(ctx, args.applicationId);
+
+    return { success: true };
+  },
+});
+
 export const upsertMine = mutation({
   args: {
     hasBurningManTicket: v.optional(v.boolean()),
@@ -139,7 +167,11 @@ export const upsertMine = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .first();
 
-    if (!confirmedApplication || confirmedApplication.status !== "confirmed") {
+    if (
+      !confirmedApplication ||
+      confirmedApplication.status !== "confirmed" ||
+      confirmedApplication.cancelled
+    ) {
       throw new Error("Only confirmed members can update this information");
     }
 

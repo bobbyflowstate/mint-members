@@ -114,7 +114,7 @@ export const getMyPendingInvite = query({
       .withIndex("by_email", (q) => q.eq("email", user.email!.toLowerCase()))
       .first();
 
-    if (!invite || invite.claimedAt) return null;
+    if (!invite || invite.claimedAt || invite.cancelled) return null;
     return invite;
   },
 });
@@ -128,6 +128,32 @@ export const setFullPayment = mutation({
   handler: async (ctx, args) => {
     requireOpsPassword(args.opsPassword);
     await ctx.db.patch(args.inviteId, { hasFullPayment: args.hasFullPayment, updatedAt: Date.now() });
+  },
+});
+
+export const setCancelledForOps = mutation({
+  args: {
+    opsPassword: v.string(),
+    inviteId: v.id("ops_manual_invites"),
+    cancelled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+
+    const invite = await ctx.db.get(args.inviteId);
+    if (!invite) {
+      throw new Error("Manual invite not found");
+    }
+    if (invite.claimedAt) {
+      throw new Error("Claimed invites cannot be cancelled from this view");
+    }
+
+    await ctx.db.patch(args.inviteId, {
+      cancelled: args.cancelled,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
   },
 });
 
@@ -181,6 +207,9 @@ export const claim = mutation({
     }
     if (invite.claimedAt) {
       throw new Error("This invite has already been claimed");
+    }
+    if (invite.cancelled) {
+      throw new Error("This invite has been cancelled");
     }
 
     const existingApp = await ctx.db

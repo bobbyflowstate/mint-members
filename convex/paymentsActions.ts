@@ -173,6 +173,10 @@ export const createReservationCheckout = action({
       throw new Error("Application not found");
     }
 
+    if (application.cancelled) {
+      throw new Error("Payment not allowed for cancelled application");
+    }
+
     if (!application.paymentAllowed) {
       throw new Error("Payment not allowed for this application");
     }

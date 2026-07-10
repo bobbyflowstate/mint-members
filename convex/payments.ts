@@ -10,6 +10,7 @@ import {
 } from "./lib/events";
 import { CONFIG_DEFAULTS, parseMaxMembers } from "./config";
 import { upsertOpsSignupRow } from "./opsSignupRows";
+import { countsTowardCapacity } from "./lib/capacity";
 
 /**
  * Update application with checkout session (internal mutation)
@@ -117,9 +118,30 @@ export const handleCheckoutSuccess = mutation({
       return { success: false, error: "Application not found" };
     }
 
-    // Idempotency: if already confirmed, return success without re-checking capacity
+    // Idempotency: if already confirmed, return success without re-checking capacity.
+    // A later ops cancellation must not turn webhook redelivery into an automatic refund.
     if (application.status === "confirmed") {
       return { success: true, applicationId: application._id };
+    }
+
+    if (application.cancelled) {
+      await logEvent(ctx, {
+        applicationId: application._id,
+        stripeSessionId: args.stripeSessionId,
+        eventType: "payment_failed",
+        payload: buildPaymentFailedPayload({
+          email: application.email,
+          stripeSessionId: args.stripeSessionId,
+          reason: "Application has been cancelled",
+        }),
+        actor: "stripe",
+      });
+
+      return {
+        success: false,
+        error: "application_cancelled",
+        stripePaymentIntentId: args.stripePaymentIntentId,
+      };
     }
 
     // === CAPACITY HARD CAP (serialized — race-condition safe) ===
@@ -139,7 +161,9 @@ export const handleCheckoutSuccess = mutation({
         .withIndex("by_status", (q) => q.eq("status", "confirmed"))
         .collect();
 
-      if (confirmed.length >= maxMembers) {
+      const confirmedCount = confirmed.filter(countsTowardCapacity).length;
+
+      if (confirmedCount >= maxMembers) {
         // Camp is full — do NOT confirm. Flag for automatic refund.
         await logEvent(ctx, {
           applicationId: application._id,
@@ -147,7 +171,7 @@ export const handleCheckoutSuccess = mutation({
           eventType: "capacity_exceeded",
           payload: buildCapacityExceededPayload({
             email: application.email,
-            confirmedCount: confirmed.length,
+            confirmedCount,
             maxMembers,
             stripeSessionId: args.stripeSessionId,
             stripePaymentIntentId: args.stripePaymentIntentId,

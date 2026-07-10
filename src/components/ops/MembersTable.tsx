@@ -16,7 +16,7 @@ import { AddManualMemberModal } from "./AddManualMemberModal";
 
 const OPS_PASSWORD_KEY = "ops_password";
 
-type StatusTab = "all" | "needs_full_payment" | "needs_ops_review" | "confirmed" | "invited";
+type StatusTab = "all" | "needs_full_payment" | "needs_ops_review" | "confirmed" | "invited" | "cancelled";
 
 interface OpsSignupRow {
   _id: string;
@@ -40,6 +40,7 @@ interface OpsSignupRow {
   hasVehiclePass: boolean;
   requests: string;
   memberType?: "alumni" | "newbie";
+  cancelled?: boolean;
   sponsorName?: string;
   addedBy?: string;
   notes?: string;
@@ -168,10 +169,12 @@ function PaidCell({
   const [loading, setLoading] = useState(false);
 
   const canToggle =
-    row._source === "invite" ||
-    row.status === "confirmed" ||
-    row.status === "pending_payment" ||
-    row.status === "payment_processing";
+    !row.cancelled &&
+    (row._source === "invite" ||
+      row.status === "confirmed" ||
+      row.status === "pending_payment" ||
+      row.status === "payment_processing");
+  if (row.cancelled) return <span className="text-xs text-red-300">Cancelled</span>;
   if (!canToggle) return <span className="text-xs text-slate-500">—</span>;
 
   const handleToggle = async () => {
@@ -255,9 +258,11 @@ const COLUMN_DEFS: ColumnDef[] = [
   {
     id: "status",
     header: "Application Status",
-    renderText: (r) => r.status,
+    renderText: (r) => (r.cancelled ? "Cancelled" : r.status),
     renderCell: (r) => {
-      const badge = getStatusBadge(r.status);
+      const badge = r.cancelled
+        ? { label: "Cancelled", cls: "bg-red-500/15 text-red-300 ring-red-400/30" }
+        : getStatusBadge(r.status);
       return (
         <span className={clsx("inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1", badge.cls)}>
           {badge.label}
@@ -379,6 +384,7 @@ const STATUS_TABS: Array<{ id: StatusTab; label: string }> = [
   { id: "all", label: "All" },
   { id: "confirmed", label: "Fully Paid" },
   { id: "needs_full_payment", label: "Need Full Payment" },
+  { id: "cancelled", label: "Cancelled" },
   { id: "invited", label: "Invited" },
   { id: "needs_ops_review", label: "Needs Review" },
 ];
@@ -402,6 +408,7 @@ export function MembersTable() {
   const [showColumnsPanel, setShowColumnsPanel] = useState(false);
   const [visibleColumnIds, setVisibleColumnIds] = useState<SignupColumnId[]>(DEFAULT_VISIBLE_COLUMN_IDS);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [cancellingRowId, setCancellingRowId] = useState<string | null>(null);
   const [toast, setToast] = useState<UndoToast | null>(null);
   const toastIdRef = useRef(0);
 
@@ -417,6 +424,8 @@ export function MembersTable() {
 
   const setConfirmedFullPayment = useMutation(api.confirmedMembers.setFullPayment);
   const setInviteFullPayment = useMutation(api.opsManualInvites.setFullPayment);
+  const setConfirmedCancelled = useMutation(api.confirmedMembers.setCancelledForOps);
+  const setInviteCancelled = useMutation(api.opsManualInvites.setCancelledForOps);
 
   const applyFullPayment = async (row: OpsSignupRow, hasFullPayment: boolean) => {
     if (!opsPassword) return;
@@ -436,6 +445,56 @@ export function MembersTable() {
       message: `Marked ${row.fullName} as ${label}`,
       onUndo: () => { void applyFullPayment(row, !hasFullPayment); },
     });
+  };
+
+  const handleToggleCancelled = async (
+    row: OpsSignupRow,
+    options?: { nextCancelled?: boolean; skipConfirm?: boolean }
+  ) => {
+    if (!opsPassword) return;
+
+    const cancelled = options?.nextCancelled ?? !row.cancelled;
+    if (cancelled && !options?.skipConfirm) {
+      const confirmed = window.confirm(
+        `Cancel ${row.fullName}? This will block their member access and payment flow.`
+      );
+      if (!confirmed) return;
+    }
+
+    setCancellingRowId(row._id);
+    try {
+      if (row._source === "invite") {
+        await setInviteCancelled({
+          opsPassword,
+          inviteId: row._id as Id<"ops_manual_invites">,
+          cancelled,
+        });
+      } else {
+        const applicationId = row.applicationId ?? row._id;
+        await setConfirmedCancelled({
+          opsPassword,
+          applicationId: applicationId as Id<"applications">,
+          cancelled,
+        });
+      }
+
+      const id = ++toastIdRef.current;
+      setToast({
+        id,
+        message: `${row.fullName} marked ${cancelled ? "Cancelled" : "Active"}`,
+        onUndo: () => {
+          void handleToggleCancelled(row, {
+            nextCancelled: !cancelled,
+            skipConfirm: true,
+          });
+        },
+      });
+    } catch (error) {
+      console.error("Failed to update cancellation:", error);
+      alert(`Failed to update cancellation: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setCancellingRowId(null);
+    }
   };
 
   const allRows = useMemo(() => (result?.rows ?? []) as OpsSignupRow[], [result]);
@@ -464,6 +523,7 @@ export function MembersTable() {
       hasVehiclePass: false,
       requests: "",
       memberType: inv.memberType,
+      cancelled: inv.cancelled,
       addedBy: inv.addedBy,
       notes: inv.notes,
     }));
@@ -475,23 +535,29 @@ export function MembersTable() {
   );
 
   const statusCounts = useMemo(() => {
-    const counts = { all: 0, needs_full_payment: 0, needs_ops_review: 0, confirmed: 0, invited: 0 };
+    const counts = { all: 0, needs_full_payment: 0, needs_ops_review: 0, confirmed: 0, invited: 0, cancelled: 0 };
     for (const row of combinedRows) {
       counts.all++;
-      if (row.hasFullPayment) counts.confirmed++;
-      else counts.needs_full_payment++;
-      if (row.status === "needs_ops_review") counts.needs_ops_review++;
-      else if (row.status === "invited") counts.invited++;
+      if (row.cancelled) {
+        counts.cancelled++;
+      } else if (row.hasFullPayment) {
+        counts.confirmed++;
+      } else {
+        counts.needs_full_payment++;
+      }
+      if (!row.cancelled && row.status === "needs_ops_review") counts.needs_ops_review++;
+      else if (!row.cancelled && row.status === "invited") counts.invited++;
     }
     return counts;
   }, [combinedRows]);
 
   const statusFilteredRows = useMemo(() => {
     if (statusTab === "all") return combinedRows;
-    if (statusTab === "confirmed") return combinedRows.filter((r) => r.hasFullPayment);
-    if (statusTab === "needs_full_payment") return combinedRows.filter((r) => !r.hasFullPayment);
-    if (statusTab === "invited") return allInviteRows;
-    return allRows.filter((r) => r.status === statusTab);
+    if (statusTab === "confirmed") return combinedRows.filter((r) => !r.cancelled && r.hasFullPayment);
+    if (statusTab === "needs_full_payment") return combinedRows.filter((r) => !r.cancelled && !r.hasFullPayment);
+    if (statusTab === "cancelled") return combinedRows.filter((r) => r.cancelled);
+    if (statusTab === "invited") return allInviteRows.filter((r) => !r.cancelled);
+    return allRows.filter((r) => !r.cancelled && r.status === statusTab);
   }, [combinedRows, allRows, allInviteRows, statusTab]);
 
   const arrivalStats = useMemo(() => buildDateStats(statusFilteredRows, "arrival"), [statusFilteredRows]);
@@ -804,6 +870,9 @@ export function MembersTable() {
                         </th>
                       </>
                     )}
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -834,6 +903,21 @@ export function MembersTable() {
                           </td>
                         </>
                       )}
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <button
+                          type="button"
+                          onClick={() => { void handleToggleCancelled(row); }}
+                          disabled={cancellingRowId === row._id}
+                          className={clsx(
+                            "text-xs font-medium transition-colors disabled:opacity-40",
+                            row.cancelled
+                              ? "text-emerald-300 hover:text-emerald-200"
+                              : "text-red-300 hover:text-red-200"
+                          )}
+                        >
+                          {row.cancelled ? "Reinstate" : "Cancel"}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -844,7 +928,9 @@ export function MembersTable() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {filteredRows.map((row) => {
-              const badge = getStatusBadge(row.status);
+              const badge = row.cancelled
+                ? { label: "Cancelled", cls: "bg-red-500/15 text-red-300 ring-red-400/30" }
+                : getStatusBadge(row.status);
               return (
                 <article
                   key={row._id}
@@ -957,6 +1043,21 @@ export function MembersTable() {
                       </div>
                     )}
                   </dl>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { void handleToggleCancelled(row); }}
+                      disabled={cancellingRowId === row._id}
+                      className={clsx(
+                        "rounded-lg px-3 py-2 text-xs font-medium ring-1 transition-colors disabled:opacity-40",
+                        row.cancelled
+                          ? "text-emerald-200 ring-emerald-400/30 hover:bg-emerald-500/10"
+                          : "text-red-200 ring-red-400/30 hover:bg-red-500/10"
+                      )}
+                    >
+                      {row.cancelled ? "Reinstate" : "Cancel"}
+                    </button>
+                  </div>
                 </article>
               );
             })}
