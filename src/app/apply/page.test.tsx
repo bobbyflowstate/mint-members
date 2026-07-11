@@ -56,8 +56,8 @@ vi.mock("@/components/forms", () => ({
   ApplicationForm: () => <div>Application form</div>,
 }));
 
-vi.mock("@/components/forms/ConfirmedMemberDetailsForm", () => ({
-  ConfirmedMemberDetailsForm: () => <div>Confirmed member details form</div>,
+vi.mock("@/components/forms/SponsorNewbieForm", () => ({
+  SponsorNewbieForm: () => <div>Sponsor newbie form</div>,
 }));
 
 const content = {

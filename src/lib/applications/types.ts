@@ -16,13 +16,15 @@ export type DietaryPreference =
   | "omnivore"
   | "vegetarian"
   | "vegan"
-  | "pescatarian";
+  | "pescatarian"
+  | "flexitarian";
 
 export const DIETARY_PREFERENCES: DietaryPreference[] = [
   "omnivore",
   "vegetarian",
   "vegan",
   "pescatarian",
+  "flexitarian",
 ];
 
 /**

@@ -19,6 +19,9 @@ export const EVENT_TYPES = [
   "allowlist_emails_removed_bulk",
   "capacity_exceeded",
   "confirmed_member_updated",
+  "attendee_profile_updated",
+  "vehicle_created",
+  "sleeping_group_created",
   "newbie_invited",
   "newbie_invite_email_sent",
   "newbie_invite_email_failed",
@@ -239,6 +242,55 @@ export function buildConfirmedMemberUpdatedPayload(data: {
     hasBurningManTicket: data.hasBurningManTicket,
     hasVehiclePass: data.hasVehiclePass,
     requests: data.requests,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build payload for attendee_profile_updated event
+ */
+export function buildAttendeeProfileUpdatedPayload(data: {
+  email: string;
+  section: string;
+  fields: Record<string, unknown>;
+}) {
+  return {
+    type: "attendee_profile_updated" as const,
+    email: data.email,
+    section: data.section,
+    fields: data.fields,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build payload for vehicle_created event
+ */
+export function buildVehicleCreatedPayload(data: {
+  email: string;
+  vehicleName: string;
+  vehicleType: string;
+}) {
+  return {
+    type: "vehicle_created" as const,
+    email: data.email,
+    vehicleName: data.vehicleName,
+    vehicleType: data.vehicleType,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build payload for sleeping_group_created event
+ */
+export function buildSleepingGroupCreatedPayload(data: {
+  email: string;
+  groupName: string;
+}) {
+  return {
+    type: "sleeping_group_created" as const,
+    email: data.email,
+    groupName: data.groupName,
     timestamp: new Date().toISOString(),
   };
 }

@@ -56,6 +56,14 @@ describe("upsertOpsSignupRow", () => {
             };
           }
 
+          if (table === "attendee_profiles") {
+            return {
+              withIndex: () => ({
+                first: vi.fn().mockResolvedValue(null),
+              }),
+            };
+          }
+
           if (table === "ops_signup_rows") {
             return {
               withIndex: () => ({
@@ -138,6 +146,14 @@ describe("upsertOpsSignupRow", () => {
               }),
             };
           }
+          if (table === "attendee_profiles") {
+            return {
+              withIndex: () => ({
+                first: vi.fn().mockResolvedValue(null),
+              }),
+            };
+          }
+
           if (table === "ops_signup_rows") {
             return {
               withIndex: () => ({
@@ -219,6 +235,14 @@ describe("backfillOpsSignupRows", () => {
           if (table === "applications") {
             return {
               collect: vi.fn().mockResolvedValue(applications),
+            };
+          }
+
+          if (table === "attendee_profiles") {
+            return {
+              withIndex: () => ({
+                first: vi.fn().mockResolvedValue(null),
+              }),
             };
           }
 

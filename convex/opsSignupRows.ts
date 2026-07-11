@@ -33,6 +33,11 @@ export async function upsertOpsSignupRow(
     .withIndex("by_applicationId", (q) => q.eq("applicationId", applicationId))
     .first();
 
+  const attendeeProfile = await ctx.db
+    .query("attendee_profiles")
+    .withIndex("by_applicationId", (q) => q.eq("applicationId", applicationId))
+    .first();
+
   const newbieInvite =
     application.memberType === "newbie"
       ? await ctx.db
@@ -41,7 +46,19 @@ export async function upsertOpsSignupRow(
           .first()
       : null;
 
-  const requests = confirmedMember?.requests ?? confirmedMember?.notes ?? "";
+  // Attendee profile supersedes the legacy confirmed_members record; fall
+  // back so pre-profile rows keep their values.
+  const requests =
+    attendeeProfile?.requests ??
+    confirmedMember?.requests ??
+    confirmedMember?.notes ??
+    "";
+  const hasBurningManTicket =
+    attendeeProfile?.hasTicket ?? confirmedMember?.hasBurningManTicket ?? false;
+  const hasVehiclePass = attendeeProfile
+    ? attendeeProfile.vehiclePassStatus === "have" ||
+      attendeeProfile.vehiclePassStatus === "have_extra"
+    : (confirmedMember?.hasVehiclePass ?? false);
   const mergedRow = {
     applicationId: application._id,
     userId: application.userId,
@@ -57,8 +74,8 @@ export async function upsertOpsSignupRow(
     status: application.status,
     paymentAllowed: application.paymentAllowed,
     earlyDepartureRequested: application.earlyDepartureRequested,
-    hasBurningManTicket: confirmedMember?.hasBurningManTicket ?? false,
-    hasVehiclePass: confirmedMember?.hasVehiclePass ?? false,
+    hasBurningManTicket,
+    hasVehiclePass,
     hasFullPayment: confirmedMember?.hasFullPayment,
     requests,
     memberType: application.memberType ?? "alumni",

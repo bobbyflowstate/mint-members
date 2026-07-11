@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { LandingContent } from "@/config/content";
 
 interface HeroProps {
@@ -39,12 +40,27 @@ export function Hero({ content }: HeroProps) {
 
           {/* CTA buttons */}
           <div className="mt-10 flex items-center justify-center gap-x-6">
-            <Link
-              href="/apply"
-              className="rounded-lg bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition-all"
-            >
-              Reserve Your Spot
-            </Link>
+            <Unauthenticated>
+              <Link
+                href="/profile"
+                className="rounded-lg bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition-all"
+              >
+                Member Sign In
+              </Link>
+            </Unauthenticated>
+            <Authenticated>
+              <Link
+                href="/profile"
+                className="rounded-lg bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition-all"
+              >
+                My Profile
+              </Link>
+            </Authenticated>
+            <AuthLoading>
+              <span className="rounded-lg bg-emerald-500/50 px-6 py-3 text-sm font-semibold text-white/70">
+                Member Sign In
+              </span>
+            </AuthLoading>
             <Link
               href="/culture"
               className="text-sm font-semibold leading-6 text-slate-300 hover:text-white transition-colors"

@@ -44,6 +44,41 @@ const arrivalDepartureTime = v.union(
 );
 
 /**
+ * Attendee profile enums (see docs: Attendee Profile Fields Implementation Spec)
+ */
+const travelMode = v.union(
+  v.literal("driving_own_vehicle"),
+  v.literal("riding_with_attendee"),
+  v.literal("burner_express"),
+  v.literal("flying"),
+  v.literal("not_sure")
+);
+
+const vehicleType = v.union(
+  v.literal("rv"),
+  v.literal("vehicle_with_trailer"),
+  v.literal("vehicle_no_trailer")
+);
+
+const vehiclePassStatus = v.union(
+  v.literal("have"),
+  v.literal("need"),
+  v.literal("have_extra")
+);
+
+const bikeStatus = v.union(
+  v.literal("bringing_own"),
+  v.literal("renting_third_party"),
+  v.literal("borrow_from_camp")
+);
+
+const sleepingType = v.union(
+  v.literal("rv_trailer_vehicle"),
+  v.literal("own_shiftpod_or_tent"),
+  v.literal("need_camp_shiftpod")
+);
+
+/**
  * Event types for audit logging
  */
 const eventType = v.union(
@@ -61,6 +96,9 @@ const eventType = v.union(
   v.literal("allowlist_emails_removed_bulk"),
   v.literal("capacity_exceeded"),
   v.literal("confirmed_member_updated"),
+  v.literal("attendee_profile_updated"),
+  v.literal("vehicle_created"),
+  v.literal("sleeping_group_created"),
   v.literal("newbie_invited"),
   v.literal("newbie_invite_email_sent"),
   v.literal("newbie_invite_email_failed")
@@ -119,6 +157,65 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_applicationId", ["applicationId"]),
+
+  /**
+   * Vehicles - shared, growing list referenced by attendee profiles.
+   * Independent of any one member's application status.
+   */
+  vehicles: defineTable({
+    name: v.string(),
+    vehicleType: vehicleType,
+    lengthFt: v.number(), // Combined length for vehicle+trailer combos
+    description: v.string(),
+    trailerName: v.optional(v.string()), // Only for vehicle_with_trailer
+    licensePlate: v.optional(v.string()),
+    createdByUserId: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  /**
+   * Sleeping groups - shared shiftpod/tent list, same pattern as vehicles.
+   */
+  sleeping_groups: defineTable({
+    name: v.string(),
+    createdByUserId: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  /**
+   * Attendee profiles - logistics details any member with an active
+   * application fills in incrementally. All fields optional so sections
+   * can be saved independently; completeness is computed client-side.
+   * Successor to confirmed_members (which is kept for legacy fallback).
+   */
+  attendee_profiles: defineTable({
+    userId: v.id("users"),
+    applicationId: v.id("applications"),
+    hasTicket: v.optional(v.boolean()),
+    numBurnsAttended: v.optional(v.number()),
+    emergencyContactName: v.optional(v.string()),
+    emergencyContactPhone: v.optional(v.string()),
+    emergencyContactEmail: v.optional(v.string()),
+    arrivalMode: v.optional(travelMode),
+    departureMode: v.optional(travelMode),
+    vehicleId: v.optional(v.id("vehicles")),
+    vehiclePassStatus: v.optional(vehiclePassStatus),
+    bikeStatus: v.optional(bikeStatus),
+    sleepingType: v.optional(sleepingType),
+    sleepingVehicleId: v.optional(v.id("vehicles")),
+    sleepingGroupId: v.optional(v.id("sleeping_groups")),
+    playaName: v.optional(v.string()),
+    requests: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_applicationId", ["applicationId"])
+    .index("by_vehicleId", ["vehicleId"])
+    .index("by_sleepingVehicleId", ["sleepingVehicleId"])
+    .index("by_sleepingGroupId", ["sleepingGroupId"]),
 
   /**
    * Ops signup projection rows - denormalized row per application for

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ConfirmedMemberDetailsForm } from "./ConfirmedMemberDetailsForm";
+import { SponsorNewbieForm } from "./SponsorNewbieForm";
 
 const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
@@ -45,7 +45,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-describe("ConfirmedMemberDetailsForm", () => {
+describe("SponsorNewbieForm", () => {
   beforeEach(() => {
     mockUseQuery.mockReset();
     mockUseMutation.mockReset();
@@ -108,7 +108,7 @@ describe("ConfirmedMemberDetailsForm", () => {
     });
     mockSendInviteSubmittedEmail.mockResolvedValue({ success: true });
 
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     fireEvent.change(screen.getByLabelText("First Name"), {
       target: { value: "Sam" },
@@ -131,7 +131,7 @@ describe("ConfirmedMemberDetailsForm", () => {
     fireEvent.change(screen.getByLabelText("Why would they be a good addition?"), {
       target: { value: "Strong contributor and aligned with camp values." },
     });
-    fireEvent.click(screen.getAllByRole("checkbox")[2]);
+    fireEvent.click(screen.getByRole("checkbox"));
 
     fireEvent.click(screen.getByRole("button", { name: "Submit Invite for Review" }));
 
@@ -155,7 +155,7 @@ describe("ConfirmedMemberDetailsForm", () => {
   });
 
   it("requires a reason when the estimated departure is before the departure cutoff", async () => {
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     fireEvent.change(screen.getByLabelText("First Name"), {
       target: { value: "Sam" },
@@ -178,7 +178,7 @@ describe("ConfirmedMemberDetailsForm", () => {
     fireEvent.change(screen.getByLabelText("Why would they be a good addition?"), {
       target: { value: "Strong contributor and aligned with camp values." },
     });
-    fireEvent.click(screen.getAllByRole("checkbox")[2]);
+    fireEvent.click(screen.getByRole("checkbox"));
 
     expect(screen.getByLabelText("Reason for Early Departure")).toBeInTheDocument();
     expect(screen.getByLabelText("Reason for Early Departure").closest("label")).toHaveClass(
@@ -204,7 +204,7 @@ describe("ConfirmedMemberDetailsForm", () => {
     });
     mockSendInviteSubmittedEmail.mockResolvedValue({ success: true });
 
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     fireEvent.change(screen.getByLabelText("First Name"), {
       target: { value: "Sam" },
@@ -230,7 +230,7 @@ describe("ConfirmedMemberDetailsForm", () => {
     fireEvent.change(screen.getByLabelText("Why would they be a good addition?"), {
       target: { value: "Strong contributor and aligned with camp values." },
     });
-    fireEvent.click(screen.getAllByRole("checkbox")[2]);
+    fireEvent.click(screen.getByRole("checkbox"));
 
     fireEvent.click(screen.getByRole("button", { name: "Submit Invite for Review" }));
 
@@ -245,7 +245,7 @@ describe("ConfirmedMemberDetailsForm", () => {
   });
 
   it("requires an estimated arrival date", async () => {
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     fireEvent.change(screen.getByLabelText("First Name"), {
       target: { value: "Sam" },
@@ -265,7 +265,7 @@ describe("ConfirmedMemberDetailsForm", () => {
     fireEvent.change(screen.getByLabelText("Why would they be a good addition?"), {
       target: { value: "Strong contributor and aligned with camp values." },
     });
-    fireEvent.click(screen.getAllByRole("checkbox")[2]);
+    fireEvent.click(screen.getByRole("checkbox"));
 
     fireEvent.click(screen.getByRole("button", { name: "Submit Invite for Review" }));
 
@@ -277,7 +277,7 @@ describe("ConfirmedMemberDetailsForm", () => {
   });
 
   it("uses the same allowed date range as the apply form", () => {
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     expect(screen.getByLabelText("Estimated Arrival Date")).toHaveAttribute("min", "2026-08-26");
     expect(screen.getByLabelText("Estimated Arrival Date")).toHaveAttribute("max", "2026-09-09");
@@ -286,7 +286,7 @@ describe("ConfirmedMemberDetailsForm", () => {
   });
 
   it("links the sponsorship acknowledgement to the culture page", () => {
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     expect(
       screen.getByRole("link", { name: "DeMentha Culture & Commitments page" })
@@ -339,14 +339,14 @@ describe("ConfirmedMemberDetailsForm", () => {
       return undefined;
     });
 
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     expect(screen.getByText("denied")).toHaveClass("text-red-300");
     expect(screen.queryByText("invited")).not.toBeInTheDocument();
   });
 
   it("shows a friendly validation message when sponsorship acknowledgement is unchecked", async () => {
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     fireEvent.change(screen.getByLabelText("First Name"), {
       target: { value: "Sam" },
@@ -417,7 +417,7 @@ describe("ConfirmedMemberDetailsForm", () => {
       return undefined;
     });
 
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     expect(screen.queryByText("Sponsor a Newbie")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Submit Invite for Review" })).not.toBeInTheDocument();
@@ -458,7 +458,7 @@ describe("ConfirmedMemberDetailsForm", () => {
       return undefined;
     });
 
-    render(<ConfirmedMemberDetailsForm />);
+    render(<SponsorNewbieForm />);
 
     expect(screen.queryByText("Sponsor a Newbie")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Submit Invite for Review" })).not.toBeInTheDocument();

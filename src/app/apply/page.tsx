@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ApplicationForm } from "@/components/forms";
-import { ConfirmedMemberDetailsForm } from "@/components/forms/ConfirmedMemberDetailsForm";
+import { SponsorNewbieForm } from "@/components/forms/SponsorNewbieForm";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthModal, UserButton } from "@/components/auth";
 import { getLandingContent, AppConfig } from "@/config/content";
@@ -352,6 +352,22 @@ export function ApplicationFormWithCheck({
           </div>
         </div>
 
+        {existingApplication.status !== "rejected" && (
+        <div className="mt-6 rounded-lg bg-emerald-500/10 p-4 ring-1 ring-emerald-500/20 text-left max-w-sm mx-auto">
+          <p className="text-sm font-medium text-white">Attendee Profile</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Tickets, transport, sleeping arrangements, emergency contact — fill it
+            in as your plans firm up.
+          </p>
+          <Link
+            href="/profile"
+            className="mt-3 inline-block rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400 transition-all"
+          >
+            Complete Your Profile
+          </Link>
+        </div>
+        )}
+
         {existingApplication.status === "pending_payment" && existingApplication.paymentAllowed && paymentsEnabled && (
           <div className="mt-6">
             <p className="text-slate-300 mb-4">
@@ -385,7 +401,7 @@ export function ApplicationFormWithCheck({
             <p className="mt-6 text-sm text-emerald-400">
               Your reservation is confirmed! See you at {content.campName}!
             </p>
-            <ConfirmedMemberDetailsForm />
+            <SponsorNewbieForm />
           </>
         )}
       </div>

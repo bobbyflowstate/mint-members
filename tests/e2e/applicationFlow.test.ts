@@ -8,17 +8,17 @@ test.describe("Application Flow", () => {
   test("should display landing page with CTA", async ({ page }) => {
     // Check hero section
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByText("Reserve Your Spot")).toBeVisible();
+    await expect(page.getByText("Member Sign In")).toBeVisible();
     
     // Check expectations section
     await expect(page.getByText("Reservation Fee")).toBeVisible();
     await expect(page.getByText("WhatsApp Required")).toBeVisible();
   });
 
-  test("should navigate to apply page", async ({ page }) => {
-    await page.click("text=Reserve Your Spot");
-    await expect(page).toHaveURL("/apply");
-    await expect(page.getByText("Apply to Join")).toBeVisible();
+  test("should navigate to profile page", async ({ page }) => {
+    await page.click("text=Member Sign In");
+    await expect(page).toHaveURL("/profile");
+    await expect(page.getByText("Attendee Profile")).toBeVisible();
   });
 
   test("should show form validation errors", async ({ page }) => {
