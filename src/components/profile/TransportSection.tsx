@@ -38,6 +38,7 @@ export function TransportSection({
   const vehicles = useQuery(api.vehicles.list) ?? [];
   const saveTransport = useMutation(api.attendeeProfiles.saveTransport);
   const createVehicle = useMutation(api.vehicles.create);
+  const updateVehicle = useMutation(api.vehicles.update);
   const { state, error, run, markDirty } = useSaveState();
 
   const [arrivalMode, setArrivalMode] = useState<"" | TravelMode>(
@@ -62,12 +63,28 @@ export function TransportSection({
   const [newDescription, setNewDescription] = useState("");
   const [newTrailerName, setNewTrailerName] = useState("");
   const [newPlate, setNewPlate] = useState("");
+  const [editingVehicle, setEditingVehicle] = useState(false);
+
+  const selectedVehicle = vehicles.find((vehicle) => vehicle._id === vehicleChoice);
+
+  const startEditVehicle = () => {
+    if (!selectedVehicle) return;
+    setNewName(selectedVehicle.name);
+    setNewType(selectedVehicle.vehicleType);
+    setNewLength(String(selectedVehicle.lengthFt));
+    setNewDescription(selectedVehicle.description);
+    setNewTrailerName(selectedVehicle.trailerName ?? "");
+    setNewPlate(selectedVehicle.licensePlate ?? "");
+    setEditingVehicle(true);
+    markDirty();
+  };
 
   const needsVehicle = isVehicleTravelMode(arrivalMode) || isVehicleTravelMode(departureMode);
   // Only a driver creates a vehicle record; riders pick an existing one.
   const canCreateVehicle =
     arrivalMode === "driving_own_vehicle" || departureMode === "driving_own_vehicle";
   const addingVehicle = needsVehicle && canCreateVehicle && vehicleChoice === NEW_VEHICLE;
+  const showVehicleFields = addingVehicle || editingVehicle;
 
   const vehicleOptions = [
     ...(canCreateVehicle ? [{ value: NEW_VEHICLE, label: "+ Add a new vehicle…" }] : []),
@@ -99,11 +116,11 @@ export function TransportSection({
 
       let vehicleId: Id<"vehicles"> | undefined;
       if (needsVehicle) {
-        if (addingVehicle) {
+        if (addingVehicle || editingVehicle) {
           if (!newType) {
             throw new Error("Please select the vehicle type");
           }
-          vehicleId = await createVehicle({
+          const vehicleFields = {
             name: newName,
             vehicleType: newType,
             lengthFt: Number(newLength),
@@ -113,7 +130,13 @@ export function TransportSection({
                 ? newTrailerName
                 : undefined,
             licensePlate: newPlate.trim() || undefined,
-          });
+          };
+          if (editingVehicle) {
+            vehicleId = vehicleChoice as Id<"vehicles">;
+            await updateVehicle({ vehicleId, ...vehicleFields });
+          } else {
+            vehicleId = await createVehicle(vehicleFields);
+          }
         } else if (vehicleChoice) {
           vehicleId = vehicleChoice as Id<"vehicles">;
         } else {
@@ -129,8 +152,9 @@ export function TransportSection({
         bikeStatus,
       });
 
-      if (addingVehicle && vehicleId) {
+      if ((addingVehicle || editingVehicle) && vehicleId) {
         setVehicleChoice(vehicleId);
+        setEditingVehicle(false);
         setNewName("");
         setNewType("");
         setNewLength("");
@@ -184,16 +208,31 @@ export function TransportSection({
               hint={
                 canCreateVehicle
                   ? undefined
-                  : "Riding with another attendee — pick their vehicle from the list."
+                  : "Riding with another attendee — pick their vehicle from the list. Don't see it? Ask whoever's driving to add it under their Transport section first."
               }
               onChange={(event) => {
                 setVehicleChoice(event.target.value);
+                setEditingVehicle(false);
                 markDirty();
               }}
             />
 
-            {addingVehicle && (
+            {showVehicleFields && (
               <div className="space-y-4">
+                {editingVehicle && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-slate-300">
+                      Editing “{selectedVehicle?.name}” — changes apply everywhere it&apos;s referenced.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setEditingVehicle(false)}
+                      className="text-xs text-slate-400 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
                 <Field
                   label="Vehicle name"
                   type="text"
@@ -279,20 +318,25 @@ export function TransportSection({
               </div>
             )}
 
-            {!addingVehicle && vehicleChoice && (
-              (() => {
-                const selected = vehicles.find((v) => v._id === vehicleChoice);
-                if (!selected) return null;
-                return (
-                  <InfoNote>
-                    {VEHICLE_TYPE_LABELS[selected.vehicleType]} · {selected.lengthFt} ft ·{" "}
-                    {selected.description}
-                    {selected.trailerName
-                      ? ` · sleeps in "${sleepingDisplayName(selected)}"`
-                      : ""}
-                  </InfoNote>
-                );
-              })()
+            {!showVehicleFields && selectedVehicle && (
+              <div className="flex items-start justify-between gap-3">
+                <InfoNote>
+                  {VEHICLE_TYPE_LABELS[selectedVehicle.vehicleType]} ·{" "}
+                  {selectedVehicle.lengthFt} ft · {selectedVehicle.description}
+                  {selectedVehicle.trailerName
+                    ? ` · sleeps in "${sleepingDisplayName(selectedVehicle)}"`
+                    : ""}
+                </InfoNote>
+                {selectedVehicle.createdByMe && (
+                  <button
+                    type="button"
+                    onClick={startEditVehicle}
+                    className="shrink-0 rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-all"
+                  >
+                    Edit details
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </ConditionalBox>

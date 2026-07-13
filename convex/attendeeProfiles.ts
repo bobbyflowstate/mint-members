@@ -7,12 +7,16 @@ import { ArrivalDepartureTime, DIETARY_PREFERENCES } from "../src/lib/applicatio
 import { isValidE164Phone } from "../src/lib/applications/validation";
 import {
   bikeStatusValidator,
+  countsForLogistics,
   getActiveApplication,
   requireActiveApplication,
   sleepingTypeValidator,
   travelModeValidator,
   vehiclePassStatusValidator,
 } from "./lib/profileValidators";
+import { requireOpsPassword } from "./lib/auth";
+import { computeProfileCompleteness } from "../src/lib/attendeeProfile/completeness";
+import { sleepingDisplayName } from "../src/lib/attendeeProfile/options";
 import {
   buildAttendeeProfileUpdatedPayload,
   buildInvalidDeparturePayload,
@@ -427,6 +431,130 @@ export const saveMeals = mutation({
       dietaryPreference: args.dietaryPreference,
       allergyFlag: args.allergyFlag,
     });
+  },
+});
+
+/**
+ * One row per active member with the full profile spread, resolved
+ * vehicle/sleeping names, and computed completeness — for the ops table
+ * and CSV export.
+ */
+export const listForOps = query({
+  args: {
+    opsPassword: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (!args.opsPassword) {
+      return [];
+    }
+    requireOpsPassword(args.opsPassword);
+
+    const applications = (await ctx.db.query("applications").collect()).filter(
+      countsForLogistics
+    );
+    const profiles = await ctx.db.query("attendee_profiles").collect();
+    const profilesByUserId = new Map(profiles.map((p) => [p.userId, p]));
+    const legacyRecords = await ctx.db.query("confirmed_members").collect();
+    const legacyByUserId = new Map(legacyRecords.map((l) => [l.userId, l]));
+    const vehicles = await ctx.db.query("vehicles").collect();
+    const vehiclesById = new Map(vehicles.map((v) => [v._id, v]));
+    const groups = await ctx.db.query("sleeping_groups").collect();
+    const groupsById = new Map(groups.map((g) => [g._id, g]));
+
+    const cutoffConfig = await ctx.db
+      .query("config")
+      .withIndex("by_key", (q) => q.eq("key", "departureCutoff"))
+      .first();
+    const departureCutoff = cutoffConfig?.value ?? CONFIG_DEFAULTS.departureCutoff;
+
+    return applications
+      .map((application) => {
+        const profile = profilesByUserId.get(application.userId);
+        const legacy = profile ? undefined : legacyByUserId.get(application.userId);
+
+        // Same legacy fallback as getMine: only affirmative old answers count.
+        const hasTicket = profile
+          ? profile.hasTicket
+          : legacy?.hasBurningManTicket === true
+            ? true
+            : undefined;
+        const vehiclePassStatus = profile
+          ? profile.vehiclePassStatus
+          : legacy?.hasVehiclePass === true
+            ? ("have" as const)
+            : undefined;
+        const requests = profile
+          ? profile.requests
+          : (legacy?.requests ?? legacy?.notes);
+
+        const vehicle = profile?.vehicleId
+          ? vehiclesById.get(profile.vehicleId)
+          : undefined;
+        const sleepingVehicle = profile?.sleepingVehicleId
+          ? vehiclesById.get(profile.sleepingVehicleId)
+          : undefined;
+        const sleepingGroup = profile?.sleepingGroupId
+          ? groupsById.get(profile.sleepingGroupId)
+          : undefined;
+
+        const completeness = computeProfileCompleteness(
+          {
+            ...profile,
+            hasTicket,
+            vehiclePassStatus,
+          },
+          {
+            departure: application.departure,
+            departureTime: application.departureTime,
+            earlyDepartureReason: application.earlyDepartureReason,
+            dietaryPreference: application.dietaryPreference,
+            allergyFlag: application.allergyFlag,
+            allergyNotes: application.allergyNotes,
+          },
+          departureCutoff
+        );
+
+        return {
+          applicationId: application._id,
+          fullName: `${application.firstName} ${application.lastName}`.trim(),
+          email: application.email,
+          phone: application.phone,
+          memberType: application.memberType ?? "alumni",
+          status: application.status,
+          arrival: application.arrival,
+          arrivalTime: application.arrivalTime,
+          departure: application.departure,
+          departureTime: application.departureTime,
+          earlyDepartureRequested: application.earlyDepartureRequested,
+          earlyDepartureReason: application.earlyDepartureReason,
+          hasTicket,
+          numBurnsAttended: profile?.numBurnsAttended,
+          emergencyContactName: profile?.emergencyContactName,
+          emergencyContactPhone: profile?.emergencyContactPhone,
+          emergencyContactEmail: profile?.emergencyContactEmail,
+          arrivalMode: profile?.arrivalMode,
+          departureMode: profile?.departureMode,
+          vehicleName: vehicle?.name,
+          vehicleLengthFt: vehicle?.lengthFt,
+          vehiclePassStatus,
+          bikeStatus: profile?.bikeStatus,
+          sleepingType: profile?.sleepingType,
+          sleepingPlace: sleepingVehicle
+            ? sleepingDisplayName(sleepingVehicle)
+            : sleepingGroup?.name,
+          dietaryPreference: application.dietaryPreference,
+          allergyFlag: application.allergyFlag,
+          allergyNotes: application.allergyNotes,
+          playaName: profile?.playaName,
+          requests,
+          completeCount: completeness.completeCount,
+          totalCount: completeness.totalCount,
+          missingSections: completeness.sections
+            .filter((section) => !section.complete)
+            .map((section) => section.label),
+        };
+      })
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
   },
 });
 

@@ -13,6 +13,7 @@ interface OpsLayoutProps {
 const navigation = [
   { name: "Dashboard", href: "/ops" },
   { name: "Members", href: "/ops/members" },
+  { name: "Profiles", href: "/ops/profiles" },
   { name: "Review Queue", href: "/ops/review" },
   { name: "Invites", href: "/ops/invites" },
   { name: "Event Logs", href: "/ops/logs" },

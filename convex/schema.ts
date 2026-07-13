@@ -98,7 +98,9 @@ const eventType = v.union(
   v.literal("confirmed_member_updated"),
   v.literal("attendee_profile_updated"),
   v.literal("vehicle_created"),
+  v.literal("vehicle_updated"),
   v.literal("sleeping_group_created"),
+  v.literal("sleeping_group_updated"),
   v.literal("newbie_invited"),
   v.literal("newbie_invite_email_sent"),
   v.literal("newbie_invite_email_failed")

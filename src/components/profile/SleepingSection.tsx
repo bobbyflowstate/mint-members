@@ -32,6 +32,7 @@ export function SleepingSection({
   const groups = useQuery(api.sleepingGroups.list) ?? [];
   const saveSleeping = useMutation(api.attendeeProfiles.saveSleeping);
   const createGroup = useMutation(api.sleepingGroups.create);
+  const updateGroup = useMutation(api.sleepingGroups.update);
   const { state, error, run, markDirty } = useSaveState();
 
   const [sleepingType, setSleepingType] = useState<"" | SleepingType>(
@@ -42,6 +43,10 @@ export function SleepingSection({
   );
   const [groupChoice, setGroupChoice] = useState(data.profile.sleepingGroupId ?? "");
   const [newGroupName, setNewGroupName] = useState("");
+  const [renamingGroup, setRenamingGroup] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+
+  const selectedGroup = groups.find((group) => group._id === groupChoice);
 
   // Trailer combos show the trailer name here — that's the part people
   // sleep in — otherwise the vehicle name.
@@ -78,6 +83,10 @@ export function SleepingSection({
           sleepingGroupId = await createGroup({ name: newGroupName });
         } else if (groupChoice) {
           sleepingGroupId = groupChoice as Id<"sleeping_groups">;
+          if (renamingGroup) {
+            await updateGroup({ groupId: sleepingGroupId, name: renameValue });
+            setRenamingGroup(false);
+          }
         } else {
           throw new Error("Please select or add your shiftpod/tent");
         }
@@ -151,9 +160,36 @@ export function SleepingSection({
               options={groupOptions}
               onChange={(event) => {
                 setGroupChoice(event.target.value);
+                setRenamingGroup(false);
                 markDirty();
               }}
             />
+            {selectedGroup?.createdByMe && !renamingGroup && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRenameValue(selectedGroup.name);
+                  setRenamingGroup(true);
+                  markDirty();
+                }}
+                className="rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-all"
+              >
+                Rename
+              </button>
+            )}
+            {renamingGroup && (
+              <Field
+                label="New name"
+                type="text"
+                required
+                value={renameValue}
+                hint="Applies everywhere this shiftpod/tent is referenced. Saved when you save this section."
+                onChange={(event) => {
+                  setRenameValue(event.target.value);
+                  markDirty();
+                }}
+              />
+            )}
             {groupChoice === NEW_GROUP && (
               <Field
                 label="New shiftpod/tent name"
