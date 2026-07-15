@@ -558,6 +558,95 @@ export const listForOps = query({
   },
 });
 
+/**
+ * Member-facing roster: who's confirmed, when they arrive/depart, and how
+ * they're traveling. Gated to members with an active application, same as
+ * the vehicle/sleeping pickers. Deliberately excludes contact info,
+ * emergency contacts, allergy notes, early-departure reasons, and requests
+ * — those stay ops-only (see listForOps). Dietary preferences are only
+ * exposed as camp-wide counts, never per person.
+ */
+export const listRoster = query({
+  args: {},
+  handler: async (ctx) => {
+    const viewer = await getActiveApplication(ctx);
+    if (!viewer) {
+      return null;
+    }
+
+    const confirmed = (await ctx.db.query("applications").collect()).filter(
+      (application) =>
+        countsForLogistics(application) && application.status === "confirmed"
+    );
+    const profiles = await ctx.db.query("attendee_profiles").collect();
+    const profilesByUserId = new Map(profiles.map((p) => [p.userId, p]));
+    const vehicles = await ctx.db.query("vehicles").collect();
+    const vehiclesById = new Map(vehicles.map((v) => [v._id, v]));
+    const groups = await ctx.db.query("sleeping_groups").collect();
+    const groupsById = new Map(groups.map((g) => [g._id, g]));
+
+    const dietaryCounts: Record<string, number> = {};
+    let allergyCount = 0;
+    for (const application of confirmed) {
+      dietaryCounts[application.dietaryPreference] =
+        (dietaryCounts[application.dietaryPreference] ?? 0) + 1;
+      if (application.allergyFlag) {
+        allergyCount += 1;
+      }
+    }
+
+    const members = confirmed
+      .map((application) => {
+        const profile = profilesByUserId.get(application.userId);
+        const vehicle = profile?.vehicleId
+          ? vehiclesById.get(profile.vehicleId)
+          : undefined;
+        const sleepingVehicle = profile?.sleepingVehicleId
+          ? vehiclesById.get(profile.sleepingVehicleId)
+          : undefined;
+        const sleepingGroup = profile?.sleepingGroupId
+          ? groupsById.get(profile.sleepingGroupId)
+          : undefined;
+
+        return {
+          applicationId: application._id,
+          fullName: `${application.firstName} ${application.lastName}`.trim(),
+          playaName: profile?.playaName,
+          memberType: application.memberType ?? ("alumni" as const),
+          isViewer: application.userId === viewer.userId,
+          arrival: application.arrival,
+          arrivalTime: application.arrivalTime,
+          departure: application.departure,
+          departureTime: application.departureTime,
+          arrivalMode: profile?.arrivalMode,
+          departureMode: profile?.departureMode,
+          vehicleName: vehicle?.name,
+          sleepingType: profile?.sleepingType,
+          sleepingPlace: sleepingVehicle
+            ? sleepingDisplayName(sleepingVehicle)
+            : sleepingGroup?.name,
+          numBurnsAttended: profile?.numBurnsAttended,
+        };
+      })
+      .sort(
+        (a, b) =>
+          a.arrival.localeCompare(b.arrival) ||
+          a.fullName.localeCompare(b.fullName)
+      );
+
+    return {
+      members,
+      stats: {
+        confirmedCount: members.length,
+        alumniCount: members.filter((m) => m.memberType === "alumni").length,
+        newbieCount: members.filter((m) => m.memberType === "newbie").length,
+        dietaryCounts,
+        allergyCount,
+      },
+    };
+  },
+});
+
 export const saveCamp = mutation({
   args: {
     playaName: v.optional(v.string()),
