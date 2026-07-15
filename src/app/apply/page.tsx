@@ -37,7 +37,7 @@ export default function ApplyPage() {
         <div className="mb-12 flex items-start justify-between">
           <div>
             <Link
-              href="/"
+              href="/dashboard"
               className="inline-flex items-center text-sm text-slate-400 hover:text-white transition-colors"
             >
               <svg
@@ -53,7 +53,7 @@ export default function ApplyPage() {
                   d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
                 />
               </svg>
-              Back to home
+              Back to Camp Dashboard
             </Link>
             
             <h1 className="mt-6 text-3xl font-bold tracking-tight text-white sm:text-4xl">

@@ -10,11 +10,7 @@ import { AuthModal, UserButton } from "@/components/auth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Spinner } from "@/components/Spinner";
 import { computeProfileCompleteness } from "@/lib/attendeeProfile/completeness";
-import {
-  DIETARY_PREFERENCE_LABELS,
-  SleepingType,
-  TravelMode,
-} from "@/lib/attendeeProfile/options";
+import { SleepingType, TravelMode } from "@/lib/attendeeProfile/options";
 import { formatDateWithWeekday } from "@/lib/dates/formatDateWithWeekday";
 import { AppConfig, LandingContent, getLandingContent } from "@/config/content";
 
@@ -37,14 +33,6 @@ const SLEEPING_SHORT: Record<SleepingType, string> = {
   need_camp_shiftpod: "Camp shiftpod",
 };
 
-/** Compact dietary labels so stat-tile values don't wrap. */
-const DIETARY_SHORT: Record<string, string> = {
-  omnivore: "Omnivore",
-  vegetarian: "Vegetarian",
-  vegan: "Vegan",
-  pescatarian: "Pescatarian",
-  flexitarian: "Flexitarian",
-};
 
 const AVATAR_COLORS = [
   "bg-emerald-500/80",
@@ -119,13 +107,13 @@ function MemberCard({ member }: { member: RosterMember }) {
             {member.fullName}
             {member.isViewer && <span className="ml-1.5 text-xs font-normal text-emerald-300">(you)</span>}
           </p>
-          <p className="truncate text-xs text-slate-400">
-            {member.playaName ? (
-              <>&ldquo;{member.playaName}&rdquo;</>
-            ) : (
-              <span className="italic text-slate-500">no playa name yet</span>
-            )}
-          </p>
+          {member.playaName ? (
+            <p className="truncate text-base font-bold tracking-wide text-emerald-300">
+              &ldquo;{member.playaName}&rdquo;
+            </p>
+          ) : (
+            <p className="truncate text-xs italic text-slate-500">no playa name yet</p>
+          )}
         </div>
         {member.memberType === "newbie" && (
           <span className="ml-auto shrink-0 rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/30">
@@ -255,12 +243,6 @@ function Roster({ content }: { content: LandingContent }) {
   const { members, stats } = data;
 
   const daysToGate = dayjs(content.burningManStartDate).diff(dayjs().startOf("day"), "day");
-  const dietaryChips = Object.entries(stats.dietaryCounts)
-    .sort((a, b) => b[1] - a[1])
-    .map(
-      ([key, count]) =>
-        `${count} ${DIETARY_SHORT[key] ?? DIETARY_PREFERENCE_LABELS[key] ?? key}`
-    );
 
   // Members arrive sorted by arrival, then name. Regroup/resort per view.
   const groups = new Map<string, RosterMember[]>();
@@ -290,7 +272,7 @@ function Roster({ content }: { content: LandingContent }) {
     <div className="space-y-8">
       <ProfileNudge content={content} />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatTile
           label="Days to gate"
           value={daysToGate > 0 ? String(daysToGate) : "It's on!"}
@@ -300,15 +282,6 @@ function Roster({ content }: { content: LandingContent }) {
           label="Confirmed campmates"
           value={String(stats.confirmedCount)}
           detail={`${stats.alumniCount} alumni · ${stats.newbieCount} newbies`}
-        />
-        <StatTile
-          label="Meals to plan for"
-          value={dietaryChips.length > 0 ? dietaryChips[0] : "—"}
-          detail={
-            [...dietaryChips.slice(1), stats.allergyCount > 0 ? `${stats.allergyCount} with allergies` : ""]
-              .filter(Boolean)
-              .join(" · ") || undefined
-          }
         />
       </div>
 

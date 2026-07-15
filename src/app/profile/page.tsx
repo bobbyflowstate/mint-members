@@ -98,7 +98,7 @@ export default function ProfilePage() {
         <div className="mb-10 flex items-start justify-between">
           <div>
             <Link
-              href="/apply"
+              href="/dashboard"
               className="inline-flex items-center text-sm text-slate-400 hover:text-white transition-colors"
             >
               <svg
@@ -114,7 +114,7 @@ export default function ProfilePage() {
                   d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
                 />
               </svg>
-              Back to application
+              Back to Camp Dashboard
             </Link>
             <h1 className="mt-6 text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Attendee Profile
@@ -122,12 +122,6 @@ export default function ProfilePage() {
             <p className="mt-3 text-slate-300">
               Fill this in as your plans firm up — each section saves on its own.
             </p>
-            <Link
-              href="/dashboard"
-              className="mt-3 inline-block text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
-            >
-              See who&apos;s coming on the camp dashboard →
-            </Link>
           </div>
           <Authenticated>
             <UserButton />
