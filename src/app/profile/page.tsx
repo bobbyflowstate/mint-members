@@ -6,6 +6,7 @@ import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/re
 import { api } from "../../../convex/_generated/api";
 import { AuthModal, UserButton } from "@/components/auth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Spinner } from "@/components/Spinner";
 import {
   BurnsEmergencySection,
   CampSection,
@@ -17,14 +18,6 @@ import {
 } from "@/components/profile";
 import { computeProfileCompleteness } from "@/lib/attendeeProfile/completeness";
 import { AppConfig, LandingContent, getLandingContent } from "@/config/content";
-
-function Spinner() {
-  return (
-    <div className="flex items-center justify-center py-12">
-      <div className="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
-    </div>
-  );
-}
 
 function ProfileSections({ content }: { content: LandingContent }) {
   const data = useQuery(api.attendeeProfiles.getMine);
@@ -129,6 +122,12 @@ export default function ProfilePage() {
             <p className="mt-3 text-slate-300">
               Fill this in as your plans firm up — each section saves on its own.
             </p>
+            <Link
+              href="/dashboard"
+              className="mt-3 inline-block text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              See who&apos;s coming on the camp dashboard →
+            </Link>
           </div>
           <Authenticated>
             <UserButton />
