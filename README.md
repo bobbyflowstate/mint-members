@@ -8,6 +8,7 @@ A modern reservation and signup system for DeMentha camp at Burning Man. Built w
 - 📅 **Date Validation** - Automatic early departure detection with ops review workflow
 - 💳 **Stripe Payments** - Secure payment processing via Stripe Checkout
 - 📱 **WhatsApp Integration** - Phone validation with auto-formatting for WhatsApp communication
+- 🏕️ **Camp Dashboard** - Member-facing roster of confirmed campmates by arrival/departure day or name
 - 👥 **Ops Portal** - Admin dashboard for reviewing applications and viewing logs
 - 📤 **Flexible Export View** - Custom column/filter/sort controls with CSV export
 - 📊 **Event Logging** - Complete audit trail of all actions
@@ -113,6 +114,7 @@ npm run lint         # Run ESLint
 ├── src/
 │   ├── app/            # Next.js App Router pages
 │   │   ├── apply/      # Application form & confirmation pages
+│   │   ├── dashboard/  # Member-facing camp dashboard & roster
 │   │   ├── ops/        # Ops admin portal (review/signups/export/logs)
 │   │   └── api/        # API routes (Stripe webhook)
 │   ├── components/     # React components
