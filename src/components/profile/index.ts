@@ -1,3 +1,4 @@
+export { PhotoSection } from "./PhotoSection";
 export { StatusSection } from "./StatusSection";
 export { BurnsEmergencySection } from "./BurnsEmergencySection";
 export { TransportSection } from "./TransportSection";

@@ -40,8 +40,9 @@ type Tables = {
 };
 
 /**
- * Minimal ctx.db supporting the two access patterns listRoster uses:
- * query(table).collect() and query("applications").withIndex("by_userId").first().
+ * Minimal ctx supporting what listRoster uses: query(table).collect(),
+ * query("applications").withIndex("by_userId").first(), and
+ * storage.getUrl() for profile photos.
  */
 function makeCtx(tables: Tables, viewerUserId: string) {
   return {
@@ -53,6 +54,9 @@ function makeCtx(tables: Tables, viewerUserId: string) {
             (tables[table] ?? []).find((row) => row.userId === viewerUserId) ?? null,
         }),
       }),
+    },
+    storage: {
+      getUrl: async (storageId: string) => `https://files.example/${storageId}`,
     },
   };
 }
@@ -143,6 +147,7 @@ describe("attendeeProfiles.listRoster", () => {
           userId: "user_zed",
           applicationId: "app_user_zed",
           playaName: "Sparkle",
+          profilePhotoStorageId: "photo_zed",
           arrivalMode: "driving_own_vehicle",
           vehicleId: "veh_1",
           sleepingType: "own_shiftpod_or_tent",
@@ -167,9 +172,13 @@ describe("attendeeProfiles.listRoster", () => {
       "Zed Zulu",
     ]);
 
+    const amy = result.members[0];
+    expect(amy.photoUrl).toBeNull();
+
     const zed = result.members[1];
     expect(zed).toMatchObject({
       playaName: "Sparkle",
+      photoUrl: "https://files.example/photo_zed",
       memberType: "newbie",
       isViewer: false,
       arrival: "2026-08-24",

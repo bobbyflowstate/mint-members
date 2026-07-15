@@ -16,6 +16,7 @@ const baseApplication: ApplicationForCompleteness = {
 
 const completeProfile: ProfileForCompleteness = {
   hasTicket: true,
+  profilePhotoStorageId: "storage1",
   numBurnsAttended: 3,
   emergencyContactName: "Jane Doe",
   emergencyContactPhone: "+15551231234",
@@ -39,11 +40,34 @@ describe("computeProfileCompleteness", () => {
   it("marks all sections complete for a fully filled profile", () => {
     const result = computeProfileCompleteness(completeProfile, baseApplication, CUTOFF);
     expect(result.completeCount).toBe(result.totalCount);
-    expect(result.totalCount).toBe(5);
+    expect(result.totalCount).toBe(6);
+  });
+
+  it("marks the photo section incomplete until a photo is uploaded", () => {
+    const withoutPhoto = computeProfileCompleteness(
+      { ...completeProfile, profilePhotoStorageId: undefined },
+      baseApplication,
+      CUTOFF
+    );
+    expect(sectionByKey(withoutPhoto, "photo").complete).toBe(false);
+    expect(sectionByKey(withoutPhoto, "photo").missing).toContain(
+      "Upload a profile photo"
+    );
+    // An otherwise-complete profile drops below total — the new section
+    // must read as unfinished for existing members.
+    expect(withoutPhoto.completeCount).toBe(withoutPhoto.totalCount - 1);
+
+    const withPhoto = computeProfileCompleteness(
+      completeProfile,
+      baseApplication,
+      CUTOFF
+    );
+    expect(sectionByKey(withPhoto, "photo").complete).toBe(true);
   });
 
   it("marks everything missing for an empty profile", () => {
     const result = computeProfileCompleteness({}, baseApplication, CUTOFF);
+    expect(sectionByKey(result, "photo").complete).toBe(false);
     expect(sectionByKey(result, "status").complete).toBe(false);
     expect(sectionByKey(result, "burnsEmergency").complete).toBe(false);
     expect(sectionByKey(result, "transport").complete).toBe(false);

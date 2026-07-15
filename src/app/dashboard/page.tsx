@@ -97,11 +97,20 @@ function MemberCard({ member }: { member: RosterMember }) {
       }`}
     >
       <div className="flex items-center gap-3">
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${avatarColor(member.fullName)}`}
-        >
-          {initials(member.fullName)}
-        </div>
+        {member.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- Convex storage URLs are dynamic; next/image needs remotePatterns config
+          <img
+            src={member.photoUrl}
+            alt={`${member.fullName}'s photo`}
+            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-white/20"
+          />
+        ) : (
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${avatarColor(member.fullName)}`}
+          >
+            {initials(member.fullName)}
+          </div>
+        )}
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-white">
             {member.fullName}

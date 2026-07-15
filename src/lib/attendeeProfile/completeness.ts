@@ -10,6 +10,7 @@ import {
 
 export interface ProfileForCompleteness {
   hasTicket?: boolean;
+  profilePhotoStorageId?: string;
   numBurnsAttended?: number;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
@@ -33,6 +34,7 @@ export interface ApplicationForCompleteness {
 }
 
 export type ProfileSectionKey =
+  | "photo"
   | "status"
   | "burnsEmergency"
   | "transport"
@@ -62,6 +64,17 @@ export function computeProfileCompleteness(
   departureCutoff: string
 ): ProfileCompleteness {
   const sections: SectionCompleteness[] = [];
+
+  const photoMissing: string[] = [];
+  if (!profile.profilePhotoStorageId) {
+    photoMissing.push("Upload a profile photo");
+  }
+  sections.push({
+    key: "photo",
+    label: "Profile Photo",
+    complete: photoMissing.length === 0,
+    missing: photoMissing,
+  });
 
   const statusMissing: string[] = [];
   if (profile.hasTicket === undefined) {

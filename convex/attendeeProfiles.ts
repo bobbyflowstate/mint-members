@@ -151,6 +151,10 @@ export const getMine = query({
         sleepingVehicleId: profile?.sleepingVehicleId,
         sleepingGroupId: profile?.sleepingGroupId,
         playaName: profile?.playaName,
+        profilePhotoStorageId: profile?.profilePhotoStorageId,
+        profilePhotoUrl: profile?.profilePhotoStorageId
+          ? await ctx.storage.getUrl(profile.profilePhotoStorageId)
+          : null,
         requests: profile ? profile.requests : (legacy?.requests ?? legacy?.notes),
       },
       application: {
@@ -559,6 +563,59 @@ export const listForOps = query({
 });
 
 /**
+ * Profile photos live in Convex file storage. The browser uploads directly
+ * to a short-lived URL from generatePhotoUploadUrl, then hands the resulting
+ * storageId to savePhoto. Both are gated to members with an active
+ * application, same as every other profile mutation.
+ */
+export const generatePhotoUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireActiveApplication(ctx);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+export const savePhoto = mutation({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const application = await requireActiveApplication(ctx);
+
+    const metadata = await ctx.db.system.get(args.storageId);
+    if (!metadata) {
+      throw new Error("Uploaded photo not found — please try again");
+    }
+    if (!metadata.contentType?.startsWith("image/")) {
+      throw new Error("Profile photo must be an image");
+    }
+    if (metadata.size > MAX_PHOTO_BYTES) {
+      throw new Error("Profile photo must be under 5 MB");
+    }
+
+    const profile = await getOrCreateProfile(ctx, application);
+    // Replacing a photo orphans the old file — delete it.
+    if (
+      profile.profilePhotoStorageId &&
+      profile.profilePhotoStorageId !== args.storageId
+    ) {
+      await ctx.storage.delete(profile.profilePhotoStorageId);
+    }
+    await ctx.db.patch(profile._id, {
+      profilePhotoStorageId: args.storageId,
+      updatedAt: Date.now(),
+    });
+
+    await finalizeSectionSave(ctx, application, "photo", {
+      profilePhotoUpdated: true,
+    });
+  },
+});
+
+/**
  * Member-facing roster: who's confirmed, when they arrive/depart, and how
  * they're traveling. Gated to members with an active application, same as
  * the vehicle/sleeping pickers. Deliberately excludes contact info,
@@ -595,44 +652,49 @@ export const listRoster = query({
       }
     }
 
-    const members = confirmed
-      .map((application) => {
-        const profile = profilesByUserId.get(application.userId);
-        const vehicle = profile?.vehicleId
-          ? vehiclesById.get(profile.vehicleId)
-          : undefined;
-        const sleepingVehicle = profile?.sleepingVehicleId
-          ? vehiclesById.get(profile.sleepingVehicleId)
-          : undefined;
-        const sleepingGroup = profile?.sleepingGroupId
-          ? groupsById.get(profile.sleepingGroupId)
-          : undefined;
+    const members = (
+      await Promise.all(
+        confirmed.map(async (application) => {
+          const profile = profilesByUserId.get(application.userId);
+          const vehicle = profile?.vehicleId
+            ? vehiclesById.get(profile.vehicleId)
+            : undefined;
+          const sleepingVehicle = profile?.sleepingVehicleId
+            ? vehiclesById.get(profile.sleepingVehicleId)
+            : undefined;
+          const sleepingGroup = profile?.sleepingGroupId
+            ? groupsById.get(profile.sleepingGroupId)
+            : undefined;
 
-        return {
-          applicationId: application._id,
-          fullName: `${application.firstName} ${application.lastName}`.trim(),
-          playaName: profile?.playaName,
-          memberType: application.memberType ?? ("alumni" as const),
-          isViewer: application.userId === viewer.userId,
-          arrival: application.arrival,
-          arrivalTime: application.arrivalTime,
-          departure: application.departure,
-          departureTime: application.departureTime,
-          arrivalMode: profile?.arrivalMode,
-          departureMode: profile?.departureMode,
-          vehicleName: vehicle?.name,
-          sleepingType: profile?.sleepingType,
-          sleepingPlace: sleepingVehicle
-            ? sleepingDisplayName(sleepingVehicle)
-            : sleepingGroup?.name,
-          numBurnsAttended: profile?.numBurnsAttended,
-        };
-      })
-      .sort(
-        (a, b) =>
-          a.arrival.localeCompare(b.arrival) ||
-          a.fullName.localeCompare(b.fullName)
-      );
+          return {
+            applicationId: application._id,
+            fullName: `${application.firstName} ${application.lastName}`.trim(),
+            playaName: profile?.playaName,
+            photoUrl: profile?.profilePhotoStorageId
+              ? await ctx.storage.getUrl(profile.profilePhotoStorageId)
+              : null,
+            memberType: application.memberType ?? ("alumni" as const),
+            isViewer: application.userId === viewer.userId,
+            arrival: application.arrival,
+            arrivalTime: application.arrivalTime,
+            departure: application.departure,
+            departureTime: application.departureTime,
+            arrivalMode: profile?.arrivalMode,
+            departureMode: profile?.departureMode,
+            vehicleName: vehicle?.name,
+            sleepingType: profile?.sleepingType,
+            sleepingPlace: sleepingVehicle
+              ? sleepingDisplayName(sleepingVehicle)
+              : sleepingGroup?.name,
+            numBurnsAttended: profile?.numBurnsAttended,
+          };
+        })
+      )
+    ).sort(
+      (a, b) =>
+        a.arrival.localeCompare(b.arrival) ||
+        a.fullName.localeCompare(b.fullName)
+    );
 
     return {
       members,

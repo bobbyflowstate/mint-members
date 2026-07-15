@@ -209,6 +209,7 @@ export default defineSchema({
     sleepingVehicleId: v.optional(v.id("vehicles")),
     sleepingGroupId: v.optional(v.id("sleeping_groups")),
     playaName: v.optional(v.string()),
+    profilePhotoStorageId: v.optional(v.id("_storage")),
     requests: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),

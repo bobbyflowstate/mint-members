@@ -12,6 +12,7 @@ import {
   CampSection,
   CompletenessSummary,
   MealsSection,
+  PhotoSection,
   SleepingSection,
   StatusSection,
   TransportSection,
@@ -55,6 +56,7 @@ function ProfileSections({ content }: { content: LandingContent }) {
   return (
     <div className="space-y-4">
       <CompletenessSummary completeness={completeness} />
+      <PhotoSection data={data} complete={sectionComplete.get("photo") ?? false} />
       <StatusSection
         data={data}
         content={content}
