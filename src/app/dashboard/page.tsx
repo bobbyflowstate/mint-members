@@ -124,11 +124,18 @@ function MemberCard({ member }: { member: RosterMember }) {
             <p className="truncate text-xs italic text-slate-500">no playa name yet</p>
           )}
         </div>
-        {member.memberType === "newbie" && (
-          <span className="ml-auto shrink-0 rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/30">
-            Newbie
-          </span>
-        )}
+        <div className="ml-auto flex shrink-0 flex-col items-end gap-1">
+          {member.memberType === "newbie" && (
+            <span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/30">
+              Newbie
+            </span>
+          )}
+          {!member.isConfirmed && (
+            <span className="rounded-full bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-300 ring-1 ring-sky-400/30">
+              Pending
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-300">
@@ -288,16 +295,20 @@ function Roster({ content }: { content: LandingContent }) {
           detail={content.burningManDates}
         />
         <StatTile
-          label="Confirmed campmates"
-          value={String(stats.confirmedCount)}
-          detail={`${stats.alumniCount} alumni · ${stats.newbieCount} newbies`}
+          label="Campmates"
+          value={String(stats.totalCount)}
+          detail={
+            stats.pendingCount > 0
+              ? `${stats.confirmedCount} confirmed · ${stats.pendingCount} pending`
+              : `${stats.alumniCount} alumni · ${stats.newbieCount} newbies`
+          }
         />
       </div>
 
       {members.length === 0 ? (
         <div className="rounded-2xl bg-white/5 backdrop-blur-sm p-8 ring-1 ring-white/10 text-center">
           <p className="text-slate-400">
-            No confirmed campmates yet — check back as reservations roll in.
+            No campmates yet — check back as sign-ups roll in.
           </p>
         </div>
       ) : (

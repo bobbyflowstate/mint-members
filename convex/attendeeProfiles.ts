@@ -616,12 +616,15 @@ export const savePhoto = mutation({
 });
 
 /**
- * Member-facing roster: who's confirmed, when they arrive/depart, and how
- * they're traveling. Gated to members with an active application, same as
- * the vehicle/sleeping pickers. Deliberately excludes contact info,
- * emergency contacts, allergy notes, early-departure reasons, and requests
- * — those stay ops-only (see listForOps). Dietary preferences are only
- * exposed as camp-wide counts, never per person.
+ * Member-facing roster: who's coming, when they arrive/depart, and how
+ * they're traveling. Includes every active application (cancelled and
+ * rejected members never appear); non-confirmed members are flagged with
+ * a coarse "pending" so the exact payment status stays ops-only. Gated to
+ * members with an active application, same as the vehicle/sleeping
+ * pickers. Deliberately excludes contact info, emergency contacts,
+ * allergy notes, early-departure reasons, and requests — those stay
+ * ops-only (see listForOps). Dietary preferences are only exposed as
+ * camp-wide counts, never per person.
  */
 export const listRoster = query({
   args: {},
@@ -631,9 +634,8 @@ export const listRoster = query({
       return null;
     }
 
-    const confirmed = (await ctx.db.query("applications").collect()).filter(
-      (application) =>
-        countsForLogistics(application) && application.status === "confirmed"
+    const active = (await ctx.db.query("applications").collect()).filter(
+      countsForLogistics
     );
     const profiles = await ctx.db.query("attendee_profiles").collect();
     const profilesByUserId = new Map(profiles.map((p) => [p.userId, p]));
@@ -644,7 +646,7 @@ export const listRoster = query({
 
     const dietaryCounts: Record<string, number> = {};
     let allergyCount = 0;
-    for (const application of confirmed) {
+    for (const application of active) {
       dietaryCounts[application.dietaryPreference] =
         (dietaryCounts[application.dietaryPreference] ?? 0) + 1;
       if (application.allergyFlag) {
@@ -654,7 +656,7 @@ export const listRoster = query({
 
     const members = (
       await Promise.all(
-        confirmed.map(async (application) => {
+        active.map(async (application) => {
           const profile = profilesByUserId.get(application.userId);
           const vehicle = profile?.vehicleId
             ? vehiclesById.get(profile.vehicleId)
@@ -674,6 +676,7 @@ export const listRoster = query({
               ? await ctx.storage.getUrl(profile.profilePhotoStorageId)
               : null,
             memberType: application.memberType ?? ("alumni" as const),
+            isConfirmed: application.status === "confirmed",
             isViewer: application.userId === viewer.userId,
             arrival: application.arrival,
             arrivalTime: application.arrivalTime,
@@ -699,7 +702,9 @@ export const listRoster = query({
     return {
       members,
       stats: {
-        confirmedCount: members.length,
+        totalCount: members.length,
+        confirmedCount: members.filter((m) => m.isConfirmed).length,
+        pendingCount: members.filter((m) => !m.isConfirmed).length,
         alumniCount: members.filter((m) => m.memberType === "alumni").length,
         newbieCount: members.filter((m) => m.memberType === "newbie").length,
         dietaryCounts,

@@ -113,11 +113,11 @@ describe("attendeeProfiles.listRoster", () => {
     expect(await handler(ctx, {})).toBeNull();
   });
 
-  it("lists confirmed members only, with member-safe fields", async () => {
+  it("lists active members with member-safe fields, excluding cancelled/rejected", async () => {
     vi.mocked(getAuthUserId).mockResolvedValue("user_viewer" as never);
     const tables: Tables = {
       applications: [
-        // Viewer: active but not confirmed — can view, must not appear.
+        // Viewer: not yet paid — appears, flagged as pending.
         application({
           userId: "user_viewer",
           firstName: "Vera",
@@ -170,16 +170,27 @@ describe("attendeeProfiles.listRoster", () => {
     expect(result.members.map((m) => m.fullName)).toEqual([
       "Amy Alpha",
       "Zed Zulu",
+      "Vera Viewer",
     ]);
 
     const amy = result.members[0];
     expect(amy.photoUrl).toBeNull();
+    expect(amy.isConfirmed).toBe(true);
+
+    // Unpaid members appear but only expose the coarse pending flag,
+    // never the exact payment status.
+    const vera = result.members[2];
+    expect(vera.isConfirmed).toBe(false);
+    expect(vera.isViewer).toBe(true);
+    expect(vera).not.toHaveProperty("status");
+    expect(vera).not.toHaveProperty("paymentAllowed");
 
     const zed = result.members[1];
     expect(zed).toMatchObject({
       playaName: "Sparkle",
       photoUrl: "https://files.example/photo_zed",
       memberType: "newbie",
+      isConfirmed: true,
       isViewer: false,
       arrival: "2026-08-24",
       arrivalMode: "driving_own_vehicle",
@@ -202,10 +213,12 @@ describe("attendeeProfiles.listRoster", () => {
     }
 
     expect(result.stats).toEqual({
+      totalCount: 3,
       confirmedCount: 2,
-      alumniCount: 1,
+      pendingCount: 1,
+      alumniCount: 2,
       newbieCount: 1,
-      dietaryCounts: { omnivore: 1, vegan: 1 },
+      dietaryCounts: { omnivore: 2, vegan: 1 },
       allergyCount: 1,
     });
   });
