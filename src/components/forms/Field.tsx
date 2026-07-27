@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { forwardRef, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, useId } from "react";
 import clsx from "clsx";
 
 interface BaseFieldProps {
@@ -29,6 +29,8 @@ export const Field = forwardRef<
   FieldProps
 >(function Field(props, ref) {
   const { label, error, hint, className, ...rest } = props;
+  const generatedId = useId();
+  const id = rest.id ?? generatedId;
   
   const baseInputStyles = clsx(
     "block w-full rounded-lg border-0 bg-white/5 px-4 py-3 text-white shadow-sm ring-1 ring-inset placeholder:text-slate-500 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 transition-all",
@@ -39,14 +41,19 @@ export const Field = forwardRef<
 
   return (
     <div className={clsx("space-y-2", className)}>
-      <label className="block text-sm font-medium leading-6 text-slate-200">
+      <label htmlFor={id} className="block text-sm font-medium leading-6 text-slate-200">
         {label}
-        {rest.required && <span className="text-red-400 ml-1">*</span>}
+        {rest.required && (
+          <span aria-hidden="true" className="text-red-400 ml-1">
+            *
+          </span>
+        )}
       </label>
       
       {props.as === "select" ? (
         <select
           ref={ref as React.Ref<HTMLSelectElement>}
+          id={id}
           className={baseInputStyles}
           {...(rest as SelectHTMLAttributes<HTMLSelectElement>)}
         >
@@ -60,12 +67,14 @@ export const Field = forwardRef<
       ) : props.as === "textarea" ? (
         <textarea
           ref={ref as React.Ref<HTMLTextAreaElement>}
+          id={id}
           className={clsx(baseInputStyles, "min-h-[100px] resize-y")}
           {...(rest as TextareaHTMLAttributes<HTMLTextAreaElement>)}
         />
       ) : (
         <input
           ref={ref as React.Ref<HTMLInputElement>}
+          id={id}
           className={baseInputStyles}
           {...(rest as InputHTMLAttributes<HTMLInputElement>)}
         />
