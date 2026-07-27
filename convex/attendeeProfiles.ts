@@ -164,7 +164,7 @@ async function saveStatusForApplication(
     application.status === "confirmed" &&
     !preservesApprovedEarlyDeparture
   ) {
-    throw new Error("Confirmed members cannot be moved into early departure review");
+    throw new Error("You cannot change a confirmed member's departure date to before the cutoff date");
   }
 
   const previousStatus = application.status;

@@ -473,7 +473,7 @@ describe("attendeeProfiles ops saves", () => {
         departureTime: "11.01 am to 6.00 pm",
         earlyDepartureReason: "Leaving early",
       })
-    ).rejects.toThrow("Confirmed members cannot be moved into early departure review");
+    ).rejects.toThrow("You cannot change a confirmed member's departure date to before the cutoff date");
 
     expect(spies.patch).not.toHaveBeenCalled();
   });
