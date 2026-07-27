@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import clsx from "clsx";
-import { FunctionReturnType } from "convex/server";
 import { api } from "../../../convex/_generated/api";
 import { buildSignupCsv, downloadCsv, CsvColumn } from "../../lib/opsSignupsView/csv";
+import { ProfileEditDialog, type ProfileRow } from "./ProfileEditDialog";
 import {
   BIKE_STATUS_LABELS,
   DIETARY_PREFERENCE_LABELS,
@@ -15,8 +15,6 @@ import {
 } from "../../lib/attendeeProfile/options";
 
 const OPS_PASSWORD_KEY = "ops_password";
-
-type ProfileRow = FunctionReturnType<typeof api.attendeeProfiles.listForOps>[number];
 
 type CompletionTab = "all" | "incomplete" | "complete";
 
@@ -114,6 +112,7 @@ export function ProfilesTable() {
   );
   const [tab, setTab] = useState<CompletionTab>("all");
   const [search, setSearch] = useState("");
+  const [editingRow, setEditingRow] = useState<ProfileRow | null>(null);
 
   const rows = useQuery(
     api.attendeeProfiles.listForOps,
@@ -226,6 +225,7 @@ export function ProfilesTable() {
                 "Allergies",
                 "Emergency Contact",
                 "Requests",
+                "Actions",
               ].map((header) => (
                 <th
                   key={header}
@@ -318,12 +318,22 @@ export function ProfilesTable() {
                   <td className="max-w-[240px] truncate px-3 py-2.5 text-slate-300" title={row.requests}>
                     {row.requests ?? "—"}
                   </td>
+                  <td className="whitespace-nowrap px-3 py-2.5">
+                    <button
+                      type="button"
+                      aria-label={`Edit ${row.fullName}`}
+                      onClick={() => setEditingRow(row)}
+                      className="rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-white/20"
+                    >
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               );
             })}
             {filteredRows.length === 0 && (
               <tr>
-                <td colSpan={14} className="px-3 py-8 text-center text-sm text-slate-500">
+                <td colSpan={15} className="px-3 py-8 text-center text-sm text-slate-500">
                   No profiles match.
                 </td>
               </tr>
@@ -331,6 +341,14 @@ export function ProfilesTable() {
           </tbody>
         </table>
       </div>
+      {editingRow && (
+        <ProfileEditDialog
+          key={editingRow.applicationId}
+          row={editingRow}
+          opsPassword={opsPassword}
+          onClose={() => setEditingRow(null)}
+        />
+      )}
     </div>
   );
 }
