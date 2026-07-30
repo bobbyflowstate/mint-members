@@ -378,6 +378,9 @@ export default function DashboardPage() {
               Your minty oasis at a glance — who&apos;s coming, when, and how.
             </p>
             <div className="mt-4 flex gap-4 text-sm">
+              <Link href="/shifts" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                Camp shifts →
+              </Link>
               <Link href="/profile" className="text-emerald-400 hover:text-emerald-300 transition-colors">
                 My attendee profile →
               </Link>

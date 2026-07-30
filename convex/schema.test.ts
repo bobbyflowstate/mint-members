@@ -30,6 +30,10 @@ describe('Convex Schema', () => {
     it('should export newbie_invites table', () => {
       expect(schema.tables).toHaveProperty('newbie_invites');
     });
+
+    it('should export published_shift_schedules table', () => {
+      expect(schema.tables).toHaveProperty('published_shift_schedules');
+    });
   });
 
   describe('applications table', () => {

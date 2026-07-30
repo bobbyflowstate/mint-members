@@ -109,6 +109,19 @@ const eventType = v.union(
 export default defineSchema({
   ...authTables,
 
+  published_shift_schedules: defineTable({
+    rows: v.array(v.object({
+      date: v.string(),
+      task: v.string(),
+      startTime: v.string(),
+      endTime: v.string(),
+      firstName: v.string(),
+      lastName: v.string(),
+    })),
+    publishedAt: v.number(),
+    publishedBy: v.string(),
+  }),
+
   /**
    * Applications table - stores member reservation applications
    */

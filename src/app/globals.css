@@ -17,3 +17,169 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+.shift-print-only {
+  display: none;
+}
+
+@page shifts {
+  size: letter portrait;
+  margin: 0.45in;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .shift-print-root,
+  .shift-print-root * {
+    visibility: visible;
+  }
+
+  .shift-print-root {
+    --shift-print-name-size: 21.6pt;
+    --shift-print-role-size: 16.8pt;
+    --shift-print-time-size: 19.2pt;
+    --shift-print-activity-size: 20.4pt;
+    page: shifts;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    color: black !important;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  .shift-no-print {
+    display: none !important;
+  }
+
+  .shift-print-only {
+    display: block;
+  }
+
+  .shift-print-only {
+    border-bottom: 3px solid black;
+    margin-bottom: 0.25in;
+    padding-bottom: 0.12in;
+  }
+
+  .shift-print-only h1 {
+    color: black !important;
+    font-size: 31.2pt;
+    font-weight: 800;
+    line-height: 1.05;
+    margin: 0.03in 0;
+  }
+
+  .shift-print-only p {
+    color: black !important;
+    font-size: 14.4pt;
+    margin: 0.02in 0;
+  }
+
+  .shift-print-kicker {
+    font-size: 10.2pt !important;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  [data-print-hidden="true"] {
+    display: none !important;
+  }
+
+  [data-print-scope="week"] .shift-print-day + .shift-print-day {
+    break-before: page;
+  }
+
+  .shift-print-day {
+    break-before: auto;
+  }
+
+  .shift-print-day-heading {
+    color: black !important;
+    font-size: 28.8pt !important;
+    line-height: 1.1;
+    margin-bottom: 0.12in;
+  }
+
+  .shift-print-slot {
+    display: grid !important;
+    grid-template-columns: 1.65in 1fr !important;
+    gap: 0.2in !important;
+    margin-bottom: 0.3in !important;
+    break-inside: auto;
+  }
+
+  .shift-print-time {
+    color: black !important;
+    font-size: var(--shift-print-time-size) !important;
+    font-weight: 800 !important;
+    line-height: 1.2;
+  }
+
+  .shift-print-cards {
+    display: block !important;
+  }
+
+  .shift-print-card {
+    background: white !important;
+    border: 2px solid black !important;
+    border-left-width: 7px !important;
+    border-radius: 0.08in !important;
+    box-shadow: none !important;
+    color: black !important;
+    margin-bottom: 0.14in !important;
+    padding: 0.19in !important;
+    break-inside: avoid;
+  }
+
+  .shift-print-family {
+    background: white !important;
+    color: black !important;
+    font-size: 13.2pt !important;
+    padding: 0 !important;
+  }
+
+  .shift-print-activity {
+    color: black !important;
+    font-size: var(--shift-print-activity-size) !important;
+    line-height: 1.15;
+    margin-top: 0.05in !important;
+  }
+
+  .shift-print-assignment {
+    border-color: #aaa !important;
+    padding: 0.11in 0 !important;
+  }
+
+  .shift-print-role {
+    color: #222 !important;
+    font-size: var(--shift-print-role-size) !important;
+    font-weight: 700 !important;
+  }
+
+  .shift-print-assignment span,
+  .shift-print-assignment mark {
+    color: black !important;
+    font-size: var(--shift-print-name-size) !important;
+  }
+
+  .shift-print-assignment mark {
+    background: white !important;
+    border: 3px solid black !important;
+    border-radius: 0.04in !important;
+    font-weight: 900 !important;
+    padding: 0.02in 0.05in !important;
+  }
+}
