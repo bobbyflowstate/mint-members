@@ -1,15 +1,26 @@
 "use client";
 
 import { ChangeEvent, useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { ShiftsTable } from "@/components/shifts/ShiftsTable";
+import { Spinner } from "@/components/Spinner";
 import { parseShiftsCsv } from "@/lib/shifts/csv";
 import type { ShiftRow } from "@/lib/shifts/types";
 
 const OPS_PASSWORD_KEY = "ops_password";
 
 export default function OpsShiftsPage() {
+  const [opsPassword] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem(OPS_PASSWORD_KEY);
+    }
+    return null;
+  });
+  const published = useQuery(
+    api.shifts.getPublishedForOps,
+    opsPassword ? { opsPassword } : "skip"
+  );
   const publishSchedule = useMutation(api.shifts.publish);
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<ShiftRow[] | null>(null);
@@ -115,6 +126,26 @@ export default function OpsShiftsPage() {
             </details>
           )}
           <ShiftsTable rows={rows} />
+        </section>
+      )}
+
+      {!rows && (
+        <section className="space-y-5">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Current published schedule</h2>
+            {published?.publishedAt && (
+              <p className="mt-1 text-sm text-slate-400">
+                Published {new Date(published.publishedAt).toLocaleString()}
+              </p>
+            )}
+          </div>
+          {published === undefined && <Spinner />}
+          {published === null && (
+            <div className="rounded-2xl bg-white/5 p-8 text-center ring-1 ring-white/10">
+              <p className="text-slate-400">No schedule has been published yet.</p>
+            </div>
+          )}
+          {published && <ShiftsTable rows={published.rows} />}
         </section>
       )}
     </div>

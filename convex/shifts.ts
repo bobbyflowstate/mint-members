@@ -119,6 +119,15 @@ export const getPublished = query({
   },
 });
 
+export const getPublishedForOps = query({
+  args: { opsPassword: v.string() },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+    const schedule = await ctx.db.query("published_shift_schedules").first();
+    return schedule ? toPublicPublishedSchedule(schedule) : null;
+  },
+});
+
 export const publish = mutation({
   args: {
     opsPassword: v.string(),

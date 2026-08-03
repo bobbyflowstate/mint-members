@@ -179,6 +179,9 @@ export function ShiftsTable({ rows }: { rows: ShiftRow[] }) {
           <p className="text-xs font-bold uppercase tracking-wider text-amber-300/80">Spots unassigned</p>
           <p data-metric="unassigned" className="mt-2 text-3xl font-bold text-white">{metrics.unassignedSpots}</p>
           <p className="mt-1 text-xs text-slate-400">of {metrics.totalSpots} total spots</p>
+          <p className="mt-2 text-xs italic text-slate-400">
+            These spots will eventually be auto assigned to those who have not signed up to enough shifts.
+          </p>
         </div>
         <div className="rounded-2xl bg-emerald-400/[0.07] p-5 ring-1 ring-emerald-400/20">
           <div className="flex items-end justify-between gap-4">
