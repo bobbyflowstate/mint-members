@@ -1,0 +1,45 @@
+import type { TrainingModule } from "./types";
+
+export const lntModule: TrainingModule = {
+  slug: "lnt",
+  version: "2026.1",
+  title: "Leave No Trace",
+  description: "Pack right, sort camp waste correctly, conserve gray-water capacity, and leave Black Rock City clean.",
+  estimatedMinutes: 8,
+  required: true,
+  completionPolicy: { acceptedVersions: ["2026.1"] },
+  content: {
+    streams: [
+      { id: "KC", name: "Kitchen compost", icon: "🍎", color: "#B98A46", shape: "circle", goesIn: "Food scraps only: peels, cores, pits, shells, bones, coffee grounds, and loose tea leaves.", never: "Paper, stickers, liquids, or anything labelled compostable or biodegradable." },
+      { id: "BC", name: "Bar compost", icon: "🍋", color: "#3FB3B8", shape: "dashed", goesIn: "Mint and lime solids from drink dumps, in their own bin and drying-rack area.", never: "Kitchen scraps or drink-dump liquid; liquid goes to gray water." },
+      { id: "OC", name: "Off-playa compost", icon: "🧻", color: "#9A85D6", shape: "dotted", goesIn: "Paper towels and tissues for the small Bay Area compost pilot bag.", never: "Anything that turns it into a second trash bag." },
+      { id: "AL", name: "Aluminium", icon: "🥤", color: "#8FA6B8", shape: "hex", goesIn: "Clean cans, crushed flat, for Recycle Camp.", never: "Cigarette butts; one contaminated can can spoil a bag." },
+      { id: "MR", name: "Mixed recycling", icon: "🧴", color: "#5B8FE0", shape: "square", goesIn: "Clean rigid plastics, flattened tetra packs with caps on, and rinsed steel cans.", never: "Soft plastic, bags, wrappers, or film." },
+      { id: "PC", name: "Paper & card", icon: "📦", color: "#9BA0AE", shape: "fold", goesIn: "Clean paper and flattened cardboard boxes.", never: "Greasy, wet, or food-soiled paper." },
+      { id: "GL", name: "Glass", icon: "🫙", color: "#5FC2C8", shape: "diamond", goesIn: "Ideally nothing. Glass you bring goes home in your own vehicle.", never: "Camp waste streams; contain broken glass before landfill disposal." },
+      { id: "TR", name: "Trash", icon: "🗑", color: "#7C8070", shape: "octagon", goesIn: "Soft plastic, wrappers, wipes, tea bags, filters, contained broken glass, and wood scraps.", never: "Anything accepted by compost or aluminium streams." },
+      { id: "LI", name: "Lithium cells", icon: "🔋", color: "#F08A3C", shape: "triangle", goesIn: "Lithium batteries and power banks in the labelled container.", never: "Trash bags; incorrect disposal can start a fire." },
+      { id: "UO", name: "Used oil", icon: "🛢", color: "#A8AD5A", shape: "pentagon", goesIn: "Cooking oil and grease in the used-oil container.", never: "Ground, gray water, or compost." },
+      { id: "WD", name: "Wood", icon: "🪵", color: "#C08E5E", shape: "plank", goesIn: "Reusable full lumber, plywood, and hardware for the Esplanade station near 3.", never: "Offcuts and scraps; those are trash." },
+      { id: "GW", name: "Gray water", icon: "🪣", color: "#8891A0", shape: "wave", goesIn: "Strained dishwater, shower runoff, drink-dump liquid, and dirty cooler melt.", never: "Solids; strain particulate to compost or trash first." },
+    ],
+    packItems: [
+      { title: "Strip the packaging", summary: "Boxes, wrappers, tags—and produce stickers—off before you leave.", reason: "If it will become trash on playa, make it trash at home. A produce sticker can cause a compost batch to be rejected." },
+      { title: "Leave the glass at home", summary: "Camp takes none of it out.", reason: "There is no glass stream. Any glass you bring must ride home in your vehicle." },
+      { title: "Pack your plate, bowl, cup, and utensils", summary: "Camp provides no reusable eatery.", reason: "Bring a mesh bag and carabiner so your labelled kit can hang instead of being abandoned on a shared table." },
+      { title: "Label everything with your name", summary: "A permanent marker is fine.", reason: "Unlabelled gear is indistinguishable from MOOP by the end of the week." },
+      { title: "No single-use anything", summary: "Bottles, plates, cutlery, or glitter.", reason: "Single-use supplies create avoidable waste; glitter is persistent MOOP." },
+      { title: "Bring 1.5 gallons of water per day", summary: "Per person, plus more for washing.", reason: "That is the drinking minimum. Plan to be self-reliant in the desert." },
+    ],
+    quizItems: [
+      { icon: "🥗", name: "Scraps off your plate", scenario: "End of dinner", answer: "KC", explanation: "Food waste belongs in kitchen compost.", source: "If you can eat it, you can compost it." },
+      { icon: "🚬", name: "A can with a butt in it", scenario: "Someone used it as an ashtray", answer: "TR", explanation: "A contaminated can is trash, not aluminium recycling.", source: "One contaminated bag can be rejected." },
+      { icon: "🍵", name: "A used tea bag", scenario: "String and tag still attached", answer: "TR", explanation: "Paper is banned from the compost stream; loose leaves would be acceptable.", source: "No tea bags or filters in compost." },
+      { icon: "🍋", name: "Mint and lime from the bar", scenario: "Strained after close", answer: "BC", explanation: "Bar compost stays separate from kitchen compost.", source: "Its own bin and drying-rack area." },
+      { icon: "🥤", name: "A compostable cup", scenario: "It says compostable on the side", answer: "TR", explanation: "Compostable dishware is refused by the receiving facility.", source: "The label does not make it acceptable here." },
+      { icon: "🥫", name: "A crushed clean can", scenario: "Rinsed, flattened, no butts", answer: "AL", explanation: "Clean crushed cans belong in aluminium.", source: "Clean cans only." },
+      { icon: "🍫", name: "A snack wrapper", scenario: "Soft, crinkly film plastic", answer: "TR", explanation: "Soft and film plastic belongs in trash.", source: "It is not accepted by mixed recycling." },
+      { icon: "🧼", name: "Dishwater", scenario: "Greasy, with bits floating in it", answer: "GW", explanation: "Strain it first, then put only the liquid in gray water.", source: "The tank holds 250 gallons for the whole camp." },
+    ],
+  },
+};

@@ -18,6 +18,22 @@ body {
   color: var(--foreground);
 }
 
+.training-cta {
+  width: 100%;
+  border-radius: 1rem;
+  background: #4ed6a0;
+  color: #0c2a20;
+  padding: 1rem 1.25rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.training-cta:disabled {
+  background: #252822;
+  color: #71756a;
+  cursor: default;
+}
+
 .shift-print-only {
   display: none;
 }

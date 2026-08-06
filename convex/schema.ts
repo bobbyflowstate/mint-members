@@ -109,6 +109,19 @@ const eventType = v.union(
 export default defineSchema({
   ...authTables,
 
+  training_progress: defineTable({
+    userId: v.id("users"),
+    moduleSlug: v.string(),
+    moduleVersion: v.string(),
+    state: v.string(),
+    startedAt: v.number(),
+    updatedAt: v.number(),
+    pledgedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_user_module_version", ["userId", "moduleSlug", "moduleVersion"])
+    .index("by_module_version", ["moduleSlug", "moduleVersion"]),
+
   published_shift_schedules: defineTable({
     rows: v.array(v.object({
       date: v.string(),
