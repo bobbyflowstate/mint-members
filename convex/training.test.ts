@@ -27,6 +27,34 @@ describe("training progress", () => {
     quizMarks: { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true },
   });
 
+  const completeGeneralState = JSON.stringify({
+    step: 30,
+    kind: "return",
+    videos: [0, 1, 2, 3],
+    safety: [0, 1, 2, 3],
+    bikes: [3, 4, 5],
+    law: [0, 1, 2, 3],
+    bar: [0, 1, 2, 3],
+    mojito: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    cultureQuiz: { queue: [], marks: { 0: true, 1: true, 2: true, 3: true } },
+    barQuiz: { queue: [], marks: { 0: true, 1: true, 2: true } },
+  });
+
+  it("validates the general module with its own completion rules", () => {
+    expect(() => assertCompletableProgress({
+      moduleSlug: "general", moduleVersion: "2026.1", state: completeGeneralState,
+    })).not.toThrow();
+    expect(() => assertCompletableProgress({
+      moduleSlug: "general", moduleVersion: "2025.1", state: completeGeneralState,
+    })).toThrow("Unknown training module version");
+    expect(() => assertCompletableProgress({
+      moduleSlug: "general", moduleVersion: "2026.1", state: JSON.stringify({ step: 30 }),
+    })).toThrow("Training module is not complete");
+    expect(() => assertCompletableProgress({
+      moduleSlug: "general", moduleVersion: "2026.1", state: completeState,
+    })).toThrow("Training module is not complete");
+  });
+
   it("accepts only the registered LNT version with genuinely complete state", () => {
     expect(() => assertCompletableProgress({
       moduleSlug: "unknown", moduleVersion: "2026.1", state: completeState,

@@ -4,7 +4,7 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getTrainingModule } from "../src/lib/training/modules";
-import type { TrainingProgressState } from "../src/lib/training/types";
+import { isGeneralStateComplete, isLntStateComplete } from "../src/lib/training/progress";
 import { countsForLogistics } from "./lib/profileValidators";
 
 type ProgressArgs = {
@@ -56,13 +56,11 @@ export function assertCompletableProgress(args: ProgressArgs): void {
   assertKnownProgressTarget(args);
   const trainingModule = getTrainingModule(args.moduleSlug)!;
 
-  const state = JSON.parse(args.state) as Partial<TrainingProgressState>;
-  const allPackItemsChecked = Array.isArray(state.packed) &&
-    trainingModule.content.packItems.every((_, index) => state.packed!.includes(index));
-  const everyQuizItemCorrect = Array.isArray(state.quizQueue) && state.quizQueue.length === 0 &&
-    trainingModule.content.quizItems.every((_, index) => state.quizMarks?.[index] === true);
-  const validRole = state.role === "camp" || state.role === "crew" || state.role === "lead";
-  if (state.step !== 13 || !validRole || !allPackItemsChecked || !everyQuizItemCorrect) {
+  const state = JSON.parse(args.state);
+  const complete = trainingModule.slug === "general"
+    ? isGeneralStateComplete(state)
+    : isLntStateComplete(state);
+  if (!complete) {
     throw new Error("Training module is not complete");
   }
 }

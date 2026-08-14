@@ -1,6 +1,6 @@
-import type { TrainingModule } from "./types";
+import type { LntTrainingModule } from "./types";
 
-export const lntModule: TrainingModule = {
+export const lntModule: LntTrainingModule = {
   slug: "lnt",
   version: "2026.1",
   title: "Leave No Trace",

@@ -16,11 +16,22 @@ describe("TrainingDashboardCard", () => {
     expect(screen.getByText("Required training")).toBeInTheDocument();
   });
 
-  it("recognizes completion of an accepted version", () => {
-    useQuery.mockReturnValue([{ moduleSlug: "lnt", moduleVersion: "2026.1", completedAt: 100 }]);
+  it("recognizes completion of accepted versions of every required module", () => {
+    useQuery.mockReturnValue([
+      { moduleSlug: "lnt", moduleVersion: "2026.1", completedAt: 100 },
+      { moduleSlug: "general", moduleVersion: "2026.1", completedAt: 100 },
+    ]);
     render(<TrainingDashboardCard />);
 
     expect(screen.getByText("Training complete")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Review training/ })).toBeInTheDocument();
+  });
+
+  it("keeps prompting while any required module is incomplete", () => {
+    useQuery.mockReturnValue([{ moduleSlug: "lnt", moduleVersion: "2026.1", completedAt: 100 }]);
+    render(<TrainingDashboardCard />);
+
+    expect(screen.getByText("Required training")).toBeInTheDocument();
+    expect(screen.getByText(/1 of 2 required modules complete/)).toBeInTheDocument();
   });
 });
