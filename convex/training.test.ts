@@ -19,13 +19,15 @@ function progressQuery(existing: unknown) {
 }
 
 describe("training progress", () => {
-  const completeState = JSON.stringify({
+  const completeLntState = {
     step: 13,
     role: "camp",
     packed: [0, 1, 2, 3, 4, 5],
+    streamsRead: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
     quizQueue: [],
     quizMarks: { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true },
-  });
+  };
+  const completeState = JSON.stringify(completeLntState);
 
   const completeGeneralState = JSON.stringify({
     step: 30,
@@ -55,7 +57,7 @@ describe("training progress", () => {
     })).toThrow("Training module is not complete");
   });
 
-  it("accepts only the registered LNT version with genuinely complete state", () => {
+  it("accepts only registered LNT versions with genuinely complete state", () => {
     expect(() => assertCompletableProgress({
       moduleSlug: "unknown", moduleVersion: "2026.1", state: completeState,
     })).toThrow("Unknown training module");
@@ -63,11 +65,31 @@ describe("training progress", () => {
       moduleSlug: "lnt", moduleVersion: "2025.1", state: completeState,
     })).toThrow("Unknown training module version");
     expect(() => assertCompletableProgress({
-      moduleSlug: "lnt", moduleVersion: "2026.1", state: JSON.stringify({ step: 13 }),
+      moduleSlug: "lnt", moduleVersion: "2026.2", state: JSON.stringify({ step: 13 }),
     })).toThrow("Training module is not complete");
+    expect(() => assertCompletableProgress({
+      moduleSlug: "lnt", moduleVersion: "2026.2", state: completeState,
+    })).not.toThrow();
     expect(() => assertCompletableProgress({
       moduleSlug: "lnt", moduleVersion: "2026.1", state: completeState,
     })).not.toThrow();
+  });
+
+  it("rejects completion when any stream card is unread", () => {
+    expect(() => assertCompletableProgress({
+      moduleSlug: "lnt",
+      moduleVersion: "2026.2",
+      state: JSON.stringify({ ...completeLntState, streamsRead: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }),
+    })).toThrow("Training module is not complete");
+  });
+
+  it("rejects non-object progress state without crashing", () => {
+    expect(() => assertCompletableProgress({
+      moduleSlug: "lnt", moduleVersion: "2026.2", state: "null",
+    })).toThrow("Training module is not complete");
+    expect(() => assertCompletableProgress({
+      moduleSlug: "general", moduleVersion: "2026.1", state: "null",
+    })).toThrow("Training module is not complete");
   });
 
   it("rejects unauthenticated access", () => {
@@ -106,14 +128,14 @@ describe("training progress", () => {
 
     const result = await saveProgressRecord(ctx as never, "user_1" as never, {
       moduleSlug: "lnt",
-      moduleVersion: "2026.1",
+      moduleVersion: "2026.2",
       state: "{\"step\":2}",
     }, 100);
 
     expect(insert).toHaveBeenCalledWith("training_progress", expect.objectContaining({
       userId: "user_1",
       moduleSlug: "lnt",
-      moduleVersion: "2026.1",
+      moduleVersion: "2026.2",
       state: "{\"step\":2}",
       startedAt: 100,
       updatedAt: 100,
@@ -128,7 +150,7 @@ describe("training progress", () => {
 
     const result = await saveProgressRecord(ctx as never, "user_1" as never, {
       moduleSlug: "lnt",
-      moduleVersion: "2026.1",
+      moduleVersion: "2026.2",
       state: "{\"step\":4}",
     }, 100);
 
@@ -146,7 +168,7 @@ describe("training progress", () => {
 
     const first = await completeProgressRecord(ctx as never, "user_1" as never, {
       moduleSlug: "lnt",
-      moduleVersion: "2026.1",
+      moduleVersion: "2026.2",
       state: completeState,
     }, 200);
 
@@ -161,7 +183,7 @@ describe("training progress", () => {
     const alreadyComplete = { _id: "progress_1", completedAt: 150, pledgedAt: 150 };
     const secondCtx = { db: { query: vi.fn().mockReturnValue(progressQuery(alreadyComplete)), patch } };
     const second = await completeProgressRecord(secondCtx as never, "user_1" as never, {
-      moduleSlug: "lnt", moduleVersion: "2026.1", state: "{}",
+      moduleSlug: "lnt", moduleVersion: "2026.2", state: "{}",
     }, 300);
 
     expect(patch).not.toHaveBeenCalled();

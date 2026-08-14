@@ -19,7 +19,7 @@ function TrainingCatalog() {
         record.completedAt && module.completionPolicy.acceptedVersions.includes(record.moduleVersion)
       );
       const inProgress = versions.some((record) =>
-        record.moduleVersion === module.version && !record.completedAt
+        !record.completedAt && module.completionPolicy.acceptedVersions.includes(record.moduleVersion)
       );
       const status = complete ? "Complete" : inProgress ? "In progress" : "Not started";
       return <Link key={module.slug} href={`/training/${module.slug}`} className="group block rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-emerald-400/30 hover:bg-white/[.07]">

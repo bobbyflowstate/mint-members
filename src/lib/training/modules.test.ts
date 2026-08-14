@@ -27,12 +27,13 @@ describe("training module registry", () => {
 
     expect(trainingModule).toMatchObject({
       slug: "lnt",
-      version: "2026.1",
+      version: "2026.2",
       title: "Leave No Trace",
       required: true,
-      estimatedMinutes: 8,
+      estimatedMinutes: 10,
     });
     expect(trainingModule?.completionPolicy.acceptedVersions).toContain("2026.1");
+    expect(trainingModule?.completionPolicy.acceptedVersions).toContain("2026.2");
   });
 
   it("keeps module slugs and versions unique", () => {
@@ -97,6 +98,7 @@ describe("training progress state", () => {
     expect(createDefaultProgress()).toMatchObject({
       step: 0,
       packed: [],
+      streamsRead: [],
       quizQueue: [0, 1, 2, 3, 4, 5, 6, 7],
       quizMarks: {},
     });
@@ -105,6 +107,8 @@ describe("training progress state", () => {
   it("falls back safely when stored state is invalid", () => {
     expect(parseProgressState("not json")).toEqual(createDefaultProgress());
     expect(parseProgressState('{"step":99}')).toEqual(createDefaultProgress());
+    expect(parseProgressState('{"step":5,"packed":[],"streamsRead":[99],"quizQueue":[],"quizMarks":{}}'))
+      .toEqual(createDefaultProgress());
   });
 
   it("preserves completion when an accepted legacy record has old state", () => {
@@ -112,8 +116,18 @@ describe("training progress state", () => {
   });
 
   it("restores valid stored progress", () => {
+    expect(parseProgressState('{"step":5,"role":"crew","packed":[0],"streamsRead":[0,11],"quizQueue":[2],"quizMarks":{"0":true}}'))
+      .toMatchObject({ step: 5, role: "crew", packed: [0], streamsRead: [0, 11], quizQueue: [2] });
+  });
+
+  it("tolerates records saved before stream reading was tracked", () => {
     expect(parseProgressState('{"step":4,"role":"crew","packed":[0],"quizQueue":[2],"quizMarks":{"0":true}}'))
-      .toMatchObject({ step: 4, role: "crew", packed: [0], quizQueue: [2] });
+      .toMatchObject({ step: 4, role: "crew", streamsRead: [] });
+  });
+
+  it("dedupes repeated indexes in stored progress", () => {
+    expect(parseProgressState('{"step":5,"role":"crew","packed":[0,0],"streamsRead":[3,3,1],"quizQueue":[],"quizMarks":{}}'))
+      .toMatchObject({ packed: [0], streamsRead: [3, 1] });
   });
 
   it("uses an accepted prior completion when the current version has no progress", () => {
@@ -121,6 +135,13 @@ describe("training progress state", () => {
     expect(selectModuleProgress(
       [priorCompletion], "lnt", "2026.2", ["2026.1", "2026.2"]
     )).toBe(priorCompletion);
+  });
+
+  it("falls back to an accepted in-progress record when the current version has none", () => {
+    const inProgress = { moduleSlug: "lnt", moduleVersion: "2026.1", state: '{"step":10}', updatedAt: 50 };
+    expect(selectModuleProgress(
+      [inProgress], "lnt", "2026.2", ["2026.1", "2026.2"]
+    )).toBe(inProgress);
   });
 
   it("prefers current-version progress over an accepted prior completion", () => {

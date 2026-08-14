@@ -30,11 +30,16 @@ function LntTraining() {
     lntModule.completionPolicy.acceptedVersions
   );
   const serialize = (state: TrainingProgressState) => JSON.stringify(state);
+  const initialState = parseProgressState(progress?.state, Boolean(progress?.completedAt));
+  if (progress && !progress.completedAt && progress.moduleVersion !== lntModule.version) {
+    // Resumed from an older version: re-enter at the streams step so requirements added since then are still met.
+    initialState.step = Math.min(initialState.step, 5);
+  }
 
   return <LntModuleRunner
     key={progress?._id ?? "new"}
     memberName={memberName}
-    initialState={parseProgressState(progress?.state, Boolean(progress?.completedAt))}
+    initialState={initialState}
     completedAt={progress?.completedAt}
     onSave={(state) => save({ moduleSlug: lntModule.slug, moduleVersion: lntModule.version, state: serialize(state) })}
     onComplete={(state) => complete({ moduleSlug: lntModule.slug, moduleVersion: lntModule.version, state: serialize(state) })}

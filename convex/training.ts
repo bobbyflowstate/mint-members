@@ -32,7 +32,7 @@ function assertProgressArgs(args: ProgressArgs): void {
 function assertKnownProgressTarget(args: ProgressArgs): void {
   const trainingModule = getTrainingModule(args.moduleSlug);
   if (!trainingModule) throw new Error("Unknown training module");
-  if (trainingModule.version !== args.moduleVersion) {
+  if (!trainingModule.completionPolicy.acceptedVersions.includes(args.moduleVersion)) {
     throw new Error("Unknown training module version");
   }
 }

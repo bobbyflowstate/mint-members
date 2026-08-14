@@ -122,6 +122,7 @@ export interface TrainingProgressState {
   step: number;
   role?: TrainingRole;
   packed: number[];
+  streamsRead: number[];
   quizQueue: number[];
   quizMarks: Record<number, boolean>;
 }

@@ -12,32 +12,46 @@ import type {
 export const LNT_FINAL_STEP = 13;
 export const GENERAL_FINAL_STEP = 30;
 
+const validNumbers = (items: unknown, max: number) =>
+  Array.isArray(items) && items.every((item) => Number.isInteger(item) && item >= 0 && item <= max);
+
+const covered = (items: unknown, count: number) =>
+  Array.isArray(items) && Array.from({ length: count }, (_, index) => index).every((index) => items.includes(index));
+
+export function withIndexMarked(items: number[], index: number): number[] {
+  return items.includes(index) ? items : [...items, index];
+}
+
 export function createDefaultProgress(): TrainingProgressState {
   return {
     step: 0,
     packed: [],
-    quizQueue: [0, 1, 2, 3, 4, 5, 6, 7],
+    streamsRead: [],
+    quizQueue: lntModule.content.quizItems.map((_, index) => index),
     quizMarks: {},
   };
 }
 
 export function parseProgressState(value?: string, completed = false): TrainingProgressState {
-  const finish = (state: TrainingProgressState) => completed ? { ...state, step: 13 } : state;
+  const finish = (state: TrainingProgressState) => completed ? { ...state, step: LNT_FINAL_STEP } : state;
   if (!value) return finish(createDefaultProgress());
   try {
     const parsed = JSON.parse(value) as Partial<TrainingProgressState>;
+    const content = lntModule.content;
     const validRole = parsed.role === undefined || (["camp", "crew", "lead"] as TrainingRole[]).includes(parsed.role);
-    const validNumbers = (items: unknown, max: number) =>
-      Array.isArray(items) && items.every((item) => Number.isInteger(item) && item >= 0 && item <= max);
+    const streamsRead = parsed.streamsRead ?? [];
     if (
-      !Number.isInteger(parsed.step) || parsed.step! < 0 || parsed.step! > 13 ||
-      !validRole || !validNumbers(parsed.packed, 5) || !validNumbers(parsed.quizQueue, 7) ||
+      !Number.isInteger(parsed.step) || parsed.step! < 0 || parsed.step! > LNT_FINAL_STEP ||
+      !validRole || !validNumbers(parsed.packed, content.packItems.length - 1) ||
+      !validNumbers(streamsRead, content.streams.length - 1) ||
+      !validNumbers(parsed.quizQueue, content.quizItems.length - 1) ||
       !parsed.quizMarks || typeof parsed.quizMarks !== "object"
     ) return finish(createDefaultProgress());
     return finish({
       step: parsed.step!,
       role: parsed.role,
-      packed: [...parsed.packed!],
+      packed: [...new Set(parsed.packed!)],
+      streamsRead: [...new Set(streamsRead)],
       quizQueue: [...parsed.quizQueue!],
       quizMarks: { ...parsed.quizMarks },
     });
@@ -67,8 +81,6 @@ export function parseGeneralProgressState(value?: string, completed = false): Ge
     const parsed = JSON.parse(value) as Partial<GeneralProgressState>;
     const content = generalModule.content;
     const validKind = parsed.kind === undefined || (["first", "return", "lead"] as GeneralKind[]).includes(parsed.kind);
-    const validNumbers = (items: unknown, max: number) =>
-      Array.isArray(items) && items.every((item) => Number.isInteger(item) && item >= 0 && item <= max);
     const validQuiz = (quiz: Partial<GeneralQuizState> | undefined, max: number) =>
       !!quiz && validNumbers(quiz.queue, max) && !!quiz.marks && typeof quiz.marks === "object";
     if (
@@ -101,19 +113,20 @@ export function parseGeneralProgressState(value?: string, completed = false): Ge
 }
 
 export function isLntStateComplete(state: Partial<TrainingProgressState>): boolean {
+  if (!state || typeof state !== "object") return false;
   const content = lntModule.content;
-  const allPackItemsChecked = Array.isArray(state.packed) &&
-    content.packItems.every((_, index) => state.packed!.includes(index));
   const everyQuizItemCorrect = Array.isArray(state.quizQueue) && state.quizQueue.length === 0 &&
     content.quizItems.every((_, index) => state.quizMarks?.[index] === true);
   const validRole = state.role === "camp" || state.role === "crew" || state.role === "lead";
-  return state.step === LNT_FINAL_STEP && validRole && allPackItemsChecked && everyQuizItemCorrect;
+  return state.step === LNT_FINAL_STEP && validRole &&
+    covered(state.packed, content.packItems.length) &&
+    covered(state.streamsRead, content.streams.length) &&
+    everyQuizItemCorrect;
 }
 
 export function isGeneralStateComplete(state: Partial<GeneralProgressState>): boolean {
+  if (!state || typeof state !== "object") return false;
   const content = generalModule.content;
-  const covered = (items: unknown, count: number) =>
-    Array.isArray(items) && Array.from({ length: count }, (_, index) => index).every((index) => items.includes(index));
   const quizDone = (bank: readonly GeneralQuizItem[], quiz?: GeneralQuizState) =>
     !!quiz && Array.isArray(quiz.queue) && quiz.queue.length === 0 &&
     bank.every((item, index) => item.critical ? quiz.marks?.[index] === true : typeof quiz.marks?.[index] === "boolean");
@@ -136,6 +149,7 @@ type ModuleProgressRecord = {
   moduleSlug: string;
   moduleVersion: string;
   state: string;
+  updatedAt?: number;
   completedAt?: number;
 };
 
@@ -148,7 +162,10 @@ export function selectModuleProgress<T extends ModuleProgressRecord>(
   const moduleRecords = records.filter((record) => record.moduleSlug === moduleSlug);
   const current = moduleRecords.find((record) => record.moduleVersion === currentVersion);
   if (current) return current;
-  return moduleRecords
-    .filter((record) => record.completedAt && acceptedVersions.includes(record.moduleVersion))
-    .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))[0];
+  const accepted = moduleRecords.filter((record) => acceptedVersions.includes(record.moduleVersion));
+  const completed = accepted
+    .filter((record) => record.completedAt)
+    .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
+  if (completed[0]) return completed[0];
+  return accepted.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))[0];
 }

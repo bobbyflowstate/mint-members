@@ -2,12 +2,12 @@ import type { LntTrainingModule } from "./types";
 
 export const lntModule: LntTrainingModule = {
   slug: "lnt",
-  version: "2026.1",
+  version: "2026.2",
   title: "Leave No Trace",
   description: "Pack right, sort camp waste correctly, conserve gray-water capacity, and leave Black Rock City clean.",
-  estimatedMinutes: 8,
+  estimatedMinutes: 10,
   required: true,
-  completionPolicy: { acceptedVersions: ["2026.1"] },
+  completionPolicy: { acceptedVersions: ["2026.1", "2026.2"] },
   content: {
     streams: [
       { id: "KC", name: "Kitchen compost", icon: "🍎", color: "#B98A46", shape: "circle", goesIn: "Food scraps only: peels, cores, pits, shells, bones, coffee grounds, and loose tea leaves.", never: "Paper, stickers, liquids, or anything labelled compostable or biodegradable." },
@@ -29,11 +29,11 @@ export const lntModule: LntTrainingModule = {
       { title: "Pack your plate, bowl, cup, and utensils", summary: "Camp provides no reusable eatery.", reason: "Bring a mesh bag and carabiner so your labelled kit can hang instead of being abandoned on a shared table." },
       { title: "Label everything with your name", summary: "A permanent marker is fine.", reason: "Unlabelled gear is indistinguishable from MOOP by the end of the week." },
       { title: "No single-use anything", summary: "Bottles, plates, cutlery, or glitter.", reason: "Single-use supplies create avoidable waste; glitter is persistent MOOP." },
-      { title: "Bring 1.5 gallons of water per day", summary: "Per person, plus more for washing.", reason: "That is the drinking minimum. Plan to be self-reliant in the desert." },
+      { title: "Bring water for the drive in and out", summary: "Camp supplies your water once you're here.", reason: "Every camper is entitled to camp potable water, so you don't need to haul a week's supply. What you do need is water in your own vehicle for entry and exodus—the gate and exodus lines can both run for hours in full sun. Recommended, not required: a couple of gallons within arm's reach in the car, not buried in the back." },
     ],
     quizItems: [
       { icon: "🥗", name: "Scraps off your plate", scenario: "End of dinner", answer: "KC", explanation: "Food waste belongs in kitchen compost.", source: "If you can eat it, you can compost it." },
-      { icon: "🚬", name: "A can with a butt in it", scenario: "Someone used it as an ashtray", answer: "TR", explanation: "A contaminated can is trash, not aluminium recycling.", source: "One contaminated bag can be rejected." },
+      { icon: "🚬", name: "A can with a butt in it", scenario: "Someone used it as an ashtray", answer: "TR", explanation: "If you have to use a can as an ashtray, just don't put the can in the recycle. One butt contaminates the whole bag.", source: "One bad bag gets the whole batch rejected." },
       { icon: "🍵", name: "A used tea bag", scenario: "String and tag still attached", answer: "TR", explanation: "Paper is banned from the compost stream; loose leaves would be acceptable.", source: "No tea bags or filters in compost." },
       { icon: "🍋", name: "Mint and lime from the bar", scenario: "Strained after close", answer: "BC", explanation: "Bar compost stays separate from kitchen compost.", source: "Its own bin and drying-rack area." },
       { icon: "🥤", name: "A compostable cup", scenario: "It says compostable on the side", answer: "TR", explanation: "Compostable dishware is refused by the receiving facility.", source: "The label does not make it acceptable here." },

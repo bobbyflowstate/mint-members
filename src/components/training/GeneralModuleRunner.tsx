@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ProgressBar } from "./ProgressBar";
 import { generalModule } from "@/lib/training/general";
-import { GENERAL_FINAL_STEP } from "@/lib/training/progress";
+import { GENERAL_FINAL_STEP, withIndexMarked } from "@/lib/training/progress";
 import type { GeneralKind, GeneralProgressState } from "@/lib/training/types";
 
 const TOTAL_STEPS = GENERAL_FINAL_STEP;
@@ -91,13 +92,14 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
   }
 
   function markSeen(key: "videos" | "safety" | "law" | "bar", index: number) {
-    if (state[key].includes(index)) return;
-    persist({ ...state, [key]: [...state[key], index] });
+    const marked = withIndexMarked(state[key], index);
+    if (marked !== state[key]) persist({ ...state, [key]: marked });
   }
 
   function tapBike(index: number) {
     const bike = content.bikes[index];
-    if (!state.bikes.includes(index)) persist({ ...state, bikes: [...state.bikes, index] });
+    const marked = withIndexMarked(state.bikes, index);
+    if (marked !== state.bikes) persist({ ...state, bikes: marked });
     setSheet({
       title: bike.bad ? "Yes — that one’s a problem" : "That one’s fine",
       body: <p className="mt-4 leading-7 text-slate-300">{bike.why}</p>,
@@ -379,7 +381,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
       <p className="mt-3 text-slate-400">Most people have never seen these numbers. They are good-faith benchmarks, not a timesheet — but they are what it takes, per person, to make camp work.</p>
       <div className="mt-6 space-y-3">{gauges.map(([hours, label, detail, pct]) => <div className={card} key={label}>
         <div className="flex items-baseline justify-between"><span className="text-2xl font-black text-emerald-300">{hours} <span className="text-sm text-slate-500">hrs</span></span><span className="text-xs font-bold uppercase tracking-widest text-slate-500">{label}</span></div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${pct}%` }} /></div>
+        <ProgressBar value={pct} max={100} className="mt-2 h-1.5" />
         <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
       </div>)}</div>
       <p className="mt-5 text-sm leading-6 text-slate-500">Heavier off-playa contributors carry a lighter on-playa load, and the reverse. Can&apos;t do in-person work? There are other ways — skills, expertise, remote contribution. Say so rather than going quiet.</p>
@@ -656,7 +658,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
     <div className="flex min-h-[720px] flex-col">
       <header className="relative flex h-14 items-center px-4">
         <button onClick={goBack} disabled={!canGoBack} aria-label="Back" className="h-10 w-10 text-2xl text-emerald-300 disabled:invisible">‹</button>
-        <div className="absolute inset-x-5 bottom-0 h-1 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-emerald-400 transition-[width]" style={{ width: `${Math.round((state.step / TOTAL_STEPS) * 100)}%` }} /></div>
+        <ProgressBar value={state.step} max={TOTAL_STEPS} className="absolute inset-x-5 bottom-0 h-1" />
       </header>
       <section className="flex-1 overflow-y-auto px-6 pb-8 pt-5">{screen}</section>
       {action && <footer className="sticky bottom-0 bg-gradient-to-t from-[#121310] via-[#121310] to-transparent px-6 pb-6 pt-5">{action}</footer>}

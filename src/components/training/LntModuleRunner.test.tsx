@@ -2,11 +2,13 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LntModuleRunner } from "./LntModuleRunner";
+import { lntModule } from "@/lib/training/lnt";
 import type { TrainingProgressState } from "@/lib/training/types";
 
 const baseState: TrainingProgressState = {
   step: 0,
   packed: [],
+  streamsRead: [],
   quizQueue: [0, 1, 2, 3, 4, 5, 6, 7],
   quizMarks: {},
 };
@@ -63,6 +65,22 @@ describe("LntModuleRunner", () => {
     await user.click(screen.getByText("Strip the packaging"));
 
     expect(screen.getByRole("checkbox", { name: "Strip the packaging" })).toBeChecked();
+  });
+
+  it("requires opening every stream card before practising", async () => {
+    const user = userEvent.setup();
+    renderRunner({ ...baseState, step: 5, role: "camp" });
+
+    expect(screen.getByText("0 of 12 read")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "0 of 12" })).toBeDisabled();
+
+    for (const stream of lntModule.content.streams) {
+      await user.click(screen.getByRole("button", { name: stream.name }));
+      await user.click(screen.getByRole("button", { name: "Close" }));
+    }
+
+    expect(screen.getByText("12 of 12 read")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Practise" })).toBeEnabled();
   });
 
   it("requeues a wrong quiz answer until it is answered correctly", async () => {
