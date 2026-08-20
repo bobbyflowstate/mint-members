@@ -8,8 +8,16 @@ import { Id } from "../../../convex/_generated/dataModel";
 import {
   DEFAULT_SIGNUPS_VIEW_STATE,
   SignupColumnId,
+  SignupSort,
+  SortDirection,
   normalizeSignupViewState,
 } from "../../lib/opsSignupsView/types";
+import {
+  SortKey,
+  dateTimeSortValue,
+  isPaymentEligible,
+  sortRows,
+} from "../../lib/opsSignupsView/sort";
 import { buildSignupCsv, downloadCsv } from "../../lib/opsSignupsView/csv";
 import { formatDateWithWeekday } from "../../lib/dates/formatDateWithWeekday";
 import { AddManualMemberModal } from "./AddManualMemberModal";
@@ -57,6 +65,31 @@ interface ColumnDef {
   renderText: (row: OpsSignupRow) => string;
   renderCell: (row: OpsSignupRow) => React.ReactNode;
   multiline?: boolean;
+  /** Comparable value for sorting. Defaults to renderText(). */
+  sortValue?: (row: OpsSignupRow) => SortKey;
+}
+
+function SortIcon({ direction }: { direction: SortDirection | null }) {
+  return (
+    <span className="inline-flex flex-col leading-none ml-1 -mb-0.5">
+      <svg
+        viewBox="0 0 8 5"
+        className={clsx("h-[5px] w-2", direction === "asc" ? "text-emerald-300" : "text-slate-600")}
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M4 0 8 5H0z" />
+      </svg>
+      <svg
+        viewBox="0 0 8 5"
+        className={clsx("h-[5px] w-2 mt-0.5", direction === "desc" ? "text-emerald-300" : "text-slate-600")}
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M4 5 0 0h8z" />
+      </svg>
+    </span>
+  );
 }
 
 function formatDate(dateValue: string | undefined) {
@@ -168,12 +201,7 @@ function PaidCell({
 }) {
   const [loading, setLoading] = useState(false);
 
-  const canToggle =
-    !row.cancelled &&
-    (row._source === "invite" ||
-      row.status === "confirmed" ||
-      row.status === "pending_payment" ||
-      row.status === "payment_processing");
+  const canToggle = !row.cancelled && isPaymentEligible(row);
   if (row.cancelled) return <span className="text-xs text-red-300">Cancelled</span>;
   if (!canToggle) return <span className="text-xs text-slate-500">—</span>;
 
@@ -273,6 +301,7 @@ const COLUMN_DEFS: ColumnDef[] = [
   {
     id: "createdAt",
     header: "Applied At",
+    sortValue: (r) => r.createdAt ?? r.applicationCreatedAt,
     renderText: (r) => new Date(r.createdAt ?? r.applicationCreatedAt).toLocaleString(),
     renderCell: (r) => (
       <span className="text-sm text-slate-400">
@@ -284,14 +313,12 @@ const COLUMN_DEFS: ColumnDef[] = [
   {
     id: "hasFullPayment",
     header: "Full Payment",
-    renderText: (r) => {
-      const eligible =
-        r._source === "invite" ||
-        r.status === "confirmed" ||
-        r.status === "pending_payment" ||
-        r.status === "payment_processing";
-      return eligible ? (r.hasFullPayment ? "Paid in Full" : "Outstanding") : "";
-    },
+    // Cancelled and not-yet-eligible rows show no badge, so they sort as blanks
+    // and sink below the rows that genuinely owe money.
+    sortValue: (r) =>
+      r.cancelled || !isPaymentEligible(r) ? "" : r.hasFullPayment ? 1 : 0,
+    renderText: (r) =>
+      isPaymentEligible(r) ? (r.hasFullPayment ? "Paid in Full" : "Outstanding") : "",
     renderCell: () => null, // rendered via PaidCell in the table loop
   },
   // Dates
@@ -299,6 +326,7 @@ const COLUMN_DEFS: ColumnDef[] = [
     id: "arrival",
     header: "Arrival",
     multiline: true,
+    sortValue: (r) => dateTimeSortValue(r.arrival, r.arrivalTime),
     renderText: (r) => `${r.arrival} ${r.arrivalTime}`.trim(),
     renderCell: (r) => (
       <>
@@ -311,6 +339,7 @@ const COLUMN_DEFS: ColumnDef[] = [
     id: "departure",
     header: "Departure",
     multiline: true,
+    sortValue: (r) => dateTimeSortValue(r.departure, r.departureTime),
     renderText: (r) => `${r.departure} ${r.departureTime}`.trim(),
     renderCell: (r) => (
       <>
@@ -323,6 +352,7 @@ const COLUMN_DEFS: ColumnDef[] = [
   {
     id: "hasBurningManTicket",
     header: "BM Ticket",
+    sortValue: (r) => (r.hasBurningManTicket ? 1 : 0),
     renderText: (r) => (r.hasBurningManTicket ? "Yes" : "No"),
     renderCell: (r) => (
       <span
@@ -340,6 +370,7 @@ const COLUMN_DEFS: ColumnDef[] = [
   {
     id: "hasVehiclePass",
     header: "Vehicle Pass",
+    sortValue: (r) => (r.hasVehiclePass ? 1 : 0),
     renderText: (r) => (r.hasVehiclePass ? "Yes" : "No"),
     renderCell: (r) => (
       <span
@@ -407,6 +438,7 @@ export function MembersTable() {
   const [searchValue, setSearchValue] = useState("");
   const [showColumnsPanel, setShowColumnsPanel] = useState(false);
   const [visibleColumnIds, setVisibleColumnIds] = useState<SignupColumnId[]>(DEFAULT_VISIBLE_COLUMN_IDS);
+  const [sortState, setSortState] = useState<SignupSort | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [cancellingRowId, setCancellingRowId] = useState<string | null>(null);
   const [toast, setToast] = useState<UndoToast | null>(null);
@@ -580,6 +612,23 @@ export function MembersTable() {
     [visibleColumnIds]
   );
 
+  const sortedRows = useMemo(() => {
+    if (!sortState) return filteredRows;
+    // Resolve against the visible columns only, so a sort can never outlive the
+    // header that shows and clears it.
+    const col = visibleColumnDefs.find((c) => c.id === sortState.field);
+    if (!col) return filteredRows;
+    return sortRows(filteredRows, col, sortState.direction);
+  }, [filteredRows, sortState, visibleColumnDefs]);
+
+  const handleSort = (field: SignupColumnId) => {
+    setSortState((prev) => {
+      if (!prev || prev.field !== field) return { field, direction: "asc" };
+      if (prev.direction === "asc") return { field, direction: "desc" };
+      return null; // third click clears back to the default order
+    });
+  };
+
   const isInvitedTab = statusTab === "invited";
   const hasDateFilters = selectedArrivalDates.length > 0 || selectedDepartureDates.length > 0;
   const hasActiveFilters = hasDateFilters || !!searchValue.trim();
@@ -595,15 +644,18 @@ export function MembersTable() {
   };
 
   const toggleColumn = (id: SignupColumnId) => {
+    const isHiding = visibleColumnIds.includes(id);
+    if (isHiding && visibleColumnIds.length === 1) return; // never hide the last column
+
     setVisibleColumnIds((prev) =>
-      prev.includes(id)
-        ? prev.length > 1 ? prev.filter((c) => c !== id) : prev
-        : [...prev, id]
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
+    // Drop the sort along with the header that controls it.
+    if (isHiding && sortState?.field === id) setSortState(null);
   };
 
   const handleExport = () => {
-    if (!filteredRows.length) return;
+    if (!sortedRows.length) return;
     const cols = visibleColumnDefs.flatMap((c) => {
       if (c.id === "arrival") {
         return [
@@ -619,7 +671,7 @@ export function MembersTable() {
       }
       return [{ key: c.id, header: c.header, getValue: c.renderText }];
     });
-    const csv = buildSignupCsv(filteredRows, cols);
+    const csv = buildSignupCsv(sortedRows, cols);
     const today = new Date().toISOString().slice(0, 10);
     downloadCsv(`members-${statusTab}-${today}.csv`, csv);
   };
@@ -852,14 +904,32 @@ export function MembersTable() {
               <table className="min-w-full divide-y divide-white/10">
                 <thead>
                   <tr className="bg-white/5">
-                    {visibleColumnDefs.map((col) => (
-                      <th
-                        key={col.id}
-                        className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider whitespace-nowrap"
-                      >
-                        {col.header}
-                      </th>
-                    ))}
+                    {visibleColumnDefs.map((col) => {
+                      const active = sortState?.field === col.id ? sortState.direction : null;
+                      return (
+                        <th
+                          key={col.id}
+                          scope="col"
+                          aria-sort={
+                            active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"
+                          }
+                          className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider whitespace-nowrap"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSort(col.id)}
+                            title={`Sort by ${col.header}`}
+                            className={clsx(
+                              "group inline-flex items-center transition-colors",
+                              active ? "text-white" : "text-slate-400 hover:text-white"
+                            )}
+                          >
+                            {col.header}
+                            <SortIcon direction={active} />
+                          </button>
+                        </th>
+                      );
+                    })}
                     {isInvitedTab && (
                       <>
                         <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -876,7 +946,7 @@ export function MembersTable() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {filteredRows.map((row) => (
+                  {sortedRows.map((row) => (
                     <tr key={row._id} className="hover:bg-white/5 transition-colors">
                       {visibleColumnDefs.map((col) => (
                         <td
@@ -927,7 +997,7 @@ export function MembersTable() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
-            {filteredRows.map((row) => {
+            {sortedRows.map((row) => {
               const badge = row.cancelled
                 ? { label: "Cancelled", cls: "bg-red-500/15 text-red-300 ring-red-400/30" }
                 : getStatusBadge(row.status);

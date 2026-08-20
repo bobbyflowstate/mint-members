@@ -1,4 +1,10 @@
 import { SignupFilter, SignupSort } from "./types";
+import {
+  DATE_TIME_COMPANION_FIELDS,
+  SortKey,
+  compareSortValues,
+  dateTimeSortValue,
+} from "./sort";
 
 type RowValue = string | number | boolean | undefined | null;
 
@@ -79,20 +85,36 @@ export function matchesSignupFilters(
   return filters.every((filter) => matchesFilter(row, filter));
 }
 
+/**
+ * Derive the comparable key for a field. Date fields pair with their time-slot
+ * companion so the two rows order chronologically rather than by label text.
+ */
+function sortKeyFor(row: Record<string, unknown>, field: string): SortKey {
+  const companionField = DATE_TIME_COMPANION_FIELDS[field];
+  if (companionField) {
+    return dateTimeSortValue(
+      asString(getValue(row, field)),
+      asString(getValue(row, companionField))
+    );
+  }
+
+  const value = getValue(row, field);
+  return typeof value === "number" ? value : asString(value);
+}
+
+/**
+ * Order two signup rows. Shares its comparison semantics with the ops members
+ * table via ./sort, so the server's default ordering and an interactive column
+ * sort agree on what "ascending" means for a given field.
+ */
 export function compareSignups(
   sort: SignupSort,
   left: Record<string, unknown>,
   right: Record<string, unknown>
 ): number {
-  const leftValue = getValue(left, sort.field);
-  const rightValue = getValue(right, sort.field);
-
-  let comparison = 0;
-  if (typeof leftValue === "number" && typeof rightValue === "number") {
-    comparison = leftValue - rightValue;
-  } else {
-    comparison = asString(leftValue).localeCompare(asString(rightValue));
-  }
-
-  return sort.direction === "asc" ? comparison : comparison * -1;
+  return compareSortValues(
+    sortKeyFor(left, sort.field),
+    sortKeyFor(right, sort.field),
+    sort.direction
+  );
 }
