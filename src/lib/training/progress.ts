@@ -64,7 +64,6 @@ export function createDefaultGeneralProgress(): GeneralProgressState {
   return {
     step: 0,
     videos: [],
-    safety: [],
     bikes: [],
     law: [],
     bar: [],
@@ -87,7 +86,6 @@ export function parseGeneralProgressState(value?: string, completed = false): Ge
       !Number.isInteger(parsed.step) || parsed.step! < 0 || parsed.step! > GENERAL_FINAL_STEP ||
       !validKind ||
       !validNumbers(parsed.videos, content.videos.length - 1) ||
-      !validNumbers(parsed.safety, content.safetyItems.length - 1) ||
       !validNumbers(parsed.bikes, content.bikes.length - 1) ||
       !validNumbers(parsed.law, content.lawItems.length - 1) ||
       !validNumbers(parsed.bar, content.barRules.length - 1) ||
@@ -99,7 +97,6 @@ export function parseGeneralProgressState(value?: string, completed = false): Ge
       step: parsed.step!,
       kind: parsed.kind,
       videos: [...parsed.videos!],
-      safety: [...parsed.safety!],
       bikes: [...parsed.bikes!],
       law: [...parsed.law!],
       bar: [...parsed.bar!],
@@ -136,7 +133,6 @@ export function isGeneralStateComplete(state: Partial<GeneralProgressState>): bo
   );
   return state.step === GENERAL_FINAL_STEP && validKind &&
     covered(state.videos, content.videos.length) &&
-    covered(state.safety, content.safetyItems.length) &&
     badBikesFound &&
     covered(state.law, content.lawItems.length) &&
     covered(state.bar, content.barRules.length) &&

@@ -91,7 +91,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
     persist({ ...state, step: previous });
   }
 
-  function markSeen(key: "videos" | "safety" | "law" | "bar", index: number) {
+  function markSeen(key: "videos" | "law" | "bar", index: number) {
     const marked = withIndexMarked(state[key], index);
     if (marked !== state[key]) persist({ ...state, [key]: marked });
   }
@@ -151,7 +151,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
   }
 
   function seenList(
-    key: "safety" | "law" | "bar",
+    key: "law" | "bar",
     items: ReadonlyArray<{ icon: string; title: string }>,
     subtitle: (index: number) => string,
     open: (index: number) => void
@@ -248,37 +248,23 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
     const watched = state.videos.length;
     screen = <>
       <p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-300">Technical · 1 of 2</p>
-      <h2 className="mt-3 text-3xl font-bold text-white">Four things you&apos;ll be handed</h2>
-      <p className="mt-3 text-slate-400">Probably by someone who assumes you already know how. Watch the one we&apos;ve got, and tap the rest.</p>
+      <h2 className="mt-3 text-3xl font-bold text-white">Two videos, before you go</h2>
+      <p className="mt-3 text-slate-400">You&apos;ll be handed both of these, probably by someone who assumes you already know how. A couple of minutes each.</p>
       <div className="mt-6 space-y-3">
         {content.videos.map((video, index) => {
           const seen = state.videos.includes(index);
-          if (video.youtubeId) {
-            return <div key={video.title} className={`rounded-2xl border p-2.5 pb-3.5 ${seen ? "border-emerald-400/40 bg-emerald-400/5" : "border-white/10 bg-white/5"}`}>
-              {playing.includes(index)
-                ? <div className="aspect-video overflow-hidden rounded-xl"><iframe className="h-full w-full" src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1`} title={video.title} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /></div>
-                : <button aria-label={`Play: ${video.title}`} onClick={() => { setPlaying((current) => [...current, index]); markSeen("videos", index); }} className="grid aspect-video w-full place-items-center rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg)` }}>
-                    <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-white/90 bg-black/70 pl-1 text-lg text-white">▶</span>
-                  </button>}
-              <strong className="ml-1 mt-3 block text-white">{video.title}</strong>
-              <span className="ml-1 text-xs text-slate-500">{seen ? "✓ watched · " : ""}{video.credit}</span>
-            </div>;
-          }
-          return <button key={video.title} onClick={() => {
-            markSeen("videos", index);
-            setSheet({
-              badge: { label: "We haven’t filmed this yet", tone: "unsourced" },
-              title: video.title,
-              body: <><p className="mt-4 leading-7 text-slate-300">{video.description}</p><h4 className="mt-5 text-xs font-bold uppercase tracking-widest text-orange-300">In the meantime</h4><p className="mt-2 text-sm leading-6 text-slate-300">{video.interim!.replace(/^ask /, "Ask ")}</p></>,
-            });
-          }} className={`w-full rounded-2xl border-[1.5px] border-dashed p-5 text-center ${seen ? "border-emerald-400/50 bg-emerald-400/5" : "border-orange-400/60 bg-white/5"}`}>
-            <span className={`mx-auto grid h-11 w-11 place-items-center rounded-full text-base ${seen ? "bg-emerald-400/15 text-emerald-300" : "bg-orange-400/15 text-orange-300"}`}>{seen ? "✓" : "▶"}</span>
-            <strong className="mt-3 block text-white">{video.title}</strong>
-            <span className="text-xs text-slate-500">{seen ? "✓ read · " : ""}we haven&apos;t filmed this yet · {video.interim}</span>
-          </button>;
+          return <div key={video.title} className={`rounded-2xl border p-2.5 pb-3.5 ${seen ? "border-emerald-400/40 bg-emerald-400/5" : "border-white/10 bg-white/5"}`}>
+            {playing.includes(index)
+              ? <div className="aspect-video overflow-hidden rounded-xl"><iframe className="h-full w-full" src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1`} title={video.title} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /></div>
+              : <button aria-label={`Play: ${video.title}`} onClick={() => { setPlaying((current) => [...current, index]); markSeen("videos", index); }} className="grid aspect-video w-full place-items-center rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg)` }}>
+                  <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-white/90 bg-black/70 pl-1 text-lg text-white">▶</span>
+                </button>}
+            <strong className="ml-1 mt-3 block text-white">{video.title}{video.ours && <span className="ml-2 rounded-full bg-amber-400/10 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-widest text-amber-300">Ours</span>}</strong>
+            <span className="ml-1 text-xs text-slate-500">{seen ? "✓ watched · " : ""}{video.credit}</span>
+          </div>;
         })}
       </div>
-      <p className="mt-4 text-sm leading-6 text-slate-500">Three of these we still owe you. We&apos;d rather say that than hand you written instructions for load-bearing hardware nobody has checked — so until they&apos;re filmed, find the person named and ask. Which is how most of this camp gets learned anyway.</p>
+      <p className="mt-4 text-sm leading-6 text-slate-500">Ball bungees and conduit you&apos;ll learn on build, from whoever&apos;s next to you. That&apos;s how most of this camp gets learned — ask early and ask often, nobody has ever thought less of someone for it.</p>
     </>;
     action = <button className="training-cta" disabled={watched !== content.videos.length} onClick={() => goTo(4)}>{watched === content.videos.length ? "Continue" : `${watched} of ${content.videos.length}`}</button>;
   } else if (state.step === 4) {
@@ -293,8 +279,8 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
     screen = <Hero>
       <p className="text-xs font-bold uppercase tracking-[.18em] text-red-300">Safety</p>
       <h2 className="mt-4 text-4xl font-semibold leading-tight text-white">This is the section where getting it wrong <span className="text-red-300">hurts somebody.</span></h2>
-      <p className="mt-5 leading-7 text-slate-300">Five things. We&apos;ve written one of them down properly. The other four we&apos;ve only ever said out loud, and we&apos;re not going to dress that up — if you don&apos;t know how to do one of them, ask before you do it.</p>
-      <p className="mt-5 text-sm text-slate-500">We owe you better than this section currently is. We&apos;ll have it written before next year.</p>
+      <p className="mt-5 leading-7 text-slate-300">Three rules. One is imposed on us from outside and the camp can be cited for it. Two are ours. None of them take long.</p>
+      <p className="mt-5 text-sm text-slate-500">And if you don&apos;t know how to do something on a build, ask before you do it. Nobody here has ever thought less of someone for asking.</p>
     </Hero>;
     action = <button className="training-cta" onClick={() => goTo(6)}>Understood</button>;
   } else if (state.step === 6) {
@@ -321,34 +307,28 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
         })}
       </div>
       {found === badCount
-        ? <div className="mt-4 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-4"><h3 className="text-lg font-bold text-white">All three.</h3><p className="mt-2 text-sm leading-6 text-slate-300">The emergency lane runs from our party entrance out to the road, and it stays clear. Bikes park <strong className="text-white">between the tent and the road, at the racks</strong> — never in the lane, never on the street.</p><p className="mt-3 border-t border-white/10 pt-3 text-xs leading-5 text-slate-500">This is our responsibility as a camp, which makes it yours as a person. If you see a bike in the lane, move it or tell whoever left it. Nobody else is coming to do it.</p></div>
+        ? <div className="mt-4 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-4"><h3 className="text-lg font-bold text-white">All three.</h3><p className="mt-2 text-sm leading-6 text-slate-300">The emergency lane runs from our party entrance out to the road, and it stays clear. Bikes park <strong className="text-white">between the tent and the road, at the racks</strong> — never in the lane, never on the street.</p><p className="mt-3 border-t border-white/10 pt-3 text-xs leading-5 text-slate-500">This one isn&apos;t ours. BRC and BLM require the lane stays clear, and it&apos;s the camp that gets cited — not the person who parked. Which makes it everyone&apos;s job: if you see a bike in the lane, move it or tell whoever left it.</p></div>
         : <p className="mt-3 text-sm text-slate-500">Tap a bike to check it.</p>}
-      <p className="mt-4 text-sm leading-6 text-slate-500">Park between the tent and the road, at the racks. Tell anyone you see getting it wrong — we would rather you did that than assume somebody else will.</p>
+      <span className="mt-5 inline-block rounded-full bg-sky-400/10 px-3 py-1 text-xs font-bold text-sky-300">BRC / BLM requirement</span>
+      <p className="mt-3 text-sm leading-6 text-slate-500">Park between the tent and the road, at the racks. Tell anyone you see getting it wrong — we would rather you did that than assume somebody else will.</p>
     </>;
     action = <button className="training-cta" disabled={found !== badCount} onClick={() => goTo(7)}>{found === badCount ? "Next" : `Find all three (${found}/${badCount})`}</button>;
   } else if (state.step === 7) {
+    const rules = [
+      ["Storing fuel", <>Fuel is stored <strong className="text-white">in shade</strong>, in the <strong className="text-white">designated fuel storage containment area</strong>. Not next to your tent, not in a hot vehicle, not wherever it was easiest to put down.</>, <>Any question about fuel — any of them — goes to <strong className="text-slate-300">Kevin Rinderle, Fuel Captain</strong>.</>],
+      ["Topping stakes", <>Top every stake with a <strong className="text-white">tennis ball</strong>. Never leave one exposed.</>, <>An untopped stake at shin height in the dark is how people get hurt, and it&apos;s rarely the person who drove it.</>],
+    ] as const;
     screen = <>
-      <h2 className="text-3xl font-bold text-white">The other four</h2>
-      <p className="mt-3 text-slate-400">Four hazards we take seriously and haven&apos;t written up properly yet. Tap each one — we&apos;ll tell you exactly where we&apos;ve got to.</p>
-      <div className="mt-6">
-        {seenList("safety", content.safetyItems, () => "We’re still writing this one", (index) => {
-          const item = content.safetyItems[index];
-          setSheet({
-            badge: { label: "We’re still writing this", tone: "unsourced" },
-            title: item.title,
-            body: <>
-              <h4 className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">Everything we&apos;ve written down so far</h4>
-              <p className="mt-2 italic leading-6 text-white">“{item.written}”</p>
-              <h4 className="mt-5 text-xs font-bold uppercase tracking-widest text-orange-300">What we still owe you</h4>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{item.owed}</p>
-              <p className="mt-3 text-sm font-semibold leading-6 text-orange-300">{item.interim}</p>
-            </>,
-          });
-        })}
-      </div>
-      <div className="mt-6 border-l-2 border-red-400 pl-4 text-sm leading-6 text-slate-400">We&apos;re not quizzing you on this section. We&apos;d be testing you on things we haven&apos;t taught you properly, and a multiple-choice question about carbon monoxide isn&apos;t worth anything to either of us. Ask a Captain instead.</div>
+      <h2 className="text-3xl font-bold text-white">Two more rules</h2>
+      <p className="mt-3 text-slate-400">Both short, both ours, both easy to get wrong if nobody tells you.</p>
+      <div className="mt-6 space-y-3">{rules.map(([title, body, note]) => <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <span className="inline-block rounded-full bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-300">DeMentha rule</span>
+        <p className="mt-2.5 text-lg font-bold text-white">{title}</p>
+        <p className="mt-2.5 leading-7 text-slate-300">{body}</p>
+        <p className="mt-3 text-sm leading-6 text-slate-500">{note}</p>
+      </div>)}</div>
     </>;
-    action = <button className="training-cta" disabled={state.safety.length !== content.safetyItems.length} onClick={() => goTo(8)}>{state.safety.length === content.safetyItems.length ? "Continue" : `${state.safety.length} of ${content.safetyItems.length}`}</button>;
+    action = <button className="training-cta" onClick={() => goTo(8)}>Next</button>;
   } else if (state.step === 8) {
     screen = <Hero>
       <p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-300">Camp culture</p>
@@ -503,17 +483,16 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
     action = <button className="training-cta" disabled={state.law.length !== content.lawItems.length} onClick={() => goTo(20)}>{state.law.length === content.lawItems.length ? "Continue" : `${state.law.length} of ${content.lawItems.length}`}</button>;
   } else if (state.step === 20) {
     screen = <>
-      <p className="text-xs font-bold uppercase tracking-[.18em] text-orange-300">We haven&apos;t figured this one out yet</p>
+      <p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-300">Weather</p>
       <h2 className="mt-3 text-3xl font-bold text-white">It might rain</h2>
-      <p className="mt-3 leading-7 text-slate-300">That&apos;s honestly all we&apos;ve written down about it so far. Three words and an exclamation mark.</p>
-      <div className="mt-4 border-l-2 border-orange-400 pl-4 text-lg text-white">“Possibility of RAIN!”</div>
-      <p className="mt-4 leading-7 text-slate-300">Wet playa stops vehicles, stops bicycles, and turns the surface into something you cannot walk out of. 2023 is recent enough that this camp has opinions — they just aren&apos;t written anywhere yet.</p>
+      <p className="mt-3 leading-7 text-slate-300">We don&apos;t have a policy about shutting parties down, or about much else. If it rains we&apos;ll work it out on the day, like everyone else out there.</p>
+      <p className="mt-4 leading-7 text-slate-300">What we do ask is that you turn up equipped for it.</p>
       <div className="mt-5"><Tips items={[
-        { icon: "❓", text: <><strong>What happens to the bar?</strong> We haven&apos;t said.</> },
-        { icon: "❓", text: <><strong>Who calls it when we shelter in place?</strong> We haven&apos;t said.</> },
-        { icon: "❓", text: <><strong>What changes about tear-down?</strong> We haven&apos;t said.</> },
+        { icon: "🧥", text: <><strong>A waterproof outer layer.</strong> Something that actually sheds water, not a hoodie.</> },
+        { icon: "☂", text: <><strong>A poncho.</strong> Packs down to nothing. Saves the week.</> },
+        { icon: "👟", text: <><strong>Rain boots, or boot covers.</strong> Wet playa becomes inches of clay that sticks to everything and doesn&apos;t come off.</> },
       ]} /></div>
-      <p className="mt-4 text-sm leading-6 text-slate-500">We&apos;ll have answers before gates open. If you&apos;ve been through a wet year and have opinions worth having, tell Ops — we&apos;d rather write this with you than at you.</p>
+      <p className="mt-5 text-sm leading-6 text-slate-500">None of it takes much room in the truck. All of it is miserable to be without.</p>
     </>;
     action = <button className="training-cta" onClick={() => goTo(21)}>Next</button>;
   } else if (state.step === 21) {
@@ -524,7 +503,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
       <div className="mt-5"><Tips items={[
         { icon: "🕐", text: <><strong>Shift 1 · 12:30–3:30 PM.</strong> Includes setup.</> },
         { icon: "🕒", text: <><strong>Shift 2 · 3:30–6:30 PM.</strong> Includes cleaning.</> },
-        { icon: "⏰", text: <><strong>Arrive 15 minutes early.</strong> Your Bar Manager briefs you before every shift — procedures, health requirements, and the mojito.</> },
+        { icon: "⏰", text: <><strong>Arrive 15 minutes early.</strong> Your Bar Manager briefs you before every shift — procedures, health requirements, and the mojito. Bar Captain is <strong>Kevin Whalen</strong>.</> },
       ]} /></div>
       <div className="mt-6 border-l-2 border-amber-400 pl-4 leading-7 text-slate-300">“A bar shift is an honour, not a chore. Show up ready to shine.”</div>
       <p className="mt-4 text-sm leading-6 text-slate-500">Everyone gets this section, bar shift or not. We want every person in camp to know the next screen — that&apos;s how somebody speaks up when it matters.</p>
@@ -617,8 +596,8 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
         <p className="mt-5 text-sm text-slate-400">— {memberName}, {new Date().toLocaleDateString()}</p>
       </div>
       <div className="mt-5 rounded-2xl border-[1.5px] border-dashed border-orange-400/60 p-4">
-        <h4 className="text-xs font-black uppercase tracking-widest text-orange-300">What you are not signing</h4>
-        <p className="mt-2 text-sm leading-6 text-slate-400">Safety, Law Enforcement and Weather are here as information. We haven&apos;t finished writing them, so we&apos;re not asking you to attest to them and we&apos;re not recording that we trained you on them. When we&apos;ve done that work properly, we&apos;ll ask you again.</p>
+        <h4 className="text-xs font-black uppercase tracking-widest text-orange-300">The one thing you are not signing</h4>
+        <p className="mt-2 text-sm leading-6 text-slate-400">Law Enforcement. That section is reference material published by other people, it isn&apos;t on your field card, and we&apos;re not recording that we trained you on it. Everything else in here is ours, and you&apos;re signing for it.</p>
       </div>
       <p className="mt-4 text-sm text-slate-500">Press and hold the button to sign.</p>
       {completionStatus === "error" && <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-200">We couldn&apos;t save your completion. Check your connection and try again.</p>}
@@ -638,11 +617,12 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
         <p className="mt-6 text-2xl font-black">{memberName}</p>
         <p className="font-semibold opacity-75">{kindLabel}</p>
         <div className="mt-6 space-y-1.5 text-xs font-bold opacity-80">
-          {([["Shifts, on playa", "20–25 hrs"], ["Tear-down", "4 Sat · 8 Sun"], ["Bar", "1–6 PM · Mon–Sat"], ["Serving a minor", "$1,500–3,000"], ["Places to charge", "0"]] as const).map(([label, value]) => <div key={label} className="flex justify-between border-t border-emerald-950/15 pt-1.5"><span>{label}</span><span>{value}</span></div>)}
+          {([["Shifts, on playa", "20–25 hrs"], ["Tear-down", "4 Sat · 8 Sun"], ["Bar", "1–6 PM · Mon–Sat"], ["Serving a minor", "$1,500–3,000"], ["Places to charge", "0"], ["Fuel", "Shade + containment"], ["Stakes", "Tennis balls"]] as const).map(([label, value]) => <div key={label} className="flex justify-between border-t border-emerald-950/15 pt-1.5"><span>{label}</span><span>{value}</span></div>)}
         </div>
-        <div className="mt-6 flex justify-between text-xs font-bold opacity-70"><span>3:00 &amp; ARARA</span><span>{completedAt ? new Date(completedAt).toLocaleDateString() : "Completed today"}</span></div>
+        <div className="mt-6 flex justify-between text-xs font-bold opacity-70"><span>3:00 &amp; ARARA · PC0047</span><span>{completedAt ? new Date(completedAt).toLocaleDateString() : "Completed today"}</span></div>
       </div>
       <div className="mt-5"><Tips items={[
+        { icon: "🖨", text: <><strong>Print your card before you leave.</strong> Grayscale-safe and laminate-ready. There&apos;s no charging out there — you read that already.</> },
         { icon: "🔒", text: <><strong>Law enforcement isn&apos;t on your card.</strong> On purpose. That section stays inside camp.</> },
         { icon: "♻", text: <><strong>LNT is a separate module.</strong> Also required. Different content, same shape.</> },
         { icon: "✅", text: <><strong>Completion saved.</strong> This exact module version is on file.</> },

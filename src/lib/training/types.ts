@@ -50,17 +50,9 @@ export interface LntTrainingModule extends TrainingModuleBase {
 export interface TrainingVideo {
   title: string;
   description: string;
-  youtubeId?: string;
-  credit?: string;
-  interim?: string;
-}
-
-export interface SafetyItem {
-  icon: string;
-  title: string;
-  written: string;
-  owed: string;
-  interim: string;
+  youtubeId: string;
+  credit: string;
+  ours: boolean;
 }
 
 export interface BikeSpot {
@@ -106,7 +98,6 @@ export interface GeneralTrainingModule extends TrainingModuleBase {
   slug: "general";
   content: {
     videos: readonly TrainingVideo[];
-    safetyItems: readonly SafetyItem[];
     bikes: readonly BikeSpot[];
     lawItems: readonly LawItem[];
     barRules: readonly BarRule[];
@@ -138,7 +129,6 @@ export interface GeneralProgressState {
   step: number;
   kind?: GeneralKind;
   videos: number[];
-  safety: number[];
   bikes: number[];
   law: number[];
   bar: number[];

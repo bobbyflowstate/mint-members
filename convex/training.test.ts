@@ -32,8 +32,7 @@ describe("training progress", () => {
   const completeGeneralState = JSON.stringify({
     step: 30,
     kind: "return",
-    videos: [0, 1, 2, 3],
-    safety: [0, 1, 2, 3],
+    videos: [0, 1],
     bikes: [3, 4, 5],
     law: [0, 1, 2, 3],
     bar: [0, 1, 2, 3],

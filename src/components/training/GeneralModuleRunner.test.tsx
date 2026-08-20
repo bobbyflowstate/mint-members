@@ -11,8 +11,7 @@ const signableState: GeneralProgressState = {
   ...baseState,
   step: 29,
   kind: "first",
-  videos: [0, 1, 2, 3],
-  safety: [0, 1, 2, 3],
+  videos: [0, 1],
   bikes: [3, 4, 5],
   law: [0, 1, 2, 3],
   bar: [0, 1, 2, 3],
@@ -56,16 +55,14 @@ describe("GeneralModuleRunner", () => {
     expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
   });
 
-  it("requires every video slot to be watched or read", async () => {
+  it("requires both videos to be played", async () => {
     const user = userEvent.setup();
     renderRunner({ ...baseState, step: 3, kind: "first" });
 
-    expect(screen.getByRole("button", { name: "0 of 4" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "0 of 2" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Play: Ratchet strap" }));
-    for (const title of ["Ball bungees", "Joining and securing conduit", "Making a mojito"]) {
-      await user.click(screen.getByRole("button", { name: new RegExp(title) }));
-      await user.click(screen.getByRole("button", { name: "Close" }));
-    }
+    expect(screen.getByRole("button", { name: "1 of 2" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Play: Making a mojito" }));
     expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
   });
 

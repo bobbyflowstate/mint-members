@@ -2,64 +2,27 @@ import type { GeneralTrainingModule } from "./types";
 
 export const generalModule: GeneralTrainingModule = {
   slug: "general",
-  version: "2026.1",
+  version: "2026.2",
   title: "How to be a Dementhian",
   description: "Everything that isn't Leave No Trace: the gear, the safety, the culture, the law, and the bar.",
   estimatedMinutes: 28,
   required: true,
-  completionPolicy: { acceptedVersions: ["2026.1"] },
+  completionPolicy: { acceptedVersions: ["2026.1", "2026.2"] },
   content: {
     videos: [
       {
         title: "Ratchet strap",
         youtubeId: "ErLlvH8TdnY",
-        credit: "Someone else’s video, and a good one. Watch it before you touch a load.",
-        description: "Threading, tensioning, and releasing without losing a finger. Every shade structure and every truck load depends on this one.",
-      },
-      {
-        title: "Ball bungees",
-        interim: "ask Nate",
-        description: "Where they belong, where they fail, and why they are not a substitute for a strap.",
-      },
-      {
-        title: "Joining and securing conduit",
-        interim: "ask Nate",
-        description: "Our camp is largely conduit. Joints that come apart in wind are how we lose a structure.",
+        ours: false,
+        credit: "Not ours — a 3D animation of how the mechanism actually works.",
+        description: "Every shade structure and every truck load depends on this one.",
       },
       {
         title: "Making a mojito",
-        interim: "ask Cuyler",
-        description: "The written procedure is in the Bar section of this module. The video shows the muddle.",
-      },
-    ],
-    safetyItems: [
-      {
-        icon: "🔌",
-        title: "Running extension cords",
-        written: "Running extension cords",
-        owed: "That line is all we’ve ever written down. Nothing on gauge, nothing on running cords under walkways, nothing on daisy-chaining, nothing on what to do when a cord gets wet — and all four of those come up every year.",
-        interim: "Ask Nate or Rod before you run one.",
-      },
-      {
-        icon: "⛺",
-        title: "Topping stakes",
-        written: "Topping stakes",
-        owed: "That line is all we’ve ever written down, and it teaches you nothing if you’ve never topped a stake. There is a real reason for it — an untopped stake at shin height in the dark is how people get hurt — we just haven’t written down what we want done.",
-        interim: "Ask Nate, or anyone who has built with us before.",
-      },
-      {
-        icon: "☠",
-        title: "CO and CO₂ in and around tents",
-        written: "CO & CO₂ emissions in and around tents (don’t die)",
-        owed: "That line — parenthetical included — is all we’ve ever written down, and it’s the one on this list most likely to actually kill someone. We haven’t told you which appliances produce it, where a monitor goes, or what to do about a generator sitting near a shiftpod. We know. We’re fixing it.",
-        interim: "Until we do: never run anything that burns fuel inside a closed shelter, and ask Ops if you are unsure.",
-      },
-      {
-        icon: "⛽",
-        title: "Storing fuel",
-        written: "Storing fuel",
-        owed: "That line is all we’ve ever written down. Nothing on containers, nothing on distance from shade structures or ignition sources, nothing on who owns the camp’s fuel.",
-        interim: "Ask Nate before you store or move any of it.",
+        youtubeId: "1Uxxde772t8",
+        ours: true,
+        credit: "Cuyler Cameron — Dementha Mojito Training.",
+        description: "The nine written steps are in the Bar section. This is the muddle, which writing can’t teach.",
       },
     ],
     bikes: [
@@ -117,21 +80,24 @@ export const generalModule: GeneralTrainingModule = {
     barRules: [
       {
         icon: "🧤",
-        title: "Gloves on. Always.",
+        title: "Wash, then glove. Always.",
         source: "Health code",
         external: true,
         paragraphs: [
-          "Gloves worn at all times. Hands washed before your shift and after any break, every time.",
-          "Health requirements change year to year, so your Bar Manager briefs you on the current ones before you start. Gloves and clean hands are the constant.",
+          "In this order, every shift:",
+          "1. Wash your hands before your shift starts.",
+          "2. Then put gloves on, and keep them on at all times.",
+          "Wash again after any break, and re-glove. The order matters — gloves over unwashed hands are just a container for the problem.",
         ],
       },
       {
         icon: "🔎",
-        title: "Health inspection? You know nothing.",
-        source: "Camp procedure",
+        title: "Inspector? “Let me go get the bar manager!”",
+        source: "Say exactly this",
         external: false,
         paragraphs: [
-          "If a health inspector approaches you, the answer is “let me find my manager.” Not a joke and not evasion — you genuinely are not the person who can answer, and guessing on the camp’s behalf is how a small question becomes a large one.",
+          "If an inspector approaches you, that sentence is the entire answer. Cheerfully, immediately, and then go and get them.",
+          "It isn’t evasion and it isn’t a joke — you genuinely aren’t the person who can speak for the camp here, and a helpful guess is how a small question becomes a large one.",
         ],
       },
       {
@@ -228,11 +194,11 @@ export const generalModule: GeneralTrainingModule = {
         options: [
           "Answer as best you can — you’ve been briefed",
           "Say the bar is closed",
-          "“Let me find my manager.”",
+          "“Let me go get the bar manager!”",
         ],
         answer: 2,
         critical: true,
-        explanation: "You don’t know anything. “Let me find my manager” is the whole answer. You’re not the person who speaks for us here, and a helpful guess is how a small question becomes a large one.",
+        explanation: "“Let me go get the bar manager!” is the entire answer. You’re not the person who speaks for us here, and a helpful guess is how a small question becomes a large one.",
         source: "This isn’t evasion. It’s the correct answer.",
       },
       {

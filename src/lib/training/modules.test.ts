@@ -59,21 +59,20 @@ describe("training module registry", () => {
 
     expect(trainingModule).toMatchObject({
       slug: "general",
-      version: "2026.1",
+      version: "2026.2",
       title: "How to be a Dementhian",
       required: true,
       estimatedMinutes: 28,
     });
-    expect(trainingModule?.completionPolicy.acceptedVersions).toContain("2026.1");
+    expect(trainingModule?.completionPolicy.acceptedVersions).toEqual(["2026.1", "2026.2"]);
   });
 
   it("contains the complete General learning material", () => {
     const { content } = getGeneralModule();
 
-    expect(content.videos).toHaveLength(4);
-    expect(content.videos.filter((video) => video.youtubeId)).toHaveLength(1);
-    expect(content.videos.every((video) => video.youtubeId || video.interim)).toBe(true);
-    expect(content.safetyItems).toHaveLength(4);
+    expect(content.videos).toHaveLength(2);
+    expect(content.videos.every((video) => video.youtubeId && video.credit)).toBe(true);
+    expect(content.videos.filter((video) => video.ours)).toHaveLength(1);
     expect(content.bikes.filter((bike) => bike.bad)).toHaveLength(3);
     expect(content.lawItems).toHaveLength(4);
     expect(content.barRules).toHaveLength(4);
@@ -157,8 +156,7 @@ describe("general module progress state", () => {
   const completeState = {
     step: 30,
     kind: "first" as const,
-    videos: [0, 1, 2, 3],
-    safety: [0, 1, 2, 3],
+    videos: [0, 1],
     bikes: [3, 4, 5],
     law: [0, 1, 2, 3],
     bar: [0, 1, 2, 3],
@@ -212,7 +210,7 @@ describe("general module progress state", () => {
   it("requires every bad bike, video, sheet, and mojito step", () => {
     expect(isGeneralStateComplete({ ...completeState, bikes: [3, 4] })).toBe(false);
     expect(isGeneralStateComplete({ ...completeState, bikes: [0, 1, 2] })).toBe(false);
-    expect(isGeneralStateComplete({ ...completeState, videos: [0, 1, 2] })).toBe(false);
+    expect(isGeneralStateComplete({ ...completeState, videos: [0] })).toBe(false);
     expect(isGeneralStateComplete({ ...completeState, law: [0, 1, 2] })).toBe(false);
     expect(isGeneralStateComplete({ ...completeState, mojito: [0, 1, 2, 3, 4, 5, 6, 7] })).toBe(false);
     expect(isGeneralStateComplete({ ...completeState, step: 29 })).toBe(false);
