@@ -7,7 +7,7 @@ export const generalModule: GeneralTrainingModule = {
   description: "Everything that isn't Leave No Trace: the gear, the safety, the culture, the law, and the bar.",
   estimatedMinutes: 28,
   required: true,
-  completionPolicy: { acceptedVersions: ["2026.1", "2026.2"] },
+  completionPolicy: { acceptedVersions: ["2026.2"] },
   content: {
     videos: [
       {

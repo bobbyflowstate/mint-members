@@ -14,9 +14,14 @@ describe("moduleStatus", () => {
     expect(moduleStatus(lnt, [{ moduleSlug: "lnt", moduleVersion: "2026.2" }])).toBe("in_progress");
   });
 
-  it("reports complete for any accepted version", () => {
-    expect(moduleStatus(general, [{ moduleSlug: "general", moduleVersion: "2026.1", completedAt: 1 }]))
+  it("reports complete for the current version", () => {
+    expect(moduleStatus(general, [{ moduleSlug: "general", moduleVersion: "2026.2", completedAt: 1 }]))
       .toBe("complete");
+  });
+
+  it("no longer counts a superseded General 2026.1 completion", () => {
+    expect(moduleStatus(general, [{ moduleSlug: "general", moduleVersion: "2026.1", completedAt: 1 }]))
+      .toBe("not_started");
   });
 
   it("ignores records for other modules and unaccepted versions", () => {
@@ -29,7 +34,7 @@ describe("moduleStatus", () => {
   it("prefers a completion over an in-progress record for the same module", () => {
     expect(moduleStatus(general, [
       { moduleSlug: "general", moduleVersion: "2026.2" },
-      { moduleSlug: "general", moduleVersion: "2026.1", completedAt: 1 },
+      { moduleSlug: "general", moduleVersion: "2026.2", completedAt: 1 },
     ])).toBe("complete");
   });
 });

@@ -64,7 +64,7 @@ describe("training module registry", () => {
       required: true,
       estimatedMinutes: 28,
     });
-    expect(trainingModule?.completionPolicy.acceptedVersions).toEqual(["2026.1", "2026.2"]);
+    expect(trainingModule?.completionPolicy.acceptedVersions).toEqual(["2026.2"]);
   });
 
   it("contains the complete General learning material", () => {

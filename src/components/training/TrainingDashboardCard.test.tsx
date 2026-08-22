@@ -40,10 +40,10 @@ describe("TrainingDashboardCard", () => {
     expect(screen.getByText("In progress")).toBeInTheDocument();
   });
 
-  it("recognizes completion of accepted older versions of every required module", () => {
+  it("recognizes completion of every required module", () => {
     useQuery.mockReturnValue([
       { moduleSlug: "lnt", moduleVersion: "2026.1", completedAt: 100 },
-      { moduleSlug: "general", moduleVersion: "2026.1", completedAt: 100 },
+      { moduleSlug: "general", moduleVersion: "2026.2", completedAt: 100 },
     ]);
     render(<TrainingDashboardCard />);
 

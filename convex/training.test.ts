@@ -43,16 +43,16 @@ describe("training progress", () => {
 
   it("validates the general module with its own completion rules", () => {
     expect(() => assertCompletableProgress({
-      moduleSlug: "general", moduleVersion: "2026.1", state: completeGeneralState,
+      moduleSlug: "general", moduleVersion: "2026.2", state: completeGeneralState,
     })).not.toThrow();
     expect(() => assertCompletableProgress({
       moduleSlug: "general", moduleVersion: "2025.1", state: completeGeneralState,
     })).toThrow("Unknown training module version");
     expect(() => assertCompletableProgress({
-      moduleSlug: "general", moduleVersion: "2026.1", state: JSON.stringify({ step: 30 }),
+      moduleSlug: "general", moduleVersion: "2026.2", state: JSON.stringify({ step: 30 }),
     })).toThrow("Training module is not complete");
     expect(() => assertCompletableProgress({
-      moduleSlug: "general", moduleVersion: "2026.1", state: completeState,
+      moduleSlug: "general", moduleVersion: "2026.2", state: completeState,
     })).toThrow("Training module is not complete");
   });
 
@@ -87,7 +87,7 @@ describe("training progress", () => {
       moduleSlug: "lnt", moduleVersion: "2026.2", state: "null",
     })).toThrow("Training module is not complete");
     expect(() => assertCompletableProgress({
-      moduleSlug: "general", moduleVersion: "2026.1", state: "null",
+      moduleSlug: "general", moduleVersion: "2026.2", state: "null",
     })).toThrow("Training module is not complete");
   });
 
