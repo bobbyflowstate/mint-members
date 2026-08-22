@@ -7,6 +7,7 @@ import { api } from "../../../convex/_generated/api";
 import { AuthModal, UserButton } from "@/components/auth";
 import { Spinner } from "@/components/Spinner";
 import { trainingModules } from "@/lib/training/modules";
+import { STATUS_LABELS, moduleStatus } from "@/lib/training/status";
 
 function TrainingCatalog() {
   const records = useQuery(api.training.listMine);
@@ -14,14 +15,9 @@ function TrainingCatalog() {
 
   return <div className="space-y-4">
     {trainingModules.map((module) => {
-      const versions = records.filter((record) => record.moduleSlug === module.slug);
-      const complete = versions.some((record) =>
-        record.completedAt && module.completionPolicy.acceptedVersions.includes(record.moduleVersion)
-      );
-      const inProgress = versions.some((record) =>
-        !record.completedAt && module.completionPolicy.acceptedVersions.includes(record.moduleVersion)
-      );
-      const status = complete ? "Complete" : inProgress ? "In progress" : "Not started";
+      const status = moduleStatus(module, records);
+      const complete = status === "complete";
+      const inProgress = status === "in_progress";
       return <Link key={module.slug} href={`/training/${module.slug}`} className="group block rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-emerald-400/30 hover:bg-white/[.07]">
         <div className="flex items-start justify-between gap-5">
           <div>
@@ -33,7 +29,7 @@ function TrainingCatalog() {
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">{module.description}</p>
             <p className="mt-4 text-xs text-slate-500">Version {module.version}</p>
           </div>
-          <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${complete ? "bg-emerald-400/10 text-emerald-300" : inProgress ? "bg-sky-400/10 text-sky-300" : "bg-white/5 text-slate-400"}`}>{status}</span>
+          <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${complete ? "bg-emerald-400/10 text-emerald-300" : inProgress ? "bg-sky-400/10 text-sky-300" : "bg-white/5 text-slate-400"}`}>{STATUS_LABELS[status]}</span>
         </div>
       </Link>;
     })}

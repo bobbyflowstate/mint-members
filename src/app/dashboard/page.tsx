@@ -13,6 +13,7 @@ import { computeProfileCompleteness } from "@/lib/attendeeProfile/completeness";
 import { SleepingType, TravelMode } from "@/lib/attendeeProfile/options";
 import { formatDateWithWeekday } from "@/lib/dates/formatDateWithWeekday";
 import { AppConfig, LandingContent, getLandingContent } from "@/config/content";
+import { TrainingDashboardCard } from "@/components/training/TrainingDashboardCard";
 
 type RosterData = NonNullable<
   FunctionReturnType<typeof api.attendeeProfiles.listRoster>
@@ -287,6 +288,8 @@ function Roster({ content }: { content: LandingContent }) {
   return (
     <div className="space-y-8">
       <ProfileNudge content={content} />
+
+      <TrainingDashboardCard />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatTile
