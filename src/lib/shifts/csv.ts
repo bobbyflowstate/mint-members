@@ -24,6 +24,24 @@ function normalizeDate(value: string): string | null {
 export interface ShiftCsvResult {
   rows: ShiftRow[];
   warnings: string[];
+  notices: string[];
+}
+
+/**
+ * SignUp.com exports each comment left on a slot as its own row: same date, task
+ * and times as the slot, but nobody attached and the commenter's email in place
+ * of a name. Those rows are not spots, so counting them inflates the schedule
+ * total and shows phantom open shifts. A genuinely unassigned spot has no name
+ * *and* no comment or email, so it is kept.
+ */
+function isCommentOnlyRow(raw: Record<string, string>): boolean {
+  const hasAssignee = Boolean(
+    (raw["First Name"] ?? "").trim() ||
+      (raw["Last Name"] ?? "").trim() ||
+      (raw.Who ?? "").trim()
+  );
+  if (hasAssignee) return false;
+  return Boolean((raw.Comment ?? "").trim() || (raw.Email ?? "").trim());
 }
 
 export function parseShiftsCsvText(csvText: string): ShiftCsvResult {
@@ -37,15 +55,27 @@ export function parseShiftsCsvText(csvText: string): ShiftCsvResult {
     throw new Error(`CSV is missing required columns: ${missing.join(", ")}`);
   }
 
-  const warnings = parsed.errors
-    .filter((error) => error.code === "TooFewFields" || error.code === "TooManyFields")
-    .map((error) => `Row ${(error.row ?? 0) + 2}: ${error.message}`);
   const fatal = parsed.errors.find(
     (error) => error.code !== "TooFewFields" && error.code !== "TooManyFields"
   );
   if (fatal) throw new Error(`CSV parsing failed: ${fatal.message}`);
 
-  const rows = parsed.data.map((raw, index): ShiftRow => {
+  const notices: string[] = [];
+  const skipped = new Set<number>();
+  const rows: ShiftRow[] = [];
+
+  parsed.data.forEach((raw, index) => {
+    if (isCommentOnlyRow(raw)) {
+      skipped.add(index);
+      const author = (raw.Email ?? "").trim();
+      const task = (raw.Task ?? "").trim();
+      notices.push(
+        `Row ${index + 2}: skipped a comment${author ? ` from ${author}` : ""}` +
+          `${task ? ` on ${task}` : ""} — comments are exported as rows but are not shift spots.`
+      );
+      return;
+    }
+
     const date = normalizeDate(raw.Date ?? "");
     const task = (raw.Task ?? "").trim();
     const startTime = (raw["Start Time"] ?? "").trim();
@@ -55,17 +85,24 @@ export function parseShiftsCsvText(csvText: string): ShiftCsvResult {
         `Row ${index + 2} has an invalid date or is missing task/start/end time`
       );
     }
-    return {
+    rows.push({
       date,
       task,
       startTime,
       endTime,
       firstName: (raw["First Name"] ?? "").trim(),
       lastName: (raw["Last Name"] ?? "").trim(),
-    };
+    });
   });
 
-  return { rows, warnings };
+  // Comment rows are truncated by the export (they stop before the trailing
+  // columns), so their field-count complaints would be noise next to the notice.
+  const warnings = parsed.errors
+    .filter((error) => error.code === "TooFewFields" || error.code === "TooManyFields")
+    .filter((error) => !skipped.has(error.row ?? -1))
+    .map((error) => `Row ${(error.row ?? 0) + 2}: ${error.message}`);
+
+  return { rows, warnings, notices };
 }
 
 export async function parseShiftsCsv(file: File): Promise<ShiftCsvResult> {

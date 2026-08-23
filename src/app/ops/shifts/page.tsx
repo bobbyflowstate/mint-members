@@ -25,6 +25,7 @@ export default function OpsShiftsPage() {
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<ShiftRow[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [notices, setNotices] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -40,8 +41,10 @@ export default function OpsShiftsPage() {
       const result = await parseShiftsCsv(file);
       setRows(result.rows);
       setWarnings(result.warnings);
+      setNotices(result.notices);
     } catch (cause) {
       setWarnings([]);
+      setNotices([]);
       setError(cause instanceof Error ? cause.message : "Could not parse this CSV.");
     }
   };
@@ -49,6 +52,7 @@ export default function OpsShiftsPage() {
   const discard = () => {
     setRows(null);
     setWarnings([]);
+    setNotices([]);
     setError(null);
     setSuccess(null);
     setFileName("");
@@ -119,6 +123,14 @@ export default function OpsShiftsPage() {
               </button>
             </div>
           </div>
+          {notices.length > 0 && (
+            <details className="rounded-xl bg-sky-500/10 p-4 text-sm text-sky-200 ring-1 ring-sky-500/30">
+              <summary className="cursor-pointer font-semibold">
+                {notices.length} comment {notices.length === 1 ? "row" : "rows"} skipped (not shift spots)
+              </summary>
+              <ul className="mt-3 list-disc space-y-1 pl-5">{notices.map((notice, index) => <li key={index}>{notice}</li>)}</ul>
+            </details>
+          )}
           {warnings.length > 0 && (
             <details className="rounded-xl bg-amber-500/10 p-4 text-sm text-amber-200 ring-1 ring-amber-500/30">
               <summary className="cursor-pointer font-semibold">{warnings.length} CSV formatting warnings</summary>
