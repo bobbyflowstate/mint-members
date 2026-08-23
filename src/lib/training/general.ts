@@ -40,10 +40,10 @@ export const generalModule: GeneralTrainingModule = {
         source: "ACLU of Nevada",
         authoredByCamp: false,
         paragraphs: [
-          "The ACLU of Nevada publishes a Know Your Rights page specifically for Burning Man. In their words: you have the right to remain silent — and if you want to use it, say so out loud. You have the right to refuse consent to a search of yourself or your vehicle. If you are not under arrest, you have the right to calmly leave. If you are arrested, you have the right to a lawyer — ask for one immediately. These apply regardless of immigration or citizenship status.",
+          "The ACLU of Nevada publishes a Know Your Rights guide for being stopped by police in this state. In their words: you have the right to remain silent — and if you want to use it, say so out loud. You have the right to refuse consent to a search of yourself or your vehicle. If you are not under arrest, ask whether you are free to leave, and if the answer is yes, walk away. If you are arrested, you have the right to a lawyer — ask for one immediately. These apply regardless of immigration or citizenship status. One Nevada-specific catch: the right to stay silent does not cover your name, which you must give if an officer asks you to identify yourself.",
           "Their page also carries their own note that none of it is intended as legal advice. We’d rather you read the whole thing from them than a summary from us — we’re not lawyers, and what you do out there is yours.",
         ],
-        link: { href: "https://www.aclunv.org/en/burning-man", label: "Read the ACLU of Nevada page" },
+        link: { href: "https://www.aclunv.org/know-your-rights/stopped-police-nevada/", label: "Read the ACLU of Nevada page" },
       },
       {
         icon: "🤫",

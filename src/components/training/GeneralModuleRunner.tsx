@@ -473,7 +473,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
       <div className="mt-3 space-y-2.5">
         {[
           ["https://survival.burningman.org/law-enforcement/", "Burning Man Survival Guide — Law Enforcement", "survival.burningman.org"],
-          ["https://www.aclunv.org/en/burning-man", "ACLU of Nevada — Know Your Rights: Burning Man", "aclunv.org"],
+          ["https://www.aclunv.org/know-your-rights/stopped-police-nevada/", "ACLU of Nevada — Know Your Rights: Stopped by Police in Nevada", "aclunv.org"],
           ["https://survival.burningman.org/law-enforcement/lawyers-for-burners/", "Lawyers for Burners", "If you need an actual lawyer out there, start here — not with us."],
         ].map(([href, label, note]) => <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm hover:border-sky-400/40">
           <span aria-hidden="true">🔗</span>
