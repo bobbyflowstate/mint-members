@@ -24,9 +24,12 @@ afterEach(() => vi.useRealTimers());
 
 function renderRunner(
   initialState = baseState,
-  overrides: { onComplete?: (state: GeneralProgressState) => Promise<unknown> } = {}
+  overrides: {
+    onComplete?: (state: GeneralProgressState) => Promise<unknown>;
+    onSave?: (state: GeneralProgressState) => Promise<unknown>;
+  } = {}
 ) {
-  const onSave = vi.fn().mockResolvedValue(undefined);
+  const onSave = vi.fn(overrides.onSave ?? (() => Promise.resolve()));
   const onComplete = vi.fn(overrides.onComplete ?? (() => Promise.resolve()));
   const onDone = vi.fn();
   render(
@@ -53,6 +56,35 @@ describe("GeneralModuleRunner", () => {
 
     await user.click(screen.getByRole("button", { name: /First year with DeMentha/ }));
     expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+  });
+
+  it("warns the member when a background save fails", async () => {
+    const user = userEvent.setup();
+    renderRunner({ ...baseState, step: 3, kind: "first" }, {
+      onSave: () => Promise.reject(new Error("Unknown training module version")),
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Play: Ratchet strap" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /We're not saving your progress right now/
+    );
+  });
+
+  it("clears the warning once a save succeeds again", async () => {
+    const user = userEvent.setup();
+    let fail = true;
+    renderRunner({ ...baseState, step: 3, kind: "first" }, {
+      onSave: () => (fail ? Promise.reject(new Error("offline")) : Promise.resolve()),
+    });
+
+    await user.click(screen.getByRole("button", { name: "Play: Ratchet strap" }));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+
+    fail = false;
+    await user.click(screen.getByRole("button", { name: "Play: Making a mojito" }));
+    await vi.waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
   });
 
   it("requires both videos to be played", async () => {

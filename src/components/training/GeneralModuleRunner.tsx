@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ProgressBar } from "./ProgressBar";
+import { SaveFailedBanner } from "./SaveFailedBanner";
 import { generalModule } from "@/lib/training/general";
 import { GENERAL_FINAL_STEP, withIndexMarked } from "@/lib/training/progress";
 import type { GeneralKind, GeneralProgressState } from "@/lib/training/types";
@@ -64,6 +65,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
   const [playing, setPlaying] = useState<number[]>([]);
   const [answer, setAnswer] = useState<{ picked: number; correct: boolean }>();
   const [completionStatus, setCompletionStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [saveFailed, setSaveFailed] = useState(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -72,7 +74,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
 
   function persist(next: GeneralProgressState) {
     setState(next);
-    void onSave(next);
+    onSave(next).then(() => setSaveFailed(false), () => setSaveFailed(true));
   }
 
   function goTo(step: number) {
@@ -640,6 +642,7 @@ export function GeneralModuleRunner({ memberName, initialState, completedAt, onS
         <button onClick={goBack} disabled={!canGoBack} aria-label="Back" className="h-10 w-10 text-2xl text-emerald-300 disabled:invisible">‹</button>
         <ProgressBar value={state.step} max={TOTAL_STEPS} className="absolute inset-x-5 bottom-0 h-1" />
       </header>
+      {saveFailed && <SaveFailedBanner />}
       <section className="flex-1 overflow-y-auto px-6 pb-8 pt-5">{screen}</section>
       {action && <footer className="sticky bottom-0 bg-gradient-to-t from-[#121310] via-[#121310] to-transparent px-6 pb-6 pt-5">{action}</footer>}
     </div>

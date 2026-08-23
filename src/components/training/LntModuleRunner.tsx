@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ProgressBar } from "./ProgressBar";
+import { SaveFailedBanner } from "./SaveFailedBanner";
 import { lntModule } from "@/lib/training/lnt";
 import { withIndexMarked } from "@/lib/training/progress";
 import type { TrainingProgressState, TrainingRole, WasteStreamId } from "@/lib/training/types";
@@ -59,6 +60,7 @@ export function LntModuleRunner({ memberName, initialState, completedAt, onSave,
   const [selectedPackReason, setSelectedPackReason] = useState<number>();
   const [answer, setAnswer] = useState<{ picked: WasteStreamId; correct: boolean }>();
   const [completionStatus, setCompletionStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [saveFailed, setSaveFailed] = useState(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -67,7 +69,7 @@ export function LntModuleRunner({ memberName, initialState, completedAt, onSave,
 
   function persist(next: TrainingProgressState) {
     setState(next);
-    void onSave(next);
+    onSave(next).then(() => setSaveFailed(false), () => setSaveFailed(true));
   }
 
   function goTo(step: number) {
@@ -249,6 +251,7 @@ export function LntModuleRunner({ memberName, initialState, completedAt, onSave,
         <button onClick={goBack} disabled={!canGoBack} aria-label="Back" className="h-10 w-10 text-2xl text-emerald-300 disabled:invisible">‹</button>
         <ProgressBar value={state.step} max={TOTAL_STEPS} className="absolute inset-x-5 bottom-0 h-1" />
       </header>
+      {saveFailed && <SaveFailedBanner />}
       <section className="flex-1 overflow-y-auto px-6 pb-8 pt-5">{content}</section>
       {action && <footer className="sticky bottom-0 bg-gradient-to-t from-[#121310] via-[#121310] to-transparent px-6 pb-6 pt-5">{action}</footer>}
     </div>
