@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Id } from "./_generated/dataModel";
 import {
+  getForOps,
   listEditOptionsForOps,
   listForOps,
   opsSaveBurnsEmergency,
@@ -664,5 +665,106 @@ describe("attendeeProfiles.listForOps editable IDs", () => {
       vehicleId,
       sleepingGroupId,
     });
+  });
+});
+
+describe("attendeeProfiles.getForOps", () => {
+  const originalPwd = process.env.OPS_PWD;
+
+  beforeEach(() => {
+    process.env.OPS_PWD = OPS_PWD;
+  });
+
+  afterEach(() => {
+    if (originalPwd === undefined) delete process.env.OPS_PWD;
+    else process.env.OPS_PWD = originalPwd;
+    vi.clearAllMocks();
+  });
+
+  it("returns the full profile spread with a resolved headshot URL", async () => {
+    const handler = getHandler(getForOps);
+    const vehicleId = "veh_1" as Id<"vehicles">;
+    const { ctx } = makeCtx({
+      applications: [application()],
+      attendee_profiles: [
+        profile({
+          playaName: "Sparkle",
+          profilePhotoStorageId: "storage_1",
+          numBurnsAttended: 3,
+          arrivalMode: "driving_own_vehicle",
+          vehicleId,
+        }),
+      ],
+      vehicles: [{ _id: vehicleId, name: "Truck", lengthFt: 20 }],
+    });
+
+    const row = (await handler(ctx, {
+      opsPassword: OPS_PWD,
+      applicationId: APPLICATION_ID,
+    })) as Row;
+
+    expect(row).toMatchObject({
+      applicationId: APPLICATION_ID,
+      firstName: "Mina",
+      lastName: "Member",
+      fullName: "Mina Member",
+      playaName: "Sparkle",
+      numBurnsAttended: 3,
+      vehicleName: "Truck",
+      cancelled: false,
+      photoUrl: "https://files.example/storage_1",
+    });
+  });
+
+  it("returns a null photo URL when the member has not uploaded one", async () => {
+    const handler = getHandler(getForOps);
+    const { ctx } = makeCtx({
+      applications: [application()],
+      attendee_profiles: [profile()],
+    });
+
+    const row = (await handler(ctx, {
+      opsPassword: OPS_PWD,
+      applicationId: APPLICATION_ID,
+    })) as Row;
+
+    expect(row.photoUrl).toBeNull();
+  });
+
+  it("still returns cancelled members, which listForOps filters out", async () => {
+    const cancelled = application({ cancelled: true });
+    const listHandler = getHandler(listForOps);
+    const getHandlerFn = getHandler(getForOps);
+
+    expect(
+      await listHandler(makeCtx({ applications: [cancelled] }).ctx, {
+        opsPassword: OPS_PWD,
+      })
+    ).toEqual([]);
+
+    const row = (await getHandlerFn(makeCtx({ applications: [cancelled] }).ctx, {
+      opsPassword: OPS_PWD,
+      applicationId: APPLICATION_ID,
+    })) as Row;
+
+    expect(row).toMatchObject({ applicationId: APPLICATION_ID, cancelled: true });
+  });
+
+  it("returns null for an unknown application", async () => {
+    const handler = getHandler(getForOps);
+    const { ctx } = makeCtx({ applications: [] });
+
+    expect(
+      await handler(ctx, { opsPassword: OPS_PWD, applicationId: APPLICATION_ID })
+    ).toBeNull();
+  });
+
+  it("rejects an invalid ops password", async () => {
+    const handler = getHandler(getForOps);
+    const { ctx } = makeCtx({ applications: [application()] });
+
+    await expect(
+      handler(ctx, { opsPassword: "wrong", applicationId: APPLICATION_ID })
+    ).rejects.toThrow();
   });
 });

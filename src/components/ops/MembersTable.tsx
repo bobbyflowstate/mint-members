@@ -21,6 +21,8 @@ import {
 import { buildSignupCsv, downloadCsv } from "../../lib/opsSignupsView/csv";
 import { formatDateWithWeekday } from "../../lib/dates/formatDateWithWeekday";
 import { AddManualMemberModal } from "./AddManualMemberModal";
+import { MemberProfileDialog } from "./MemberProfileDialog";
+import { getStatusBadge } from "./statusBadge";
 
 const OPS_PASSWORD_KEY = "ops_password";
 
@@ -105,23 +107,6 @@ function formatDate(dateValue: string | undefined) {
     }
   }
   return dateValue;
-}
-
-function getStatusBadge(status: string) {
-  switch (status) {
-    case "confirmed":
-      return { label: "Confirmed", cls: "bg-emerald-500/15 text-emerald-300 ring-emerald-400/30" };
-    case "pending_payment":
-      return { label: "Pending", cls: "bg-amber-500/15 text-amber-300 ring-amber-400/30" };
-    case "needs_ops_review":
-      return { label: "Needs Review", cls: "bg-orange-500/15 text-orange-300 ring-orange-400/30" };
-    case "rejected":
-      return { label: "Rejected", cls: "bg-red-500/15 text-red-300 ring-red-400/30" };
-    case "invited":
-      return { label: "Invited", cls: "bg-violet-500/15 text-violet-300 ring-violet-400/30" };
-    default:
-      return { label: status, cls: "bg-slate-500/10 text-slate-300 ring-slate-400/30" };
-  }
 }
 
 function buildDateStats(rows: OpsSignupRow[], field: "arrival" | "departure"): DateStat[] {
@@ -244,7 +229,7 @@ const COLUMN_DEFS: ColumnDef[] = [
     id: "fullName",
     header: "Name",
     renderText: (r) => r.fullName,
-    renderCell: (r) => <span className="text-sm font-medium text-white">{r.fullName}</span>,
+    renderCell: () => null, // rendered as a profile link in the table loop
   },
   {
     id: "email",
@@ -440,6 +425,7 @@ export function MembersTable() {
   const [visibleColumnIds, setVisibleColumnIds] = useState<SignupColumnId[]>(DEFAULT_VISIBLE_COLUMN_IDS);
   const [sortState, setSortState] = useState<SignupSort | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [profileRow, setProfileRow] = useState<OpsSignupRow | null>(null);
   const [cancellingRowId, setCancellingRowId] = useState<string | null>(null);
   const [toast, setToast] = useState<UndoToast | null>(null);
   const toastIdRef = useRef(0);
@@ -958,6 +944,14 @@ export function MembersTable() {
                               row={row}
                               onToggle={handleTogglePaid}
                             />
+                          ) : col.id === "fullName" ? (
+                            <button
+                              type="button"
+                              onClick={() => setProfileRow(row)}
+                              className="text-sm font-medium text-white underline decoration-white/25 underline-offset-4 transition-colors hover:text-emerald-300 hover:decoration-emerald-300"
+                            >
+                              {row.fullName}
+                            </button>
                           ) : (
                             col.renderCell(row)
                           )}
@@ -1008,7 +1002,15 @@ export function MembersTable() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="text-sm font-semibold text-white">{row.fullName}</h3>
+                      <h3 className="text-sm font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => setProfileRow(row)}
+                          className="text-left text-white underline decoration-white/25 underline-offset-4 transition-colors hover:text-emerald-300"
+                        >
+                          {row.fullName}
+                        </button>
+                      </h3>
                       <p className="text-xs text-slate-400">{row.email}</p>
                     </div>
                     {isVisible("status") && (
@@ -1139,6 +1141,15 @@ export function MembersTable() {
         <AddManualMemberModal
           opsPassword={opsPassword}
           onClose={() => setShowAddModal(false)}
+        />
+      )}
+
+      {profileRow && opsPassword && (
+        <MemberProfileDialog
+          key={profileRow._id}
+          row={profileRow}
+          opsPassword={opsPassword}
+          onClose={() => setProfileRow(null)}
         />
       )}
 

@@ -14,6 +14,7 @@ import { SleepingType, TravelMode } from "@/lib/attendeeProfile/options";
 import { formatDateWithWeekday } from "@/lib/dates/formatDateWithWeekday";
 import { AppConfig, LandingContent, getLandingContent } from "@/config/content";
 import { TrainingDashboardCard } from "@/components/training/TrainingDashboardCard";
+import { PhotoLightbox } from "@/components/PhotoLightbox";
 
 type RosterData = NonNullable<
   FunctionReturnType<typeof api.attendeeProfiles.listRoster>
@@ -90,6 +91,7 @@ function StatTile({ label, value, detail }: { label: string; value: string; deta
 function MemberCard({ member }: { member: RosterMember }) {
   const travel = member.arrivalMode ? TRAVEL_MODE_SHORT[member.arrivalMode] : undefined;
   const sleeping = member.sleepingType ? SLEEPING_SHORT[member.sleepingType] : undefined;
+  const [showPhoto, setShowPhoto] = useState(false);
 
   return (
     <div
@@ -99,15 +101,23 @@ function MemberCard({ member }: { member: RosterMember }) {
     >
       <div className="flex items-center gap-3">
         {member.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- Convex storage URLs are dynamic; next/image needs remotePatterns config
-          <img
-            src={member.photoUrl}
-            alt={`${member.fullName}'s photo`}
-            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-white/20"
-          />
+          <button
+            type="button"
+            onClick={() => setShowPhoto(true)}
+            aria-label={`Enlarge ${member.fullName}'s photo`}
+            title="Click to enlarge"
+            className="shrink-0 rounded-full ring-1 ring-white/20 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- Convex storage URLs are dynamic; next/image needs remotePatterns config */}
+            <img
+              src={member.photoUrl}
+              alt={`${member.fullName}'s photo`}
+              className="h-12 w-12 rounded-full object-cover sm:h-14 sm:w-14"
+            />
+          </button>
         ) : (
           <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${avatarColor(member.fullName)}`}
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white sm:h-14 sm:w-14 ${avatarColor(member.fullName)}`}
           >
             {initials(member.fullName)}
           </div>
@@ -163,6 +173,17 @@ function MemberCard({ member }: { member: RosterMember }) {
           </span>
         )}
       </div>
+
+      {showPhoto && member.photoUrl && (
+        <PhotoLightbox
+          src={member.photoUrl}
+          alt={`${member.fullName}'s photo`}
+          caption={
+            member.playaName ? `${member.fullName} — “${member.playaName}”` : member.fullName
+          }
+          onClose={() => setShowPhoto(false)}
+        />
+      )}
     </div>
   );
 }

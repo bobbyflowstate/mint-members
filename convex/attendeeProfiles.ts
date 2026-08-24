@@ -1,4 +1,4 @@
-import { mutation, query, MutationCtx } from "./_generated/server";
+import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { CONFIG_DEFAULTS } from "./config";
@@ -32,7 +32,7 @@ const arrivalDepartureTime = v.union(
 
 const VEHICLE_TRAVEL_MODES = ["driving_own_vehicle", "riding_with_attendee"];
 
-async function getDepartureCutoff(ctx: MutationCtx): Promise<string> {
+async function getDepartureCutoff(ctx: QueryCtx | MutationCtx): Promise<string> {
   const cutoffConfig = await ctx.db
     .query("config")
     .withIndex("by_key", (q) => q.eq("key", "departureCutoff"))
@@ -707,6 +707,104 @@ export const opsSaveCamp = mutation({
 });
 
 /**
+ * The ops-facing spread for one member: profile fields with the legacy
+ * fallbacks applied, resolved vehicle/sleeping names, and completeness.
+ * Pure so both the bulk table query and the single-member profile view
+ * build identical rows from docs they each resolve their own way.
+ */
+function buildOpsProfileRow({
+  application,
+  profile,
+  legacy,
+  vehicle,
+  sleepingVehicle,
+  sleepingGroup,
+  departureCutoff,
+}: {
+  application: Doc<"applications">;
+  profile: Doc<"attendee_profiles"> | undefined;
+  legacy: Doc<"confirmed_members"> | undefined;
+  vehicle: Doc<"vehicles"> | undefined;
+  sleepingVehicle: Doc<"vehicles"> | undefined;
+  sleepingGroup: Doc<"sleeping_groups"> | undefined;
+  departureCutoff: string;
+}) {
+  // Same legacy fallback as getMine: only affirmative old answers count.
+  const hasTicket = profile
+    ? profile.hasTicket
+    : legacy?.hasBurningManTicket === true
+      ? true
+      : undefined;
+  const vehiclePassStatus = profile
+    ? profile.vehiclePassStatus
+    : legacy?.hasVehiclePass === true
+      ? ("have" as const)
+      : undefined;
+  const requests = profile ? profile.requests : (legacy?.requests ?? legacy?.notes);
+
+  const completeness = computeProfileCompleteness(
+    {
+      ...profile,
+      hasTicket,
+      vehiclePassStatus,
+    },
+    {
+      departure: application.departure,
+      departureTime: application.departureTime,
+      earlyDepartureReason: application.earlyDepartureReason,
+      dietaryPreference: application.dietaryPreference,
+      allergyFlag: application.allergyFlag,
+      allergyNotes: application.allergyNotes,
+    },
+    departureCutoff
+  );
+
+  return {
+    applicationId: application._id,
+    profileId: profile?._id,
+    fullName: `${application.firstName} ${application.lastName}`.trim(),
+    email: application.email,
+    phone: application.phone,
+    memberType: application.memberType ?? "alumni",
+    status: application.status,
+    arrival: application.arrival,
+    arrivalTime: application.arrivalTime,
+    departure: application.departure,
+    departureTime: application.departureTime,
+    earlyDepartureRequested: application.earlyDepartureRequested,
+    earlyDepartureReason: application.earlyDepartureReason,
+    hasTicket,
+    numBurnsAttended: profile?.numBurnsAttended,
+    emergencyContactName: profile?.emergencyContactName,
+    emergencyContactPhone: profile?.emergencyContactPhone,
+    emergencyContactEmail: profile?.emergencyContactEmail,
+    arrivalMode: profile?.arrivalMode,
+    departureMode: profile?.departureMode,
+    vehicleId: profile?.vehicleId,
+    vehicleName: vehicle?.name,
+    vehicleLengthFt: vehicle?.lengthFt,
+    vehiclePassStatus,
+    bikeStatus: profile?.bikeStatus,
+    sleepingType: profile?.sleepingType,
+    sleepingVehicleId: profile?.sleepingVehicleId,
+    sleepingGroupId: profile?.sleepingGroupId,
+    sleepingPlace: sleepingVehicle
+      ? sleepingDisplayName(sleepingVehicle)
+      : sleepingGroup?.name,
+    dietaryPreference: application.dietaryPreference,
+    allergyFlag: application.allergyFlag,
+    allergyNotes: application.allergyNotes,
+    playaName: profile?.playaName,
+    requests,
+    completeCount: completeness.completeCount,
+    totalCount: completeness.totalCount,
+    missingSections: completeness.sections
+      .filter((section) => !section.complete)
+      .map((section) => section.label),
+  };
+}
+
+/**
  * One row per active member with the full profile spread, resolved
  * vehicle/sleeping names, and computed completeness — for the ops table
  * and CSV export.
@@ -733,104 +831,92 @@ export const listForOps = query({
     const groups = await ctx.db.query("sleeping_groups").collect();
     const groupsById = new Map(groups.map((g) => [g._id, g]));
 
-    const cutoffConfig = await ctx.db
-      .query("config")
-      .withIndex("by_key", (q) => q.eq("key", "departureCutoff"))
-      .first();
-    const departureCutoff = cutoffConfig?.value ?? CONFIG_DEFAULTS.departureCutoff;
+    const departureCutoff = await getDepartureCutoff(ctx);
 
     return applications
       .map((application) => {
         const profile = profilesByUserId.get(application.userId);
         const legacy = profile ? undefined : legacyByUserId.get(application.userId);
 
-        // Same legacy fallback as getMine: only affirmative old answers count.
-        const hasTicket = profile
-          ? profile.hasTicket
-          : legacy?.hasBurningManTicket === true
-            ? true
-            : undefined;
-        const vehiclePassStatus = profile
-          ? profile.vehiclePassStatus
-          : legacy?.hasVehiclePass === true
-            ? ("have" as const)
-            : undefined;
-        const requests = profile
-          ? profile.requests
-          : (legacy?.requests ?? legacy?.notes);
-
-        const vehicle = profile?.vehicleId
-          ? vehiclesById.get(profile.vehicleId)
-          : undefined;
-        const sleepingVehicle = profile?.sleepingVehicleId
-          ? vehiclesById.get(profile.sleepingVehicleId)
-          : undefined;
-        const sleepingGroup = profile?.sleepingGroupId
-          ? groupsById.get(profile.sleepingGroupId)
-          : undefined;
-
-        const completeness = computeProfileCompleteness(
-          {
-            ...profile,
-            hasTicket,
-            vehiclePassStatus,
-          },
-          {
-            departure: application.departure,
-            departureTime: application.departureTime,
-            earlyDepartureReason: application.earlyDepartureReason,
-            dietaryPreference: application.dietaryPreference,
-            allergyFlag: application.allergyFlag,
-            allergyNotes: application.allergyNotes,
-          },
-          departureCutoff
-        );
-
-        return {
-          applicationId: application._id,
-          profileId: profile?._id,
-          fullName: `${application.firstName} ${application.lastName}`.trim(),
-          email: application.email,
-          phone: application.phone,
-          memberType: application.memberType ?? "alumni",
-          status: application.status,
-          arrival: application.arrival,
-          arrivalTime: application.arrivalTime,
-          departure: application.departure,
-          departureTime: application.departureTime,
-          earlyDepartureRequested: application.earlyDepartureRequested,
-          earlyDepartureReason: application.earlyDepartureReason,
-          hasTicket,
-          numBurnsAttended: profile?.numBurnsAttended,
-          emergencyContactName: profile?.emergencyContactName,
-          emergencyContactPhone: profile?.emergencyContactPhone,
-          emergencyContactEmail: profile?.emergencyContactEmail,
-          arrivalMode: profile?.arrivalMode,
-          departureMode: profile?.departureMode,
-          vehicleId: profile?.vehicleId,
-          vehicleName: vehicle?.name,
-          vehicleLengthFt: vehicle?.lengthFt,
-          vehiclePassStatus,
-          bikeStatus: profile?.bikeStatus,
-          sleepingType: profile?.sleepingType,
-          sleepingVehicleId: profile?.sleepingVehicleId,
-          sleepingGroupId: profile?.sleepingGroupId,
-          sleepingPlace: sleepingVehicle
-            ? sleepingDisplayName(sleepingVehicle)
-            : sleepingGroup?.name,
-          dietaryPreference: application.dietaryPreference,
-          allergyFlag: application.allergyFlag,
-          allergyNotes: application.allergyNotes,
-          playaName: profile?.playaName,
-          requests,
-          completeCount: completeness.completeCount,
-          totalCount: completeness.totalCount,
-          missingSections: completeness.sections
-            .filter((section) => !section.complete)
-            .map((section) => section.label),
-        };
+        return buildOpsProfileRow({
+          application,
+          profile,
+          legacy,
+          vehicle: profile?.vehicleId ? vehiclesById.get(profile.vehicleId) : undefined,
+          sleepingVehicle: profile?.sleepingVehicleId
+            ? vehiclesById.get(profile.sleepingVehicleId)
+            : undefined,
+          sleepingGroup: profile?.sleepingGroupId
+            ? groupsById.get(profile.sleepingGroupId)
+            : undefined,
+          departureCutoff,
+        });
       })
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  },
+});
+
+/**
+ * The same spread as listForOps for a single member, plus the headshot URL
+ * and application timestamps — what the ops Members view pops open when a
+ * name is clicked.
+ *
+ * Unlike listForOps this does *not* filter on countsForLogistics: ops needs
+ * to read the profile of a cancelled or rejected member too, since those
+ * rows are still listed under their own tabs.
+ */
+export const getForOps = query({
+  args: {
+    opsPassword: v.string(),
+    applicationId: v.id("applications"),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+
+    const application = await ctx.db.get(args.applicationId);
+    if (!application) {
+      return null;
+    }
+
+    const profile = await ctx.db
+      .query("attendee_profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", application.userId))
+      .first();
+    const legacy = profile
+      ? null
+      : await ctx.db
+          .query("confirmed_members")
+          .withIndex("by_userId", (q) => q.eq("userId", application.userId))
+          .first();
+
+    const vehicle = profile?.vehicleId ? await ctx.db.get(profile.vehicleId) : null;
+    const sleepingVehicle = profile?.sleepingVehicleId
+      ? await ctx.db.get(profile.sleepingVehicleId)
+      : null;
+    const sleepingGroup = profile?.sleepingGroupId
+      ? await ctx.db.get(profile.sleepingGroupId)
+      : null;
+
+    const row = buildOpsProfileRow({
+      application,
+      profile: profile ?? undefined,
+      legacy: legacy ?? undefined,
+      vehicle: vehicle ?? undefined,
+      sleepingVehicle: sleepingVehicle ?? undefined,
+      sleepingGroup: sleepingGroup ?? undefined,
+      departureCutoff: await getDepartureCutoff(ctx),
+    });
+
+    return {
+      ...row,
+      firstName: application.firstName,
+      lastName: application.lastName,
+      cancelled: application.cancelled === true,
+      applicationCreatedAt: application.createdAt,
+      photoUrl: profile?.profilePhotoStorageId
+        ? await ctx.storage.getUrl(profile.profilePhotoStorageId)
+        : null,
+    };
   },
 });
 
