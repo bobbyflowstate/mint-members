@@ -64,6 +64,40 @@ describe("ShiftsTable", () => {
     expect(screen.getByText("Zoe Able")).toBeInTheDocument();
   });
 
+  it("highlights an accented name searched without accents", () => {
+    // Own fixture so the shared row counts other tests assert on stay put.
+    const accented: ShiftRow[] = [
+      { date: "2026-08-28", task: "Meals", startTime: "10:00 am", endTime: "12:00 pm", firstName: "José", lastName: "Dupré" },
+      { date: "2026-08-28", task: "Meals", startTime: "10:00 am", endTime: "12:00 pm", firstName: "Alex", lastName: "Zulu" },
+    ];
+    render(<ShiftsTable rows={accented} />);
+
+    fireEvent.change(screen.getByLabelText("Find a person"), {
+      target: { value: "jose dupre" },
+    });
+
+    const name = screen.getByText("José Dupré");
+    expect(name).toBeInTheDocument();
+    // The filter already matched before this fix; the highlight did not.
+    expect(name.closest("mark")).toBeInTheDocument();
+    // Shiftmates stay visible so you can see who someone is on with, but
+    // only the match is highlighted.
+    expect(screen.getByText("Alex Zulu").closest("mark")).toBeNull();
+  });
+
+  it("highlights an unaccented name searched with accents", () => {
+    const plain: ShiftRow[] = [
+      { date: "2026-08-28", task: "Meals", startTime: "10:00 am", endTime: "12:00 pm", firstName: "Jose", lastName: "Dupre" },
+    ];
+    render(<ShiftsTable rows={plain} />);
+
+    fireEvent.change(screen.getByLabelText("Find a person"), {
+      target: { value: "José" },
+    });
+
+    expect(screen.getByText("Jose Dupre").closest("mark")).toBeInTheDocument();
+  });
+
   it("can show only unassigned shifts", () => {
     render(<ShiftsTable rows={rows} />);
     fireEvent.click(screen.getByLabelText("Unassigned only"));

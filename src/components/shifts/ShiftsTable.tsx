@@ -10,6 +10,7 @@ import {
 } from "@/lib/shifts/agenda";
 import type { AgendaCard } from "@/lib/shifts/agenda";
 import type { ShiftRow } from "@/lib/shifts/types";
+import { foldedIncludes } from "@/lib/search/fold";
 
 const FAMILY_STYLES: Record<string, { icon: string; accent: string; badge: string }> = {
   WATER: { icon: "💧", accent: "border-l-sky-400", badge: "bg-sky-400/10 text-sky-300" },
@@ -43,7 +44,7 @@ function dateParts(value: string) {
 
 function TaskCard({ card, personQuery }: { card: AgendaCard; personQuery: string }) {
   const style = FAMILY_STYLES[card.family] ?? FALLBACK_STYLE;
-  const normalizedQuery = personQuery.trim().toLocaleLowerCase();
+  const query = personQuery.trim();
   return (
     <article className={`shift-print-card rounded-2xl border-l-4 ${style.accent} bg-white/[0.055] p-4 ring-1 ring-white/10 transition hover:bg-white/[0.075]`}>
       <div className="flex items-start justify-between gap-3">
@@ -63,12 +64,12 @@ function TaskCard({ card, personQuery }: { card: AgendaCard; personQuery: string
         {card.assignments.map((assignment, index) => (
           <div key={`${assignment.role}-${assignment.assignee}-${index}`} className="shift-print-assignment flex items-baseline justify-between gap-4 py-2 first:pt-0 last:pb-0">
             <span className="shift-print-role text-xs font-medium text-slate-400">{assignment.role}</span>
-            {normalizedQuery && assignment.assignee.toLocaleLowerCase().includes(normalizedQuery) ? (
+            {query && foldedIncludes(assignment.assignee, query) ? (
               <mark className="rounded-md bg-emerald-400/20 px-1.5 py-0.5 text-right text-sm font-bold text-emerald-200 ring-1 ring-emerald-400/30">
                 {assignment.assignee}
               </mark>
             ) : (
-              <span className={`text-right text-sm font-semibold ${assignment.unassigned ? "text-amber-300" : normalizedQuery ? "text-slate-400" : "text-slate-100"}`}>
+              <span className={`text-right text-sm font-semibold ${assignment.unassigned ? "text-amber-300" : query ? "text-slate-400" : "text-slate-100"}`}>
                 {assignment.assignee}
               </span>
             )}

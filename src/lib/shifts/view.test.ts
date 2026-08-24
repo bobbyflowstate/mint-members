@@ -20,6 +20,22 @@ describe("applyShiftView", () => {
     })).toEqual([rows[0]]);
   });
 
+  it("matches names regardless of accents in either the row or the filter", () => {
+    const accented: ShiftRow[] = [
+      { date: "2026-08-28", task: "Meals", startTime: "10:00 am", endTime: "12:00 pm", firstName: "José", lastName: "Dupré" },
+    ];
+    const view = {
+      date: "",
+      task: "",
+      sortField: "date" as const,
+      sortDirection: "asc" as const,
+    };
+
+    expect(applyShiftView(accented, { ...view, firstName: "jose", lastName: "dupre" })).toEqual(accented);
+    expect(applyShiftView(accented, { ...view, firstName: "JOSÉ", lastName: "" })).toEqual(accented);
+    expect(applyShiftView(accented, { ...view, firstName: "sam", lastName: "" })).toEqual([]);
+  });
+
   it("can filter unassigned shifts", () => {
     expect(applyShiftView(rows, {
       firstName: "unassigned",

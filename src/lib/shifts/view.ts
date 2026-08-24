@@ -1,6 +1,8 @@
 import type { ShiftRow, ShiftViewState } from "./types";
+import { foldForSearch } from "../search/fold";
 
-const normalized = (value: string) => value.trim().toLocaleLowerCase();
+/** Trim + case-fold + accent-fold, so "dupre" matches "Dupré". */
+const normalized = (value: string) => foldForSearch(value.trim());
 const assignee = (row: ShiftRow) =>
   row.firstName || row.lastName ? `${row.firstName} ${row.lastName}`.trim() : "Unassigned";
 
