@@ -88,10 +88,15 @@ function StatTile({ label, value, detail }: { label: string; value: string; deta
   );
 }
 
-function MemberCard({ member }: { member: RosterMember }) {
+function MemberCard({
+  member,
+  onShowPhoto,
+}: {
+  member: RosterMember;
+  onShowPhoto: (member: RosterMember) => void;
+}) {
   const travel = member.arrivalMode ? TRAVEL_MODE_SHORT[member.arrivalMode] : undefined;
   const sleeping = member.sleepingType ? SLEEPING_SHORT[member.sleepingType] : undefined;
-  const [showPhoto, setShowPhoto] = useState(false);
 
   return (
     <div
@@ -103,7 +108,7 @@ function MemberCard({ member }: { member: RosterMember }) {
         {member.photoUrl ? (
           <button
             type="button"
-            onClick={() => setShowPhoto(true)}
+            onClick={() => onShowPhoto(member)}
             aria-label={`Enlarge ${member.fullName}'s photo`}
             title="Click to enlarge"
             className="shrink-0 rounded-full ring-1 ring-white/20 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400"
@@ -173,17 +178,6 @@ function MemberCard({ member }: { member: RosterMember }) {
           </span>
         )}
       </div>
-
-      {showPhoto && member.photoUrl && (
-        <PhotoLightbox
-          src={member.photoUrl}
-          alt={`${member.fullName}'s photo`}
-          caption={
-            member.playaName ? `${member.fullName} — “${member.playaName}”` : member.fullName
-          }
-          onClose={() => setShowPhoto(false)}
-        />
-      )}
     </div>
   );
 }
@@ -256,6 +250,9 @@ function RosterViewToggle({
 function Roster({ content }: { content: LandingContent }) {
   const data = useQuery(api.attendeeProfiles.listRoster);
   const [view, setView] = useState<RosterView>("arrival");
+  // One viewer for the whole roster: clicking a second headshot swaps the
+  // photo rather than stacking another overlay on top of the first.
+  const [photoMember, setPhotoMember] = useState<RosterMember | null>(null);
 
   if (data === undefined) {
     return <Spinner />;
@@ -362,12 +359,30 @@ function Roster({ content }: { content: LandingContent }) {
               )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {group.map((member) => (
-                  <MemberCard key={member.applicationId} member={member} />
+                  <MemberCard
+                    key={member.applicationId}
+                    member={member}
+                    onShowPhoto={setPhotoMember}
+                  />
                 ))}
               </div>
             </section>
           ))}
         </div>
+      )}
+
+      {photoMember?.photoUrl && (
+        <PhotoLightbox
+          key={photoMember.applicationId}
+          src={photoMember.photoUrl}
+          alt={`${photoMember.fullName}'s photo`}
+          caption={
+            photoMember.playaName
+              ? `${photoMember.fullName} — “${photoMember.playaName}”`
+              : photoMember.fullName
+          }
+          onClose={() => setPhotoMember(null)}
+        />
       )}
     </div>
   );
