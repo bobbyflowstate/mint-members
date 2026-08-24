@@ -181,6 +181,27 @@ describe("MembersTable cancellation", () => {
   });
 });
 
+describe("MembersTable search", () => {
+  it("finds an accented name typed without accents, and vice versa", async () => {
+    rows = [
+      { ...rows[0], _id: "row_2", applicationId: "app_2", fullName: "José Nguyễn", email: "jose@example.com" },
+    ];
+
+    render(<MembersTable />);
+
+    const search = screen.getByPlaceholderText("Search by name or email...");
+
+    fireEvent.change(search, { target: { value: "jose nguyen" } });
+    expect(screen.getAllByRole("button", { name: "José Nguyễn" }).length).toBeGreaterThan(0);
+
+    fireEvent.change(search, { target: { value: "JOSÉ" } });
+    expect(screen.getAllByRole("button", { name: "José Nguyễn" }).length).toBeGreaterThan(0);
+
+    fireEvent.change(search, { target: { value: "smith" } });
+    expect(screen.queryByRole("button", { name: "José Nguyễn" })).not.toBeInTheDocument();
+  });
+});
+
 describe("MembersTable profile view", () => {
   it("opens the full profile with the headshot when a member name is clicked", async () => {
     render(<MembersTable />);

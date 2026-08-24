@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import clsx from "clsx";
+import { MemberNameLink } from "./MemberNameLink";
 
 type ReviewDecision = "pending" | "approved" | "denied";
 
@@ -179,7 +180,10 @@ export function ReviewTable() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <h3 className="text-base font-semibold text-white">
-                              {app.firstName} {app.lastName}
+                              <MemberNameLink
+                                applicationId={app._id}
+                                name={`${app.firstName} ${app.lastName}`}
+                              />
                             </h3>
                             <p className="mt-1 text-xs text-slate-500">
                               Applied {new Date(app.createdAt).toLocaleDateString()}
@@ -304,7 +308,10 @@ export function ReviewTable() {
                             <tr key={app._id} className="hover:bg-white/5 transition-colors">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-white">
-                                  {app.firstName} {app.lastName}
+                                  <MemberNameLink
+                                    applicationId={app._id}
+                                    name={`${app.firstName} ${app.lastName}`}
+                                  />
                                 </div>
                                 <div className="text-xs text-slate-500">
                                   Applied {new Date(app.createdAt).toLocaleDateString()}

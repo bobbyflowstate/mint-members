@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { formatDateWithWeekday } from "../../lib/dates/formatDateWithWeekday";
+import { MemberNameLink } from "./MemberNameLink";
 
 const OPS_PASSWORD_KEY = "ops_password";
 
@@ -114,7 +115,9 @@ export function ConfirmedMembersTableView({ rows }: { rows: ConfirmedMemberRow[]
               const hasRequests = row.requests.trim().length > 0;
               return (
                 <tr key={row._id} className="align-top">
-                  <td className="px-4 py-3 font-medium text-white">{row.fullName}</td>
+                  <td className="px-4 py-3 font-medium text-white">
+                    <MemberNameLink applicationId={row._id} name={row.fullName} />
+                  </td>
                   <td className="px-4 py-3">{row.email}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{row.phone}</td>
                   <td className="px-4 py-3">
@@ -151,7 +154,9 @@ export function ConfirmedMembersTableView({ rows }: { rows: ConfirmedMemberRow[]
           const hasRequests = row.requests.trim().length > 0;
           return (
             <article key={row._id} className="rounded-xl bg-white/5 ring-1 ring-white/10 p-4 space-y-2">
-              <h3 className="text-base font-semibold text-white">{row.fullName}</h3>
+              <h3 className="text-base font-semibold text-white">
+                <MemberNameLink applicationId={row._id} name={row.fullName} />
+              </h3>
               <p className="text-sm text-slate-300">{row.email}</p>
               <p className="text-sm text-slate-300">{row.phone}</p>
               <p className="text-sm text-slate-300">

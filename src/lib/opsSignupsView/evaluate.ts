@@ -1,4 +1,5 @@
 import { SignupFilter, SignupSort } from "./types";
+import { foldForSearch, foldedEquals, foldedIncludes } from "../search/fold";
 import {
   DATE_TIME_COMPANION_FIELDS,
   SortKey,
@@ -31,13 +32,13 @@ function matchesFilter(row: Record<string, unknown>, filter: SignupFilter): bool
       if (filter.value === undefined) {
         return false;
       }
-      return asString(rowValue).toLowerCase() === filter.value.toLowerCase();
+      return foldedEquals(asString(rowValue), filter.value);
     }
     case "contains": {
       if (filter.value === undefined) {
         return false;
       }
-      return asString(rowValue).toLowerCase().includes(filter.value.toLowerCase());
+      return foldedIncludes(asString(rowValue), filter.value);
     }
     case "before": {
       if (filter.value === undefined) {
@@ -67,8 +68,8 @@ function matchesFilter(row: Record<string, unknown>, filter: SignupFilter): bool
       if (!filter.values || filter.values.length === 0) {
         return false;
       }
-      const candidate = asString(rowValue).toLowerCase();
-      return filter.values.some((value) => value.toLowerCase() === candidate);
+      const candidate = foldForSearch(asString(rowValue));
+      return filter.values.some((value) => foldForSearch(value) === candidate);
     }
     case "not_empty": {
       return asString(rowValue).trim().length > 0;

@@ -17,11 +17,14 @@ import {
   loadStoredExportViewState,
   saveExportViewState,
 } from "../../lib/opsSignupsView/storage";
+import { MemberNameLink } from "./MemberNameLink";
 
 const OPS_PASSWORD_KEY = "ops_password";
 
 interface OpsSignupRow {
   _id: string;
+  /** The projection row's own id is not the application's — see ops_signup_rows. */
+  applicationId: string;
   firstName: string;
   lastName: string;
   fullName: string;
@@ -54,7 +57,10 @@ interface DateBounds {
 interface ColumnDefinition {
   id: SignupColumnId;
   label: string;
+  /** Plain text for the cell and, importantly, for the CSV export. */
   render: (row: OpsSignupRow) => string;
+  /** Optional richer cell for the table only — never used for the CSV. */
+  renderCell?: (row: OpsSignupRow) => React.ReactNode;
 }
 
 const COLUMN_DEFINITIONS: ColumnDefinition[] = [
@@ -72,6 +78,9 @@ const COLUMN_DEFINITIONS: ColumnDefinition[] = [
     id: "fullName",
     label: "Full Name",
     render: (row) => row.fullName,
+    renderCell: (row) => (
+      <MemberNameLink applicationId={row.applicationId} name={row.fullName} />
+    ),
   },
   {
     id: "email",
@@ -836,7 +845,7 @@ export function ExportSignupsTable() {
                           key={`${row._id}:${column.id}`}
                           className="px-4 py-3 text-sm text-slate-200"
                         >
-                          {column.render(row)}
+                          {column.renderCell ? column.renderCell(row) : column.render(row)}
                         </td>
                       ))}
                     </tr>

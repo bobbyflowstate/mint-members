@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import clsx from "clsx";
+import { MemberNameLink } from "./MemberNameLink";
 
 function formatDateForDisplay(
   dateValue: string | undefined,
@@ -307,7 +308,10 @@ export function SignupsTable() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h3 className="text-base font-semibold text-white">
-                            {signup.firstName} {signup.lastName}
+                            <MemberNameLink
+                              applicationId={signup._id}
+                              name={`${signup.firstName} ${signup.lastName}`}
+                            />
                           </h3>
                           <p className="mt-1 text-xs text-slate-500">
                             Created{" "}
@@ -427,10 +431,16 @@ export function SignupsTable() {
                         return (
                           <tr key={signup._id} className="hover:bg-white/5 transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                              {signup.firstName}
+                              <MemberNameLink
+                                applicationId={signup._id}
+                                name={signup.firstName}
+                              />
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                              {signup.lastName}
+                              <MemberNameLink
+                                applicationId={signup._id}
+                                name={signup.lastName}
+                              />
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                               {signup.email}

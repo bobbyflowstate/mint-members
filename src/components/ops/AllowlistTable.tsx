@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import clsx from "clsx";
+import { foldedIncludes } from "../../lib/search/fold";
 
 interface AllowlistEntry {
   _id: string;
@@ -32,12 +33,12 @@ export function AllowlistTable({ emails, opsPassword }: AllowlistTableProps) {
   const filteredEmails = useMemo(() => {
     if (!searchQuery.trim()) return emails;
 
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery;
     return emails.filter(
       (entry) =>
-        entry.email.toLowerCase().includes(query) ||
-        entry.addedBy.toLowerCase().includes(query) ||
-        entry.notes?.toLowerCase().includes(query)
+        foldedIncludes(entry.email, query) ||
+        foldedIncludes(entry.addedBy, query) ||
+        foldedIncludes(entry.notes, query)
     );
   }, [emails, searchQuery]);
 

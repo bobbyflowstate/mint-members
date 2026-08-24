@@ -1,4 +1,5 @@
 import type { ShiftRow } from "./types";
+import { foldForSearch } from "../search/fold";
 
 const FAMILY_LABELS: Record<string, string> = {
   BAR: "Bar",
@@ -111,14 +112,14 @@ export function filterRowsForAgenda(
   rows: ShiftRow[],
   filters: { person: string; taskFamily: string; unassignedOnly: boolean }
 ): ShiftRow[] {
-  const query = filters.person.trim().toLocaleLowerCase();
+  const query = foldForSearch(filters.person.trim());
   const eligibleRows = filters.taskFamily
     ? rows.filter((row) => parseTask(row.task).family === filters.taskFamily)
     : rows;
   const matchingGroups = new Set<string>();
 
   for (const row of eligibleRows) {
-    const name = `${row.firstName} ${row.lastName}`.trim().toLocaleLowerCase();
+    const name = foldForSearch(`${row.firstName} ${row.lastName}`.trim());
     if (
       (!query || name.includes(query)) &&
       (!filters.unassignedOnly || !name)

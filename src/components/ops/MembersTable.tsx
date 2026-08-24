@@ -20,6 +20,7 @@ import {
 } from "../../lib/opsSignupsView/sort";
 import { buildSignupCsv, downloadCsv } from "../../lib/opsSignupsView/csv";
 import { formatDateWithWeekday } from "../../lib/dates/formatDateWithWeekday";
+import { foldedIncludes } from "../../lib/search/fold";
 import { AddManualMemberModal } from "./AddManualMemberModal";
 import { MemberProfileDialog } from "./MemberProfileDialog";
 import { getStatusBadge } from "./statusBadge";
@@ -586,8 +587,8 @@ export function MembersTable() {
       if (selectedArrivalDates.length > 0 && !selectedArrivalDates.includes(row.arrival)) return false;
       if (selectedDepartureDates.length > 0 && !selectedDepartureDates.includes(row.departure)) return false;
       if (searchValue.trim()) {
-        const q = searchValue.trim().toLowerCase();
-        if (!row.fullName.toLowerCase().includes(q) && !row.email.toLowerCase().includes(q)) return false;
+        const q = searchValue.trim();
+        if (!foldedIncludes(row.fullName, q) && !foldedIncludes(row.email, q)) return false;
       }
       return true;
     });

@@ -18,25 +18,29 @@ import {
 } from "../../lib/attendeeProfile/options";
 
 /**
- * The subset of an ops members row this dialog needs. Structural, so the
- * members table can hand over its own row type without exporting it.
+ * What a caller can hand over about a member. Only `fullName` is required:
+ * everything else is fetched from getForOps by applicationId, so any ops
+ * table can open this with just an id and a name. The optional fields cover
+ * what lives on a table row but not on the application — sponsor, ops notes,
+ * payment state — and stand in for unclaimed invites, which have no
+ * application to fetch at all.
  */
 export interface MemberProfileDialogRow {
   _source?: "signup" | "invite";
   applicationId?: string;
   fullName: string;
-  email: string;
-  phone: string;
-  arrival: string;
-  arrivalTime: string;
-  departure: string;
-  departureTime: string;
-  status: string;
+  email?: string;
+  phone?: string;
+  arrival?: string;
+  arrivalTime?: string;
+  departure?: string;
+  departureTime?: string;
+  status?: string;
   memberType?: "alumni" | "newbie";
   hasFullPayment?: boolean;
   cancelled?: boolean;
   sponsorName?: string;
-  requests: string;
+  requests?: string;
   addedBy?: string;
   notes?: string;
 }
@@ -133,9 +137,23 @@ export function MemberProfileDialog({
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose, lightboxOpen]);
 
-  const badge = row.cancelled
+  // The fetched application is authoritative; the caller's row only fills the
+  // gaps it knows about and covers the pre-fetch/invite cases.
+  const cancelled = profile?.cancelled ?? row.cancelled;
+  const status = profile?.status ?? row.status;
+  const badge = cancelled
     ? { label: "Cancelled", cls: "bg-red-500/15 text-red-300 ring-red-400/30" }
-    : getStatusBadge(row.status);
+    : status
+      ? getStatusBadge(status)
+      : null;
+  const memberType = profile?.memberType ?? row.memberType;
+  const fullName = profile?.fullName ?? row.fullName;
+  const email = profile?.email ?? row.email;
+  const phone = profile?.phone ?? row.phone;
+  const arrival = profile?.arrival ?? row.arrival;
+  const arrivalTime = profile?.arrivalTime ?? row.arrivalTime;
+  const departure = profile?.departure ?? row.departure;
+  const departureTime = profile?.departureTime ?? row.departureTime;
   const photoUrl = profile?.photoUrl ?? null;
   const playaName = profile?.playaName;
 
@@ -143,7 +161,7 @@ export function MemberProfileDialog({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Profile: ${row.fullName}`}
+      aria-label={`Profile: ${fullName}`}
       onMouseDown={(event) => {
         pressedBackdrop.current = event.target === event.currentTarget;
       }}
@@ -162,13 +180,13 @@ export function MemberProfileDialog({
               <button
                 type="button"
                 onClick={() => setLightboxOpen(true)}
-                aria-label={`Enlarge ${row.fullName}'s photo`}
+                aria-label={`Enlarge ${fullName}'s photo`}
                 className="shrink-0 rounded-full ring-1 ring-white/20 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- Convex storage URLs are dynamic; next/image needs remotePatterns config */}
                 <img
                   src={photoUrl}
-                  alt={`${row.fullName}'s photo`}
+                  alt={`${fullName}'s photo`}
                   className="h-20 w-20 rounded-full object-cover"
                 />
               </button>
@@ -176,49 +194,53 @@ export function MemberProfileDialog({
               <div
                 className={clsx(
                   "flex h-20 w-20 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white",
-                  avatarColor(row.fullName)
+                  avatarColor(fullName)
                 )}
                 title={loading ? "Loading photo…" : "No photo uploaded"}
               >
-                {initials(row.fullName)}
+                {initials(fullName)}
               </div>
             )}
             <div className="min-w-0">
-              <h2 className="truncate text-xl font-semibold text-white">{row.fullName}</h2>
+              <h2 className="truncate text-xl font-semibold text-white">{fullName}</h2>
               {playaName && (
                 <p className="truncate text-base font-bold tracking-wide text-emerald-300">
                   &ldquo;{playaName}&rdquo;
                 </p>
               )}
               <div className="mt-2 flex flex-wrap gap-1.5">
+                {badge && (
+                  <span
+                    className={clsx(
+                      "inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1",
+                      badge.cls
+                    )}
+                  >
+                    {badge.label}
+                  </span>
+                )}
                 <span
                   className={clsx(
                     "inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1",
-                    badge.cls
-                  )}
-                >
-                  {badge.label}
-                </span>
-                <span
-                  className={clsx(
-                    "inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1",
-                    row.memberType === "newbie"
+                    memberType === "newbie"
                       ? "bg-sky-500/10 text-sky-200 ring-sky-400/30"
                       : "bg-amber-500/10 text-amber-200 ring-amber-400/30"
                   )}
                 >
-                  {row.memberType === "newbie" ? "Newbie" : "Alumni"}
+                  {memberType === "newbie" ? "Newbie" : "Alumni"}
                 </span>
-                <span
-                  className={clsx(
-                    "inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1",
-                    row.hasFullPayment
-                      ? "bg-emerald-500/15 text-emerald-300 ring-emerald-400/30"
-                      : "bg-slate-500/10 text-slate-400 ring-slate-400/20"
-                  )}
-                >
-                  {row.hasFullPayment ? "Paid in Full" : "Payment Outstanding"}
-                </span>
+                {row.hasFullPayment !== undefined && (
+                  <span
+                    className={clsx(
+                      "inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1",
+                      row.hasFullPayment
+                        ? "bg-emerald-500/15 text-emerald-300 ring-emerald-400/30"
+                        : "bg-slate-500/10 text-slate-400 ring-slate-400/20"
+                    )}
+                  >
+                    {row.hasFullPayment ? "Paid in Full" : "Payment Outstanding"}
+                  </span>
+                )}
                 {profile && (
                   <span
                     className={clsx(
@@ -256,23 +278,27 @@ export function MemberProfileDialog({
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <Section title="Contact">
               <Row term="Email">
-                <a href={`mailto:${row.email}`} className="text-emerald-300 hover:text-emerald-200">
-                  {row.email}
-                </a>
+                {email ? (
+                  <a href={`mailto:${email}`} className="text-emerald-300 hover:text-emerald-200">
+                    {email}
+                  </a>
+                ) : (
+                  "—"
+                )}
               </Row>
-              <Row term="Phone">{formatPhoneDisplay(row.phone) || "—"}</Row>
+              <Row term="Phone">{formatPhoneDisplay(phone ?? "") || "—"}</Row>
               {row.sponsorName && <Row term="Sponsor">{row.sponsorName}</Row>}
               {row.addedBy && <Row term="Added by">{row.addedBy}</Row>}
             </Section>
 
             <Section title="Dates">
               <Row term="Arrival">
-                {formatDateWithWeekday(row.arrival)}
-                <span className="block text-xs text-slate-500">{row.arrivalTime}</span>
+                {formatDateWithWeekday(arrival)}
+                <span className="block text-xs text-slate-500">{arrivalTime}</span>
               </Row>
               <Row term="Departure">
-                {formatDateWithWeekday(row.departure)}
-                <span className="block text-xs text-slate-500">{row.departureTime}</span>
+                {formatDateWithWeekday(departure)}
+                <span className="block text-xs text-slate-500">{departureTime}</span>
               </Row>
               {profile?.earlyDepartureRequested && (
                 <Row term="Early departure">{profile.earlyDepartureReason ?? "Requested"}</Row>
@@ -366,8 +392,8 @@ export function MemberProfileDialog({
       {lightboxOpen && photoUrl && (
         <PhotoLightbox
           src={photoUrl}
-          alt={`${row.fullName}'s photo`}
-          caption={playaName ? `${row.fullName} — “${playaName}”` : row.fullName}
+          alt={`${fullName}'s photo`}
+          caption={playaName ? `${fullName} — “${playaName}”` : fullName}
           onClose={() => setLightboxOpen(false)}
         />
       )}

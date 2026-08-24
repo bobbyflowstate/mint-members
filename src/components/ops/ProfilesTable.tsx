@@ -6,6 +6,8 @@ import clsx from "clsx";
 import { api } from "../../../convex/_generated/api";
 import { buildSignupCsv, downloadCsv, CsvColumn } from "../../lib/opsSignupsView/csv";
 import { ProfileEditDialog, type ProfileRow } from "./ProfileEditDialog";
+import { foldedIncludes } from "../../lib/search/fold";
+import { MemberNameLink } from "./MemberNameLink";
 import {
   BIKE_STATUS_LABELS,
   DIETARY_PREFERENCE_LABELS,
@@ -121,17 +123,17 @@ export function ProfilesTable() {
 
   const filteredRows = useMemo(() => {
     if (!rows) return [];
-    const term = search.trim().toLowerCase();
+    const term = search.trim();
     return rows
       .filter((row) => {
         if (tab === "incomplete" && row.completeCount === row.totalCount) return false;
         if (tab === "complete" && row.completeCount !== row.totalCount) return false;
         if (!term) return true;
         return (
-          row.fullName.toLowerCase().includes(term) ||
-          row.email.toLowerCase().includes(term) ||
-          (row.playaName ?? "").toLowerCase().includes(term) ||
-          (row.vehicleName ?? "").toLowerCase().includes(term)
+          foldedIncludes(row.fullName, term) ||
+          foldedIncludes(row.email, term) ||
+          foldedIncludes(row.playaName, term) ||
+          foldedIncludes(row.vehicleName, term)
         );
       })
       .sort((a, b) => {
@@ -243,7 +245,10 @@ export function ProfilesTable() {
                 <tr key={row.applicationId} className="hover:bg-white/5">
                   <td className="whitespace-nowrap px-3 py-2.5">
                     <p className="font-medium text-white">
-                      {row.fullName}
+                      <MemberNameLink
+                        applicationId={row.applicationId}
+                        name={row.fullName}
+                      />
                       {row.playaName ? (
                         <span className="ml-1.5 text-xs text-emerald-300">
                           “{row.playaName}”

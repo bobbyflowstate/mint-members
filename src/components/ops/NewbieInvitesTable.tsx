@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { requiresOpsReview } from "../../config/content";
+import { MemberNameLink } from "./MemberNameLink";
 
 const OPS_PASSWORD_KEY = "ops_password";
 
@@ -127,7 +128,12 @@ export function NewbieInvitesTable() {
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                         Newbie
                       </p>
-                      <h2 className="mt-1 text-xl font-semibold text-white">{invite.newbieName}</h2>
+                      <h2 className="mt-1 text-xl font-semibold text-white">
+                        <MemberNameLink
+                          applicationId={invite.applicationId ?? undefined}
+                          name={invite.newbieName}
+                        />
+                      </h2>
                       <p className="text-sm text-slate-300">{invite.newbieEmail}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
