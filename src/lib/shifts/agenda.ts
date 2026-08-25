@@ -49,6 +49,21 @@ export interface ScheduleMetrics {
   filledPercent: number;
 }
 
+/**
+ * Leads print at the top of a task card so a posted schedule shows who is
+ * running the shift first; everyone else keeps the order they arrived in.
+ */
+const ROLE_RANK: Record<string, number> = {
+  lead: 0,
+  manager: 1,
+  supervisor: 2,
+};
+const OTHER_ROLE_RANK = 3;
+
+function roleRank(role: string): number {
+  return ROLE_RANK[role.trim().toLocaleLowerCase()] ?? OTHER_ROLE_RANK;
+}
+
 export function familyLabel(family: string): string {
   return FAMILY_LABELS[family] ??
     family.toLocaleLowerCase().replace(/\b\w/g, (letter) => letter.toLocaleUpperCase());
@@ -176,7 +191,14 @@ export function buildShiftAgenda(rows: ShiftRow[]): AgendaDay[] {
           return {
             startTime,
             endTime,
-            cards: [...cards.values()].sort(
+            cards: [...cards.values()]
+              .map((card) => ({
+                ...card,
+                assignments: [...card.assignments].sort(
+                  (a, b) => roleRank(a.role) - roleRank(b.role)
+                ),
+              }))
+              .sort(
               (a, b) =>
                 a.familyLabel.localeCompare(b.familyLabel) ||
                 a.activity.localeCompare(b.activity)

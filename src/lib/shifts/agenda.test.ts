@@ -69,6 +69,20 @@ describe("buildShiftAgenda", () => {
     ]);
   });
 
+  it("lists leads ahead of the rest of the team on a task card", () => {
+    const agenda = buildShiftAgenda([
+      shift({ task: "WATER // Support", firstName: "Zoe", lastName: "Able" }),
+      shift({ task: "WATER // Support", firstName: "", lastName: "" }),
+      shift({ task: "WATER // Lead", firstName: "Bobby", lastName: "Lyte" }),
+    ]);
+
+    expect(agenda[0].slots[0].cards[0].assignments).toEqual([
+      { role: "Lead", assignee: "Bobby Lyte", unassigned: false },
+      { role: "Support", assignee: "Zoe Able", unassigned: false },
+      { role: "Support", assignee: "Unassigned", unassigned: true },
+    ]);
+  });
+
   it("orders cards by task family and activity inside a time slot", () => {
     const agenda = buildShiftAgenda([
       shift({ task: "WATER // Lead" }),
