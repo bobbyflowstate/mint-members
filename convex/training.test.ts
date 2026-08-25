@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  clearOverrideRecord,
   completeProgressRecord,
+  markCompleteRecord,
   assertCompletableProgress,
   requireTrainingUser,
   requireActiveTrainingMember,
@@ -187,5 +189,131 @@ describe("training progress", () => {
 
     expect(patch).not.toHaveBeenCalled();
     expect(second.completedAt).toBe(150);
+  });
+});
+
+describe("ops training overrides", () => {
+  it("creates a completed record for a member who never opened the module", async () => {
+    const insert = vi.fn().mockResolvedValue("progress_1");
+    const ctx = {
+      db: { query: vi.fn().mockReturnValue(progressQuery(null)), insert, patch: vi.fn() },
+    };
+
+    const result = await markCompleteRecord(
+      ctx as never,
+      "user_1" as never,
+      { moduleSlug: "lnt", note: "did it in person" },
+      "ops@example.com",
+      1_000
+    );
+
+    expect(result).toMatchObject({ moduleVersion: "2026.2", alreadyComplete: false });
+    expect(insert).toHaveBeenCalledWith("training_progress", expect.objectContaining({
+      moduleSlug: "lnt",
+      moduleVersion: "2026.2",
+      completedAt: 1_000,
+      overriddenBy: "ops@example.com",
+      overrideNote: "did it in person",
+    }));
+  });
+
+  it("keeps a half-finished member's own progress when ops marks it complete", async () => {
+    const existing = { _id: "progress_1", state: '{"step":4}', completedAt: undefined };
+    const patch = vi.fn();
+    const ctx = {
+      db: { query: vi.fn().mockReturnValue(progressQuery(existing)), patch, insert: vi.fn() },
+    };
+
+    await markCompleteRecord(
+      ctx as never,
+      "user_1" as never,
+      { moduleSlug: "lnt" },
+      "ops@example.com",
+      2_000
+    );
+
+    expect(patch).toHaveBeenCalledWith("progress_1", expect.objectContaining({
+      completedAt: 2_000,
+      overriddenBy: "ops@example.com",
+    }));
+    expect(patch.mock.calls[0][1]).not.toHaveProperty("state");
+  });
+
+  it("leaves an earned completion untouched", async () => {
+    const existing = { _id: "progress_1", state: "{}", completedAt: 500 };
+    const patch = vi.fn();
+    const ctx = {
+      db: { query: vi.fn().mockReturnValue(progressQuery(existing)), patch, insert: vi.fn() },
+    };
+
+    const result = await markCompleteRecord(
+      ctx as never,
+      "user_1" as never,
+      { moduleSlug: "lnt" },
+      "ops@example.com",
+      2_000
+    );
+
+    expect(result.alreadyComplete).toBe(true);
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown module and an oversized note", async () => {
+    const ctx = { db: { query: vi.fn(), insert: vi.fn(), patch: vi.fn() } };
+
+    await expect(markCompleteRecord(
+      ctx as never, "user_1" as never, { moduleSlug: "nope" }, "ops"
+    )).rejects.toThrow("Unknown training module");
+    await expect(markCompleteRecord(
+      ctx as never, "user_1" as never, { moduleSlug: "lnt", note: "x".repeat(501) }, "ops"
+    )).rejects.toThrow("Note is too long");
+  });
+
+  it("deletes the row when undoing an override the member never worked on", async () => {
+    const existing = { _id: "progress_1", state: "{}", completedAt: 1_000, overriddenBy: "ops" };
+    const remove = vi.fn();
+    const ctx = {
+      db: { query: vi.fn().mockReturnValue(progressQuery(existing)), delete: remove, patch: vi.fn() },
+    };
+
+    const result = await clearOverrideRecord(ctx as never, "user_1" as never, "lnt", 3_000);
+
+    expect(result.deleted).toBe(true);
+    expect(remove).toHaveBeenCalledWith("progress_1");
+  });
+
+  it("clears the completion but keeps real progress when undoing", async () => {
+    const existing = {
+      _id: "progress_1",
+      state: '{"step":4}',
+      completedAt: 1_000,
+      overriddenBy: "ops",
+    };
+    const patch = vi.fn();
+    const ctx = {
+      db: { query: vi.fn().mockReturnValue(progressQuery(existing)), patch, delete: vi.fn() },
+    };
+
+    const result = await clearOverrideRecord(ctx as never, "user_1" as never, "lnt", 3_000);
+
+    expect(result.deleted).toBe(false);
+    expect(patch).toHaveBeenCalledWith("progress_1", {
+      completedAt: undefined,
+      pledgedAt: undefined,
+      overriddenBy: undefined,
+      overrideNote: undefined,
+      updatedAt: 3_000,
+    });
+  });
+
+  it("refuses to undo a completion the member earned", async () => {
+    const existing = { _id: "progress_1", state: '{"step":13}', completedAt: 1_000 };
+    const ctx = {
+      db: { query: vi.fn().mockReturnValue(progressQuery(existing)), patch: vi.fn(), delete: vi.fn() },
+    };
+
+    await expect(
+      clearOverrideRecord(ctx as never, "user_1" as never, "lnt", 3_000)
+    ).rejects.toThrow("earned by the member");
   });
 });

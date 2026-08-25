@@ -27,6 +27,8 @@ export const EVENT_TYPES = [
   "newbie_invited",
   "newbie_invite_email_sent",
   "newbie_invite_email_failed",
+  "training_marked_complete",
+  "training_override_cleared",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

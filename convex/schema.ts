@@ -103,7 +103,9 @@ const eventType = v.union(
   v.literal("sleeping_group_updated"),
   v.literal("newbie_invited"),
   v.literal("newbie_invite_email_sent"),
-  v.literal("newbie_invite_email_failed")
+  v.literal("newbie_invite_email_failed"),
+  v.literal("training_marked_complete"),
+  v.literal("training_override_cleared")
 );
 
 export default defineSchema({
@@ -118,6 +120,9 @@ export default defineSchema({
     updatedAt: v.number(),
     pledgedAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),
+    // Set when ops marked this complete instead of the member earning it.
+    overriddenBy: v.optional(v.string()),
+    overrideNote: v.optional(v.string()),
   })
     .index("by_user_module_version", ["userId", "moduleSlug", "moduleVersion"])
     .index("by_module_version", ["moduleSlug", "moduleVersion"]),

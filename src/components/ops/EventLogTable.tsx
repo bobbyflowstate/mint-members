@@ -16,6 +16,8 @@ const EVENT_TYPE_STYLES: Record<string, { bg: string; text: string }> = {
   ops_override_denied: { bg: "bg-red-500/20", text: "text-red-400" },
   webhook_error: { bg: "bg-red-500/20", text: "text-red-400" },
   mutation_failed: { bg: "bg-red-500/20", text: "text-red-400" },
+  training_marked_complete: { bg: "bg-violet-500/20", text: "text-violet-400" },
+  training_override_cleared: { bg: "bg-amber-500/20", text: "text-amber-400" },
 };
 
 const EVENT_TYPES = [
@@ -29,6 +31,8 @@ const EVENT_TYPES = [
   "ops_override_denied",
   "webhook_error",
   "mutation_failed",
+  "training_marked_complete",
+  "training_override_cleared",
 ] as const;
 
 type EventType = (typeof EVENT_TYPES)[number];

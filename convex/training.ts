@@ -6,7 +6,8 @@ import { mutation, query } from "./_generated/server";
 import { getTrainingModule } from "../src/lib/training/modules";
 import { isGeneralStateComplete, isLntStateComplete } from "../src/lib/training/progress";
 import { summarizeOpsTraining } from "../src/lib/training/opsStatus";
-import { requireOpsPassword } from "./lib/auth";
+import { getCurrentUserEmail, requireOpsPassword } from "./lib/auth";
+import { logEvent } from "./lib/events";
 import { countsForLogistics } from "./lib/profileValidators";
 
 type ProgressArgs = {
@@ -241,5 +242,167 @@ export const listForOps = query({
         }
         return a.fullName.localeCompare(b.fullName);
       });
+  },
+});
+
+/** A progress record ops created by hand carries no member work. */
+const EMPTY_STATE = "{}";
+
+/**
+ * Mark a module complete on a member's behalf, against the module's current
+ * version. Deliberately skips the completion checks `completeProgressRecord`
+ * runs — that is the whole point of an override — and stamps who did it so a
+ * marked completion is never mistaken for an earned one.
+ */
+export async function markCompleteRecord(
+  ctx: Pick<MutationCtx, "db">,
+  userId: Id<"users">,
+  args: { moduleSlug: string; note?: string },
+  actor: string,
+  now = Date.now()
+) {
+  const trainingModule = getTrainingModule(args.moduleSlug);
+  if (!trainingModule) throw new Error("Unknown training module");
+  if (args.note && args.note.length > 500) throw new Error("Note is too long");
+
+  const moduleVersion = trainingModule.version;
+  const existing = await findProgress(ctx, userId, { moduleSlug: args.moduleSlug, moduleVersion });
+
+  if (existing?.completedAt && !existing.overriddenBy) {
+    // Already earned it the honest way — leave the record alone.
+    return { id: existing._id, moduleVersion, alreadyComplete: true };
+  }
+
+  if (existing) {
+    await ctx.db.patch(existing._id, {
+      completedAt: existing.completedAt ?? now,
+      overriddenBy: actor,
+      overrideNote: args.note,
+      updatedAt: now,
+    });
+    return { id: existing._id, moduleVersion, alreadyComplete: false };
+  }
+
+  const id = await ctx.db.insert("training_progress", {
+    userId,
+    moduleSlug: args.moduleSlug,
+    moduleVersion,
+    state: EMPTY_STATE,
+    startedAt: now,
+    updatedAt: now,
+    completedAt: now,
+    overriddenBy: actor,
+    overrideNote: args.note,
+  });
+  return { id, moduleVersion, alreadyComplete: false };
+}
+
+/**
+ * Undo an ops override. Refuses to touch a completion the member earned —
+ * clearing one of those would delete real work, and ops asking for it means
+ * they picked the wrong row.
+ */
+export async function clearOverrideRecord(
+  ctx: Pick<MutationCtx, "db">,
+  userId: Id<"users">,
+  moduleSlug: string,
+  now = Date.now()
+) {
+  const trainingModule = getTrainingModule(moduleSlug);
+  if (!trainingModule) throw new Error("Unknown training module");
+
+  const moduleVersion = trainingModule.version;
+  const existing = await findProgress(ctx, userId, { moduleSlug, moduleVersion });
+  if (!existing?.overriddenBy) {
+    throw new Error("That completion was earned by the member, not marked by ops");
+  }
+
+  if (existing.state === EMPTY_STATE) {
+    // Nothing of the member's under it — take the row out entirely so they
+    // read as "not started" rather than half-way through.
+    await ctx.db.delete(existing._id);
+    return { id: existing._id, moduleVersion, deleted: true };
+  }
+
+  await ctx.db.patch(existing._id, {
+    completedAt: undefined,
+    pledgedAt: undefined,
+    overriddenBy: undefined,
+    overrideNote: undefined,
+    updatedAt: now,
+  });
+  return { id: existing._id, moduleVersion, deleted: false };
+}
+
+async function requireActiveApplication(ctx: MutationCtx, applicationId: Id<"applications">) {
+  const application = await ctx.db.get(applicationId);
+  if (!countsForLogistics(application)) {
+    throw new Error("No active application for that member");
+  }
+  return application!;
+}
+
+export const opsMarkComplete = mutation({
+  args: {
+    opsPassword: v.string(),
+    applicationId: v.id("applications"),
+    moduleSlug: v.string(),
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+    const application = await requireActiveApplication(ctx, args.applicationId);
+    const actor = await getCurrentUserEmail(ctx);
+
+    const result = await markCompleteRecord(
+      ctx,
+      application.userId,
+      { moduleSlug: args.moduleSlug, note: args.note },
+      actor
+    );
+
+    if (!result.alreadyComplete) {
+      await logEvent(ctx, {
+        applicationId: application._id,
+        eventType: "training_marked_complete",
+        payload: {
+          memberEmail: application.email,
+          moduleSlug: args.moduleSlug,
+          moduleVersion: result.moduleVersion,
+          note: args.note ?? "",
+        },
+        actor,
+      });
+    }
+
+    return result;
+  },
+});
+
+export const opsClearOverride = mutation({
+  args: {
+    opsPassword: v.string(),
+    applicationId: v.id("applications"),
+    moduleSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireOpsPassword(args.opsPassword);
+    const application = await requireActiveApplication(ctx, args.applicationId);
+    const actor = await getCurrentUserEmail(ctx);
+
+    const result = await clearOverrideRecord(ctx, application.userId, args.moduleSlug);
+
+    await logEvent(ctx, {
+      applicationId: application._id,
+      eventType: "training_override_cleared",
+      payload: {
+        memberEmail: application.email,
+        moduleSlug: args.moduleSlug,
+        moduleVersion: result.moduleVersion,
+      },
+      actor,
+    });
+
+    return result;
   },
 });

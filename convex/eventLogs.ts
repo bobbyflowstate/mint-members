@@ -96,7 +96,9 @@ export const getByEventType = query({
       v.literal("ops_override_granted"),
       v.literal("ops_override_denied"),
       v.literal("webhook_error"),
-      v.literal("mutation_failed")
+      v.literal("mutation_failed"),
+      v.literal("training_marked_complete"),
+      v.literal("training_override_cleared")
     ),
     limit: v.optional(v.number()),
   },

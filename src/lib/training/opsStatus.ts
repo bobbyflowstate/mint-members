@@ -4,6 +4,9 @@ import { moduleStatus, type ModuleStatus, type TrainingProgressRecord } from "./
 /** A `training_progress` row narrowed to what the ops view reads. */
 export interface OpsTrainingProgressRecord extends TrainingProgressRecord {
   updatedAt?: number;
+  /** Set when ops marked this complete rather than the member earning it. */
+  overriddenBy?: string;
+  overrideNote?: string;
 }
 
 export interface OpsTrainingModuleCell {
@@ -14,6 +17,9 @@ export interface OpsTrainingModuleCell {
   completedAt?: number;
   /** Last save against an accepted version — what "in progress since" means. */
   updatedAt?: number;
+  /** Who marked this complete by hand, when nobody earned it. */
+  overriddenBy?: string;
+  overrideNote?: string;
   /**
    * True when the member completed this module under a version the current
    * completion policy no longer accepts: they finished it once, and they owe
@@ -59,6 +65,10 @@ export function summarizeOpsTraining(
       const accepted = mine.filter((record) =>
         module.completionPolicy.acceptedVersions.includes(record.moduleVersion)
       );
+      const completions = accepted
+        .filter((record) => record.completedAt !== undefined)
+        .sort((a, b) => b.completedAt! - a.completedAt!);
+      const latestCompletion = completions[0];
       const status = moduleStatus(module, records);
       const retiredCompletions = mine.filter(
         (record) =>
@@ -70,7 +80,9 @@ export function summarizeOpsTraining(
         slug: module.slug,
         title: module.title,
         status,
-        completedAt: latest(accepted.map((record) => record.completedAt)),
+        completedAt: latestCompletion?.completedAt,
+        overriddenBy: latestCompletion?.overriddenBy,
+        overrideNote: latestCompletion?.overrideNote,
         updatedAt: latest(accepted.map((record) => record.updatedAt)),
         staleCompletion,
         previousCompletedAt: staleCompletion
