@@ -16,7 +16,7 @@ files import — several of them import from `src/lib/`:
 
 | Convex file | Imports from `src/lib/` |
 |---|---|
-| `convex/training.ts` | `training/modules`, `training/progress` (and transitively `training/general`, `training/lnt`, `training/types`) |
+| `convex/training.ts` | `training/modules`, `training/progress`, `training/opsStatus` (and transitively `training/status`, `training/general`, `training/lnt`, `training/types`) |
 | `convex/applications.ts` | `opsSignupsView/types`, `opsSignupsView/evaluate` |
 | `convex/attendeeProfiles.ts` | `attendeeProfile/*`, `applications/types`, `applications/validation` |
 | `convex/confirmedMembers.ts` | `confirmedMembers/normalize` |

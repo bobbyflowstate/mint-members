@@ -5,6 +5,8 @@ import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getTrainingModule } from "../src/lib/training/modules";
 import { isGeneralStateComplete, isLntStateComplete } from "../src/lib/training/progress";
+import { summarizeOpsTraining } from "../src/lib/training/opsStatus";
+import { requireOpsPassword } from "./lib/auth";
 import { countsForLogistics } from "./lib/profileValidators";
 
 type ProgressArgs = {
@@ -186,5 +188,58 @@ export const completeMine = mutation({
     const userId = requireTrainingUser(await getAuthUserId(ctx));
     await requireActiveTrainingMember(ctx, userId);
     return completeProgressRecord(ctx, userId, args);
+  },
+});
+
+/**
+ * One row per active member with their status on each required training
+ * module — what /ops/training lists and exports.
+ *
+ * Reads every progress record rather than only completions so ops can tell
+ * "started and stalled" from "never opened it", and so a completion under a
+ * retired module version still shows as a retake.
+ */
+export const listForOps = query({
+  args: { opsPassword: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    if (!args.opsPassword) {
+      return [];
+    }
+    requireOpsPassword(args.opsPassword);
+
+    const applications = (await ctx.db.query("applications").collect()).filter(
+      countsForLogistics
+    );
+    const records = await ctx.db.query("training_progress").collect();
+
+    const byUserId = new Map<string, typeof records>();
+    for (const record of records) {
+      const existing = byUserId.get(record.userId);
+      if (existing) {
+        existing.push(record);
+      } else {
+        byUserId.set(record.userId, [record]);
+      }
+    }
+
+    return applications
+      .map((application) => {
+        const summary = summarizeOpsTraining(byUserId.get(application.userId) ?? []);
+        return {
+          applicationId: application._id,
+          fullName: `${application.firstName} ${application.lastName}`.trim(),
+          email: application.email,
+          memberType: application.memberType ?? "alumni",
+          status: application.status,
+          ...summary,
+        };
+      })
+      .sort((a, b) => {
+        // Least-trained first so ops sees who to chase.
+        if (a.completeCount !== b.completeCount) {
+          return a.completeCount - b.completeCount;
+        }
+        return a.fullName.localeCompare(b.fullName);
+      });
   },
 });

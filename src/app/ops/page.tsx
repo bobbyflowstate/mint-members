@@ -39,6 +39,10 @@ export default function OpsHomePage() {
   });
 
   const pendingReviews = useQuery(api.applications.listNeedingReview);
+  const trainingRows = useQuery(
+    api.training.listForOps,
+    opsPassword ? { opsPassword } : "skip"
+  );
   const recentEvents = useQuery(api.eventLogs.listRecent, { limit: 5 });
   const config = useQuery(api.config.getConfig);
   const updateConfig = useMutation(api.config.setConfig);
@@ -425,6 +429,35 @@ export default function OpsHomePage() {
             </div>
           )}
         </div>
+        {/* Training Card */}
+        <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-semibold text-white">Training</h2>
+            <Link
+              href="/ops/training"
+              className="text-sm text-emerald-400 hover:text-emerald-300"
+            >
+              View all →
+            </Link>
+          </div>
+          <div className="mt-4">
+            {trainingRows === undefined ? (
+              <div className="animate-pulse h-16 bg-white/10 rounded" />
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="text-4xl font-bold text-white">
+                  {trainingRows.filter((row) => !row.allComplete).length}
+                </div>
+                <div className="text-sm text-slate-400">
+                  of {trainingRows.length}{" "}
+                  {trainingRows.length === 1 ? "member" : "members"} still owe us
+                  required training
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Pending Reviews Card */}
         <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

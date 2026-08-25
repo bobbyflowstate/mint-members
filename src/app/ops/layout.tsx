@@ -15,6 +15,7 @@ const navigation = [
   { name: "Members", href: "/ops/members" },
   { name: "Profiles", href: "/ops/profiles" },
   { name: "Shifts", href: "/ops/shifts" },
+  { name: "Training", href: "/ops/training" },
   { name: "Review Queue", href: "/ops/review" },
   { name: "Invites", href: "/ops/invites" },
   { name: "Event Logs", href: "/ops/logs" },
